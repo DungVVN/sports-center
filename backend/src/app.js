@@ -36,6 +36,8 @@ import { insightRepository } from "./modules/insights/insight.repository.js";
 import { createInsightRouter } from "./modules/insights/insight.routes.js";
 import { createInsightService } from "./modules/insights/insight.service.js";
 import { createAuditRouter } from "./modules/audit/audit.routes.js";
+import { auditRepository } from "./modules/audit/audit.repository.js";
+import { createAuditLogService } from "./modules/audit/audit.service.js";
 import { createAssignmentRouter } from "./modules/assignments/assignment.routes.js";
 import { assignmentRepository } from "./modules/assignments/assignment.repository.js";
 import { createAssignmentService } from "./modules/assignments/assignment.service.js";
@@ -53,6 +55,7 @@ function isAllowedOrigin(origin) {
 export function createApp({ authService = createAuthService({ repository: authRepository, verificationDelivery: verificationDeliveryService, auditService }), staffService = createStaffService({ repository: staffRepository, auditService }), memberService = createMemberService({ repository: memberRepository, auditService }), membershipService = createMembershipService({ repository: membershipRepository, auditService }), classService = createClassService({ repository: classRepository, auditService }), bookingService = createBookingService({ repository: bookingRepository, auditService }), attendanceService = createAttendanceService({ repository: attendanceRepository, auditService }), paymentService = createPaymentService({ repository: paymentRepository, auditService }), trainingService = createTrainingService({ repository: trainingRepository, auditService }), insightService = createInsightService({ repository: insightRepository }) } = {}) {
   const app = express();
   const assignmentService = createAssignmentService({ repository: assignmentRepository, auditService });
+  const auditLogService = createAuditLogService({ repository: auditRepository });
 
   app.disable("x-powered-by");
   app.use(helmet());
@@ -81,7 +84,7 @@ export function createApp({ authService = createAuthService({ repository: authRe
   app.use(env.apiBasePath, createPaymentRouter(paymentService, authService));
   app.use(env.apiBasePath, createTrainingRouter(trainingService, authService));
   app.use(env.apiBasePath, createInsightRouter(insightService, authService));
-  app.use(env.apiBasePath, createAuditRouter(authService));
+  app.use(env.apiBasePath, createAuditRouter(auditLogService, authService));
   app.use(env.apiBasePath, createAssignmentRouter(assignmentService, authService));
 
   app.use(notFound);
