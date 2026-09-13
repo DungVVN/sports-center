@@ -3,7 +3,7 @@ import { z } from "zod";
 
 const environmentSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  PORT: z.coerce.number().int().min(1).max(65535).default(3000),
+  PORT: z.coerce.number().int().min(1).max(65535).default(8880),
   API_BASE_PATH: z.string().startsWith("/").default("/api/v1"),
   CORS_ORIGIN: z.string().min(1).default("http://localhost:5173"),
   AUTH_JWT_SECRET: z.string().min(32).default("development-only-auth-secret-change-before-production"),

@@ -1,4 +1,4 @@
-const baseUrl = (process.env.API_BASE_URL ?? "http://localhost:3000/api/v1").replace(/\/$/, "");
+const baseUrl = (process.env.API_BASE_URL ?? "http://localhost:8880/api/v1").replace(/\/$/, "");
 const password = process.env.DEMO_ACCOUNT_PASSWORD;
 
 if (!password) {
