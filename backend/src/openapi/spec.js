@@ -9,6 +9,9 @@ export const openApiSpec = {
   },
   servers: [{ url: env.apiBasePath }],
   paths: {
+    "/payments": { get: { tags: ["Payments"], summary: "Danh sách giao dịch", security: [{ sessionCookie: [] }], responses: { 200: { description: "Giao dịch" } } }, post: { tags: ["Payments"], summary: "Tạo giao dịch chờ xác nhận", security: [{ sessionCookie: [] }], responses: { 201: { description: "Giao dịch pending" } } } },
+    "/payments/{id}": { get: { tags: ["Payments"], summary: "Chi tiết giao dịch", security: [{ sessionCookie: [] }], responses: { 200: { description: "Giao dịch" } } } },
+    "/payments/{id}/confirm": { post: { tags: ["Payments"], summary: "Lễ tân xác nhận tiền mặt/chuyển khoản", security: [{ sessionCookie: [] }], responses: { 200: { description: "Đã xác nhận; gói được kích hoạt khi paid" } } } },
     "/classes/{id}/attendance": { get: { tags: ["Attendance"], summary: "Danh sách điểm danh lớp", security: [{ sessionCookie: [] }], responses: { 200: { description: "Điểm danh" } } } },
     "/attendance/check-in": { post: { tags: ["Attendance"], summary: "Điểm danh theo booking", security: [{ sessionCookie: [] }], responses: { 200: { description: "Đã điểm danh" } } } },
     "/attendance/{id}/check-out": { post: { tags: ["Attendance"], summary: "Check-out theo lượt điểm danh", security: [{ sessionCookie: [] }], parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }], responses: { 200: { description: "Đã check-out" } } } },
