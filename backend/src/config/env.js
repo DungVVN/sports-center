@@ -11,6 +11,8 @@ const environmentSchema = z.object({
   VERIFICATION_CODE_SECRET: z.string().min(32).default("development-only-verification-secret-change-before-production"),
   VERIFICATION_CODE_TTL_MINUTES: z.coerce.number().int().min(1).max(60).default(10),
   VERIFICATION_DELIVERY_MODE: z.enum(["development", "provider"]).default("development"),
+  JOBS_ENABLED: z.coerce.boolean().default(true),
+  JOB_INTERVAL_MINUTES: z.coerce.number().int().min(15).max(1440).default(60),
 });
 
 const parsedEnvironment = environmentSchema.safeParse(process.env);
@@ -37,4 +39,6 @@ export const env = Object.freeze({
   verificationCodeSecret: values.VERIFICATION_CODE_SECRET,
   verificationCodeTtlMinutes: values.VERIFICATION_CODE_TTL_MINUTES,
   verificationDeliveryMode: values.VERIFICATION_DELIVERY_MODE,
+  jobsEnabled: values.JOBS_ENABLED,
+  jobIntervalMinutes: values.JOB_INTERVAL_MINUTES,
 });
