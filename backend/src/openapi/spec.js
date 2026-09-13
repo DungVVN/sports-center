@@ -9,6 +9,8 @@ export const openApiSpec = {
   },
   servers: [{ url: env.apiBasePath }],
   paths: {
+    "/membership-packages": { get: { tags: ["Memberships"], summary: "Danh sách gói tập và quyền sử dụng", security: [{ sessionCookie: [] }], responses: { 200: { description: "Gói tập đang cấu hình" } } } },
+    "/members/{id}/memberships": { get: { tags: ["Memberships"], summary: "Lịch sử gói tập của hội viên", security: [{ sessionCookie: [] }], parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }], responses: { 200: { description: "Danh sách membership" } } }, post: { tags: ["Memberships"], summary: "Tạo membership chờ thanh toán", security: [{ sessionCookie: [] }], responses: { 201: { description: "Membership pending_payment" } } } },
     "/members": { get: { tags: ["Members"], summary: "Danh sách hội viên", security: [{ sessionCookie: [] }], responses: { 200: { description: "Danh sách hội viên" } } }, post: { tags: ["Members"], summary: "Tạo hồ sơ hội viên", security: [{ sessionCookie: [] }], responses: { 201: { description: "Hồ sơ hội viên mới" } } } },
     "/members/{id}": { get: { tags: ["Members"], summary: "Chi tiết hội viên", security: [{ sessionCookie: [] }], parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }], responses: { 200: { description: "Hội viên" } } }, patch: { tags: ["Members"], summary: "Cập nhật hội viên", security: [{ sessionCookie: [] }], responses: { 200: { description: "Đã cập nhật" } } } },
     "/members/{id}/emergency-contacts": { put: { tags: ["Members"], summary: "Thay thế liên hệ khẩn cấp", security: [{ sessionCookie: [] }], responses: { 200: { description: "Danh sách liên hệ mới" } } } },

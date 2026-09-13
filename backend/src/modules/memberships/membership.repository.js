@@ -1,0 +1,2 @@
+import { prisma } from "../../database.js";
+export const membershipRepository={packages:()=>prisma.membership_packages.findMany({orderBy:{tier_rank:"asc"}}),packageById:(id)=>prisma.membership_packages.findUnique({where:{id}}),entitlements:(packageId)=>prisma.membership_package_entitlements.findMany({where:{package_id:packageId}}),memberExists:(id)=>prisma.members.findUnique({where:{id}}),createMembership:(data)=>prisma.member_memberships.create({data}),memberships:(memberId)=>prisma.member_memberships.findMany({where:{member_id:memberId},orderBy:{created_at:"desc"}})};

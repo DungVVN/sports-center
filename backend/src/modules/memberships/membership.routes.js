@@ -1,0 +1,6 @@
+import { Router } from "express";
+import { z } from "zod";
+import { authenticate, requirePermission } from "../../shared/auth/authentication.middleware.js";
+import { sendSuccess } from "../../shared/http/response.js";
+import { validateRequest } from "../../shared/validation/validate-request.js";
+const id=z.string().uuid();export function createMembershipRouter(service,authService){const router=Router();router.get("/membership-packages",authenticate(authService),requirePermission("member.read"),async(req,res,next)=>{try{sendSuccess(res,{data:await service.listPackages()});}catch(e){next(e);}});router.post("/members/:id/memberships",authenticate(authService),requirePermission("member.write"),validateRequest(z.object({params:z.object({id}),body:z.object({packageId:id,startsOn:z.string().date()})})),async(req,res,next)=>{try{sendSuccess(res,{statusCode:201,data:await service.createMemberMembership({memberId:req.validated.params.id,...req.validated.body},req.auth.user.id)});}catch(e){next(e);}});router.get("/members/:id/memberships",authenticate(authService),requirePermission("member.read"),validateRequest(z.object({params:z.object({id})})),async(req,res,next)=>{try{sendSuccess(res,{data:await service.listMemberMemberships(req.validated.params.id)});}catch(e){next(e);}});return router;}
