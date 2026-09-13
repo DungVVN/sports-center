@@ -14,7 +14,7 @@ const entitlementLabels = { gym_access: "Tập gym", group_class_booking: "Đặ
 export function MembershipsPage({ session }) {
   const role = session?.user?.role;
   const isMember = role === "member";
-  const canCreatePackages = role === "manager";
+  const canCreatePackages = session?.permissions?.includes("membership.package.manage") ?? false;
   const canReviewFreeze = ["manager", "receptionist"].includes(role);
   const [packages, setPackages] = useState([]); const [members, setMembers] = useState([]); const [memberships, setMemberships] = useState([]); const [freezeRequests, setFreezeRequests] = useState([]); const [selectedMemberId, setSelectedMemberId] = useState("");
   const [packageForm, setPackageForm] = useState(emptyPackage); const [freezeForm, setFreezeForm] = useState(emptyFreeze); const [membershipForm, setMembershipForm] = useState(emptyMembership);
