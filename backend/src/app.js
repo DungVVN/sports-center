@@ -36,6 +36,7 @@ import { insightRepository } from "./modules/insights/insight.repository.js";
 import { createInsightRouter } from "./modules/insights/insight.routes.js";
 import { createInsightService } from "./modules/insights/insight.service.js";
 import { createAuditRouter } from "./modules/audit/audit.routes.js";
+import { createAssignmentRouter } from "./modules/assignments/assignment.routes.js";
 import { auditService } from "./shared/audit/audit.service.js";
 import { openApiSpec } from "./openapi/spec.js";
 import { sendSuccess } from "./shared/http/response.js";
@@ -78,6 +79,7 @@ export function createApp({ authService = createAuthService({ repository: authRe
   app.use(env.apiBasePath, createTrainingRouter(trainingService, authService));
   app.use(env.apiBasePath, createInsightRouter(insightService, authService));
   app.use(env.apiBasePath, createAuditRouter(authService));
+  app.use(env.apiBasePath, createAssignmentRouter(authService));
 
   app.use(notFound);
   app.use(errorHandler);
