@@ -5,7 +5,7 @@ const input = { name: "Yoga sáng", type: "group", coachUserId: "coach-1", roomI
 
 function dependencies({ room = { id: "room-1" }, coach = { id: "coach-1" } } = {}) {
   return {
-    repository: { findRoom: vi.fn().mockResolvedValue(room), findCoach: vi.fn().mockResolvedValue(coach), create: vi.fn().mockResolvedValue({ id: "class-1" }) },
+    repository: { findRoom: vi.fn().mockResolvedValue(room), findCoach: vi.fn().mockResolvedValue(coach), find: vi.fn().mockResolvedValue({ id: "class-1", starts_at: new Date(input.startsAt), ends_at: new Date(input.endsAt) }), create: vi.fn().mockResolvedValue({ id: "class-1" }), update: vi.fn().mockResolvedValue({ id: "class-1" }) },
     auditService: { record: vi.fn().mockResolvedValue(undefined) },
   };
 }
@@ -28,5 +28,12 @@ describe("Class service", () => {
     await expect(createClassService({ repository, auditService }).create(input, "manager-1")).resolves.toEqual({ id: "class-1" });
     expect(repository.create).toHaveBeenCalledWith(expect.objectContaining({ name: "Yoga sáng", coach_user_id: "coach-1", room_id: "room-1", capacity: 20 }));
     expect(auditService.record).toHaveBeenCalledWith(expect.objectContaining({ action: "class.created", actorUserId: "manager-1" }));
+  });
+
+  it("updates schedule, room and coach after validating the referenced resources", async () => {
+    const { repository, auditService } = dependencies();
+    await createClassService({ repository, auditService }).update("class-1", { roomId: "room-2", coachUserId: "coach-2", startsAt: "2026-09-15T03:00:00.000Z", endsAt: "2026-09-15T04:00:00.000Z", description: "Lớp cập nhật" }, "manager-1");
+    expect(repository.update).toHaveBeenCalledWith("class-1", expect.objectContaining({ room_id: "room-2", coach_user_id: "coach-2", description: "Lớp cập nhật" }));
+    expect(auditService.record).toHaveBeenCalledWith(expect.objectContaining({ action: "class.updated" }));
   });
 });
