@@ -21,5 +21,12 @@ export async function runMembershipLifecycleJob(now = new Date()) {
   for (const membership of inGrace) await notifyMember(membership.member_id, "Nhắc gia hạn gói tập", "Gói tập của bạn đang trong thời gian gia hạn 72 giờ. Hãy gia hạn ngay hôm nay.", `/memberships/${membership.id}`);
   const pastGrace = await prisma.member_memberships.findMany({ where: { status: "expiring_soon", grace_expires_at: { lte: now } } });
   for (const membership of pastGrace) { await prisma.member_memberships.update({ where: { id: membership.id }, data: { status: "expired" } }); await notifyMember(membership.member_id, "Gói tập đã hết hạn chính thức", "Thời gian gia hạn 72 giờ đã kết thúc. Vui lòng mua hoặc gia hạn gói tập để tiếp tục sử dụng.", `/memberships/${membership.id}`); }
-  return { expiring: expiring.length, graceStarted: expiredToday.length, expired: pastGrace.length };
+  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  const upcoming = await prisma.class_sessions.findMany({ where: { status: "published", starts_at: { gte: now, lte: tomorrow } } });
+  for (const session of upcoming) { const bookings = await prisma.bookings.findMany({ where: { class_session_id: session.id, status: "confirmed" }, select: { member_id: true } }); for (const booking of bookings) await notifyMember(booking.member_id, "Nhắc lịch học", `Bạn có lớp ${session.name} lúc ${session.starts_at.toLocaleString("vi-VN")}.`, `/classes/${session.id}`); }
+  const absent = await prisma.attendance_records.findMany({ where: { status: "absent", recorded_at: { gte: today } }, select: { member_id: true, class_session_id: true } });
+  for (const record of absent) await notifyMember(record.member_id, "Bạn đã vắng buổi học", "Hãy kiểm tra lịch tập và liên hệ Coach nếu cần hỗ trợ.", `/classes/${record.class_session_id}`);
+  const stalePlans = await prisma.training_plans.findMany({ where: { updated_at: { lt: new Date(now.getTime() - 14 * 86400000) }, status: "active" }, select: { id: true, coach_user_id: true } });
+  for (const plan of stalePlans) { const duplicate = await prisma.notifications.findFirst({ where: { recipient_user_id: plan.coach_user_id, title: "Cần cập nhật giáo án", created_at: { gte: new Date(now.getTime() - 20 * 60 * 60 * 1000) } } }); if (!duplicate) await prisma.notifications.create({ data: { recipient_user_id: plan.coach_user_id, category: "operations", title: "Cần cập nhật giáo án", body: "Một giáo án đang hoạt động chưa được cập nhật trong 14 ngày.", link_path: `/training-plans/${plan.id}` } }); }
+  return { expiring: expiring.length, graceStarted: expiredToday.length, expired: pastGrace.length, upcomingClasses: upcoming.length, absences: absent.length, stalePlans: stalePlans.length };
 }
