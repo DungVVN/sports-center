@@ -4,10 +4,15 @@ import { createApp } from "../src/app.js";
 
 const memberId = "11111111-1111-4111-8111-111111111111";
 const templateId = "22222222-2222-4222-8222-222222222222";
-function authService(permissions) { return { getAuthentication: vi.fn().mockResolvedValue({ user: { id: "coach-1", role: "coach" }, permissions }) }; }
-function trainingService() { return { members: vi.fn().mockResolvedValue([]), templates: vi.fn().mockResolvedValue([]), plans: vi.fn().mockResolvedValue([]), createPlan: vi.fn().mockResolvedValue({ id: "plan-1" }) }; }
+function authService(permissions, role = "coach") { return { getAuthentication: vi.fn().mockResolvedValue({ user: { id: "coach-1", role }, permissions }) }; }
+function trainingService() { return { ownProgress: vi.fn().mockResolvedValue({ plans: [], results: [] }), members: vi.fn().mockResolvedValue([]), templates: vi.fn().mockResolvedValue([]), plans: vi.fn().mockResolvedValue([]), createPlan: vi.fn().mockResolvedValue({ id: "plan-1" }) }; }
 
 describe("Training routes", () => {
+  it("lets a Member read their own plans and results without training.write", async () => {
+    const service = trainingService();
+    await request(createApp({ authService: authService([], "member"), trainingService: service })).get("/api/v1/members/me/training").set("Authorization", "Bearer token").expect(200);
+    expect(service.ownProgress).toHaveBeenCalledWith({ id: "coach-1", role: "member" });
+  });
   it("creates a shared template with its first exercise", async () => {
     const service = { ...trainingService(), createTemplate: vi.fn().mockResolvedValue({ id: "template-1" }) };
     const body = { name: "Sức bền cơ bản", targetGroup: "Người mới", exercises: [{ name: "Squat", sets: 3, reps: 10, rest_seconds: 60 }] };
