@@ -9,6 +9,9 @@ export const openApiSpec = {
   },
   servers: [{ url: env.apiBasePath }],
   paths: {
+    "/staff": { get: { tags: ["Staff"], summary: "Danh sách nhân viên", security: [{ sessionCookie: [] }], responses: { 200: { description: "Danh sách nhân sự" }, 403: { description: "Thiếu quyền staff.manage" } } }, post: { tags: ["Staff"], summary: "Tạo nhân viên và trả mật khẩu tạm một lần", security: [{ sessionCookie: [] }], responses: { 201: { description: "Nhân viên mới và temporaryPassword" } } } },
+    "/staff/{id}": { get: { tags: ["Staff"], summary: "Chi tiết nhân viên", security: [{ sessionCookie: [] }], parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }], responses: { 200: { description: "Nhân viên" } } }, patch: { tags: ["Staff"], summary: "Cập nhật nhân viên", security: [{ sessionCookie: [] }], responses: { 200: { description: "Đã cập nhật" } } } },
+    "/staff/{id}/status": { patch: { tags: ["Staff"], summary: "Đình chỉ hoặc kích hoạt nhân viên", security: [{ sessionCookie: [] }], responses: { 200: { description: "Đã cập nhật trạng thái" } } } },
     "/auth/register": {
       post: { tags: ["Auth"], summary: "Đăng ký hội viên công khai", requestBody: { required: true, content: { "application/json": { schema: { $ref: "#/components/schemas/RegisterRequest" } } } }, responses: { 201: { description: "Đã tạo tài khoản chờ xác thực" }, 409: { description: "Email hoặc số điện thoại đã tồn tại" }, 422: { description: "Dữ liệu không hợp lệ" } } },
     },
