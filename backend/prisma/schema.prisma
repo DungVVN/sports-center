@@ -234,9 +234,23 @@ model member_memberships {
   activated_at        DateTime?        @db.Timestamptz(6)
   activation_payment_id String?        @unique @db.Uuid
   frozen_days        Int               @default(0)
+  auto_renew         Boolean           @default(false)
   created_by         String?           @db.Uuid
   created_at         DateTime          @default(now()) @db.Timestamptz(6)
   updated_at         DateTime          @updatedAt @db.Timestamptz(6)
+}
+
+model membership_freeze_requests {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  membership_id String   @db.Uuid
+  requested_by  String   @db.Uuid
+  starts_on     DateTime @db.Date
+  ends_on       DateTime @db.Date
+  reason        String
+  status        String   @default("pending")
+  reviewed_by   String?  @db.Uuid
+  reviewed_at   DateTime? @db.Timestamptz(6)
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
 }
 
 model member_coach_assignments {
