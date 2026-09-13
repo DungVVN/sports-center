@@ -10,7 +10,7 @@ export const bookingRepository = {
   class: (id) => prisma.class_sessions.findUnique({ where: { id } }),
   member: (id) => prisma.members.findUnique({ where: { id } }),
   memberByUser: (userId) => prisma.members.findUnique({ where: { user_id: userId } }),
-  activeMembership: (memberId) => prisma.member_memberships.findFirst({ where: { member_id: memberId, status: { in: ["active", "expiring_soon"] }, starts_on: { lte: new Date() }, OR: [{ expires_on: { gte: new Date() } }, { grace_expires_at: { gte: new Date() } }] }, orderBy: { expires_on: "desc" } }),
+  activeMembership: (memberId, accessAt) => prisma.member_memberships.findFirst({ where: { member_id: memberId, status: { in: ["active", "expiring_soon"] }, starts_on: { lte: accessAt }, OR: [{ expires_on: { gte: accessAt } }, { grace_expires_at: { gte: accessAt } }] }, orderBy: { expires_on: "desc" } }),
   entitlement: (packageId) => prisma.membership_package_entitlements.findUnique({ where: { package_id_entitlement: { package_id: packageId, entitlement: "group_class_booking" } } }),
   createWithCapacity: ({ bookingCode, memberId, classId, bookedBy }) => prisma.$transaction(async (tx) => {
     const existing = await tx.bookings.findFirst({ where: { member_id: memberId, class_session_id: classId, status: { in: ["confirmed", "waitlisted"] } } });

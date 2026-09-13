@@ -17,11 +17,11 @@ export function createBookingService({ repository, auditService }) {
     async create({ memberId: requestedMemberId, classId }, actor) {
       const memberId = await scopedMemberId(actor, requestedMemberId);
       if (!memberId || !await repository.member(memberId)) throw new AppError({ statusCode: 404, code: "MEMBER_NOT_FOUND", message: "Không tìm thấy hội viên." });
-      const membership = await repository.activeMembership(memberId);
-      const access = membership && await repository.entitlement(membership.package_id);
-      if (!access) throw new AppError({ statusCode: 422, code: "MEMBERSHIP_BOOKING_NOT_ELIGIBLE", message: "Hội viên chưa có gói tập đang hoạt động với quyền đặt lớp." });
       const session = await repository.class(classId);
       if (!session || session.status !== "published" || session.starts_at <= new Date()) throw new AppError({ statusCode: 422, code: "CLASS_UNAVAILABLE", message: "Lớp học chưa sẵn sàng để đặt chỗ." });
+      const membership = await repository.activeMembership(memberId, session.starts_at);
+      const access = membership && await repository.entitlement(membership.package_id);
+      if (!access) throw new AppError({ statusCode: 422, code: "MEMBERSHIP_BOOKING_NOT_ELIGIBLE", message: "Gói tập không còn hiệu lực vào thời điểm lớp diễn ra hoặc không có quyền đặt lớp." });
       const result = await repository.createWithCapacity({ bookingCode: `BKG-${randomBytes(4).toString("hex").toUpperCase()}`, memberId, classId, bookedBy: actor.id });
       if (result.duplicate) throw new AppError({ statusCode: 409, code: "BOOKING_ALREADY_EXISTS", message: "Hội viên đã có đặt chỗ còn hiệu lực cho lớp này." });
       await auditService.record({ actorUserId: actor.id, action: "booking.created", entityType: "booking", entityId: result.booking.id, summary: result.booking.status === "waitlisted" ? "Đã vào danh sách chờ." : "Đã đặt chỗ lớp học." });
@@ -33,7 +33,7 @@ export function createBookingService({ repository, auditService }) {
       const memberId = await scopedMemberId(actor);
       if (isMember(actor) && booking.member_id !== memberId) throw new AppError({ statusCode: 403, code: "BOOKING_ACCESS_DENIED", message: "Bạn chỉ có thể hủy lịch của chính mình." });
       const session = await repository.class(booking.class_session_id);
-      if (!session || session.starts_at.getTime() - Date.now() < 5 * 60 * 60 * 1000) throw new AppError({ statusCode: 422, code: "BOOKING_CANCELLATION_TOO_LATE", message: "Chỉ được hủy trước giờ học ít nhất 5 giờ." });
+      if (!session || (isMember(actor) && session.starts_at.getTime() - Date.now() < 5 * 60 * 60 * 1000)) throw new AppError({ statusCode: 422, code: "BOOKING_CANCELLATION_TOO_LATE", message: "Hội viên chỉ được tự hủy trước giờ học ít nhất 5 giờ." });
       const result = await repository.cancel(id, reason);
       const promoted = booking.status === "confirmed" ? await repository.promoteWaitlisted(booking.class_session_id) : null;
       await auditService.record({ actorUserId: actor.id, action: "booking.cancelled", entityType: "booking", entityId: id, summary: promoted ? "Đã hủy booking và tự động xác nhận danh sách chờ." : "Đã hủy đặt chỗ lớp học.", reason });
