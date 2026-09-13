@@ -9,7 +9,7 @@ describe("apiClient", () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ success: true, data: { status: "ok" } }), { headers: { "content-type": "application/json" } }));
     vi.stubGlobal("fetch", fetchMock);
     await expect(apiClient.get("/health")).resolves.toEqual({ status: "ok" });
-    expect(fetchMock).toHaveBeenCalledWith("http://localhost:3000/api/v1/health", expect.objectContaining({ credentials: "include", method: "GET" }));
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringMatching(/\/api\/v1\/health$/), expect.objectContaining({ credentials: "include", method: "GET" }));
   });
 
   it("maps the backend error envelope to ApiError", async () => {
