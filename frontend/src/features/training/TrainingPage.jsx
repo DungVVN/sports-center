@@ -9,7 +9,7 @@ const newResult = { planId: "", recordedOn: new Date().toISOString().slice(0, 10
 
 export function TrainingPage({ session }) {
   const [templates, setTemplates] = useState([]); const [members, setMembers] = useState([]); const [plans, setPlans] = useState([]); const [plan, setPlan] = useState(newPlan); const [template, setTemplate] = useState(newTemplate); const [result, setResult] = useState(newResult); const [error, setError] = useState(""); const [notice, setNotice] = useState(""); const [submitting, setSubmitting] = useState(false);
-  const canCreateTemplate = session?.user?.role === "manager";
+  const canCreateTemplate = session?.permissions?.includes("training.template.manage") ?? false;
   const load = useCallback(async () => { try { const [nextTemplates, nextMembers, nextPlans] = await Promise.all([trainingApi.templates(), trainingApi.members(), trainingApi.plans()]); setTemplates(nextTemplates); setMembers(nextMembers); setPlans(nextPlans); } catch (caught) { setError(caught.message); } }, []);
   useEffect(() => { void Promise.resolve().then(load); }, [load]);
   async function submit(task, success) { setError(""); setNotice(""); setSubmitting(true); try { await task(); setNotice(success); await load(); } catch (caught) { setError(caught.message); } finally { setSubmitting(false); } }
