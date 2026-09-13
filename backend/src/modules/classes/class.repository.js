@@ -1,0 +1,2 @@
+import { prisma } from "../../database.js";
+export const classRepository={list:()=>prisma.class_sessions.findMany({orderBy:{starts_at:"asc"}}),find:(id)=>prisma.class_sessions.findUnique({where:{id}}),findRoom:(id)=>prisma.rooms.findUnique({where:{id}}),rooms:()=>prisma.rooms.findMany({where:{is_active:true},orderBy:{name:"asc"}}),coaches:()=>prisma.users.findMany({where:{role:"coach",status:"active"},select:{id:true,display_name:true,email:true}}),create:(data)=>prisma.class_sessions.create({data}),update:(id,data)=>prisma.class_sessions.update({where:{id},data})};

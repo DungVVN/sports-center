@@ -9,6 +9,11 @@ export const openApiSpec = {
   },
   servers: [{ url: env.apiBasePath }],
   paths: {
+    "/classes": { get: { tags: ["Classes"], summary: "Danh sách lớp học", security: [{ sessionCookie: [] }], responses: { 200: { description: "Lớp học" } } }, post: { tags: ["Classes"], summary: "Tạo lớp học nháp", security: [{ sessionCookie: [] }], responses: { 201: { description: "Lớp học mới" } } } },
+    "/classes/{id}": { patch: { tags: ["Classes"], summary: "Cập nhật lớp học", security: [{ sessionCookie: [] }], parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }], responses: { 200: { description: "Đã cập nhật" } } } },
+    "/classes/{id}/publish": { post: { tags: ["Classes"], summary: "Xuất bản lớp học", security: [{ sessionCookie: [] }], responses: { 200: { description: "Đã xuất bản" } } } },
+    "/rooms": { get: { tags: ["Classes"], summary: "Danh sách phòng", security: [{ sessionCookie: [] }], responses: { 200: { description: "Phòng đang hoạt động" } } } },
+    "/coaches": { get: { tags: ["Classes"], summary: "Danh sách huấn luyện viên", security: [{ sessionCookie: [] }], responses: { 200: { description: "HLV đang hoạt động" } } } },
     "/membership-packages": { get: { tags: ["Memberships"], summary: "Danh sách gói tập và quyền sử dụng", security: [{ sessionCookie: [] }], responses: { 200: { description: "Gói tập đang cấu hình" } } } },
     "/members/{id}/memberships": { get: { tags: ["Memberships"], summary: "Lịch sử gói tập của hội viên", security: [{ sessionCookie: [] }], parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }], responses: { 200: { description: "Danh sách membership" } } }, post: { tags: ["Memberships"], summary: "Tạo membership chờ thanh toán", security: [{ sessionCookie: [] }], responses: { 201: { description: "Membership pending_payment" } } } },
     "/members": { get: { tags: ["Members"], summary: "Danh sách hội viên", security: [{ sessionCookie: [] }], responses: { 200: { description: "Danh sách hội viên" } } }, post: { tags: ["Members"], summary: "Tạo hồ sơ hội viên", security: [{ sessionCookie: [] }], responses: { 201: { description: "Hồ sơ hội viên mới" } } } },

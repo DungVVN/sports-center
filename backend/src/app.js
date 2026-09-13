@@ -17,6 +17,9 @@ import { createMemberService } from "./modules/members/member.service.js";
 import { membershipRepository } from "./modules/memberships/membership.repository.js";
 import { createMembershipRouter } from "./modules/memberships/membership.routes.js";
 import { createMembershipService } from "./modules/memberships/membership.service.js";
+import { classRepository } from "./modules/classes/class.repository.js";
+import { createClassRouter } from "./modules/classes/class.routes.js";
+import { createClassService } from "./modules/classes/class.service.js";
 import { auditService } from "./shared/audit/audit.service.js";
 import { openApiSpec } from "./openapi/spec.js";
 import { sendSuccess } from "./shared/http/response.js";
@@ -28,7 +31,7 @@ function isAllowedOrigin(origin) {
   return !origin || env.corsOrigins.includes(origin);
 }
 
-export function createApp({ authService = createAuthService({ repository: authRepository, verificationDelivery: verificationDeliveryService, auditService }), staffService = createStaffService({ repository: staffRepository, auditService }), memberService = createMemberService({ repository: memberRepository, auditService }), membershipService = createMembershipService({ repository: membershipRepository, auditService }) } = {}) {
+export function createApp({ authService = createAuthService({ repository: authRepository, verificationDelivery: verificationDeliveryService, auditService }), staffService = createStaffService({ repository: staffRepository, auditService }), memberService = createMemberService({ repository: memberRepository, auditService }), membershipService = createMembershipService({ repository: membershipRepository, auditService }), classService = createClassService({ repository: classRepository, auditService }) } = {}) {
   const app = express();
 
   app.disable("x-powered-by");
@@ -52,6 +55,7 @@ export function createApp({ authService = createAuthService({ repository: authRe
   app.use(`${env.apiBasePath}/staff`, createStaffRouter(staffService, authService));
   app.use(`${env.apiBasePath}/members`, createMemberRouter(memberService, authService));
   app.use(env.apiBasePath, createMembershipRouter(membershipService, authService));
+  app.use(env.apiBasePath, createClassRouter(classService, authService));
 
   app.use(notFound);
   app.use(errorHandler);
