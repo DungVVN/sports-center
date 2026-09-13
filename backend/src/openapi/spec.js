@@ -9,6 +9,7 @@ export const openApiSpec = {
   },
   servers: [{ url: env.apiBasePath }],
   paths: {
+    "/members/me": { get: { tags: ["Members"], summary: "Hội viên xem hồ sơ của chính mình", security: [{ sessionCookie: [] }], responses: { 200: { description: "Hồ sơ cá nhân" } } } },
     "/members/{id}/coach-assignments": { get: { tags: ["Coach assignments"], summary: "Lịch sử coach của hội viên", security: [{ sessionCookie: [] }], responses: { 200: { description: "Lịch sử" } } }, post: { tags: ["Coach assignments"], summary: "Đổi coach chính và giữ lịch sử hiệu lực", security: [{ sessionCookie: [] }], responses: { 201: { description: "Đã phân công" } } } },
     "/audit-logs": { get: { tags: ["Audit"], summary: "Nhật ký kiểm toán", security: [{ sessionCookie: [] }], responses: { 200: { description: "Nhật ký" } } } },
     "/dashboards/{role}": { get: { tags: ["Dashboard"], summary: "Tổng quan theo vai trò", security: [{ sessionCookie: [] }], responses: { 200: { description: "Chỉ số dashboard" } } } },
