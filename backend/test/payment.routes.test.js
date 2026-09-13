@@ -5,10 +5,15 @@ import { createApp } from "../src/app.js";
 const memberId = "11111111-1111-4111-8111-111111111111";
 const membershipId = "22222222-2222-4222-8222-222222222222";
 const paymentId = "33333333-3333-4333-8333-333333333333";
-function authService(permissions) { return { getAuthentication: vi.fn().mockResolvedValue({ user: { id: "receptionist-1", role: "receptionist" }, permissions }) }; }
-function paymentService() { return { list: vi.fn().mockResolvedValue([]), create: vi.fn().mockResolvedValue({ id: paymentId, status: "pending" }), get: vi.fn(), confirm: vi.fn().mockResolvedValue({ id: paymentId, status: "paid" }), providerCallback: vi.fn() }; }
+function authService(permissions, role = "receptionist") { return { getAuthentication: vi.fn().mockResolvedValue({ user: { id: "receptionist-1", role }, permissions }) }; }
+function paymentService() { return { ownPayments: vi.fn().mockResolvedValue([]), list: vi.fn().mockResolvedValue([]), create: vi.fn().mockResolvedValue({ id: paymentId, status: "pending" }), get: vi.fn(), confirm: vi.fn().mockResolvedValue({ id: paymentId, status: "paid" }), providerCallback: vi.fn() }; }
 
 describe("Payment routes", () => {
+  it("lets a Member view their own payment statuses without payment.record", async () => {
+    const service = paymentService();
+    await request(createApp({ authService: authService([], "member"), paymentService: service })).get("/api/v1/members/me/payments").set("Authorization", "Bearer token").expect(200);
+    expect(service.ownPayments).toHaveBeenCalledWith({ id: "receptionist-1", role: "member" });
+  });
   it("creates a cash payment with its linked pending membership", async () => {
     const service = paymentService();
     await request(createApp({ authService: authService(["payment.record"]), paymentService: service })).post("/api/v1/payments").set("Authorization", "Bearer token")
