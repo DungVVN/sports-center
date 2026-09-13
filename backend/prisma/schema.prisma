@@ -93,6 +93,13 @@ enum payment_method {
   online
 }
 
+enum payment_provider {
+  vnpay
+  momo
+  zalopay
+  bank
+}
+
 enum payment_status {
   pending
   paid
@@ -371,6 +378,7 @@ model payments {
   membership_id    String?        @db.Uuid
   amount_vnd       BigInt
   method           payment_method
+  provider         payment_provider?
   status           payment_status @default(pending)
   recorded_by      String         @db.Uuid
   notes            String?

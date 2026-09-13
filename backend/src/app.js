@@ -60,7 +60,7 @@ export function createApp({ authService = createAuthService({ repository: authRe
     },
   }));
   app.use(cookieParser());
-  app.use(express.json({ limit: "1mb" }));
+  app.use(express.json({ limit: "1mb", verify: (request, response, buffer) => { request.rawBody = buffer; } }));
   app.use(requestId);
 
   app.get(`${env.apiBasePath}/health`, (request, response) => sendSuccess(response, {

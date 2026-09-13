@@ -13,6 +13,7 @@ const environmentSchema = z.object({
   VERIFICATION_DELIVERY_MODE: z.enum(["development", "provider"]).default("development"),
   JOBS_ENABLED: z.coerce.boolean().default(true),
   JOB_INTERVAL_MINUTES: z.coerce.number().int().min(15).max(1440).default(60),
+  PAYMENT_WEBHOOK_SECRET: z.string().min(32).default("development-only-payment-webhook-secret"),
 });
 
 const parsedEnvironment = environmentSchema.safeParse(process.env);
@@ -41,4 +42,5 @@ export const env = Object.freeze({
   verificationDeliveryMode: values.VERIFICATION_DELIVERY_MODE,
   jobsEnabled: values.JOBS_ENABLED,
   jobIntervalMinutes: values.JOB_INTERVAL_MINUTES,
+  paymentWebhookSecret: values.PAYMENT_WEBHOOK_SECRET,
 });
