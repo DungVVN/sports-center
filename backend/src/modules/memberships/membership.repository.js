@@ -4,7 +4,7 @@ export const membershipRepository = {
   packages: () => prisma.membership_packages.findMany({ orderBy: { tier_rank: "asc" } }),
   packageById: (id) => prisma.membership_packages.findUnique({ where: { id } }),
   entitlements: (packageId) => prisma.membership_package_entitlements.findMany({ where: { package_id: packageId } }),
-  memberExists: (id) => prisma.members.findUnique({ where: { id } }),
+  memberExists: (id) => prisma.members.findUnique({ where: { id } }), memberByUser: (userId) => prisma.members.findUnique({ where: { user_id: userId } }),
   createPackage: (data) => prisma.membership_packages.create({ data }),
   updatePackage: (id, data) => prisma.membership_packages.update({ where: { id }, data }),
   replaceEntitlements: async (packageId, entitlements) => prisma.$transaction(async (tx) => { await tx.membership_package_entitlements.deleteMany({ where: { package_id: packageId } }); if (entitlements.length) await tx.membership_package_entitlements.createMany({ data: entitlements.map((item) => ({ package_id: packageId, entitlement: item.code, usage_limit: item.usageLimit ?? null, limit_period: item.limitPeriod ?? null })) }); }),

@@ -8,7 +8,7 @@ const permissions = [
   ["booking.write", "Tạo và hủy đặt chỗ"], ["attendance.write", "Ghi nhận điểm danh"],
   ["payment.record", "Ghi nhận thanh toán"],
   ["registration.approve", "Duyệt tài khoản hội viên đăng ký công khai"],
-  ["training.write", "Tạo kế hoạch và kết quả tập luyện"], ["report.read", "Xem báo cáo"],
+  ["training.write", "Tạo kế hoạch và kết quả tập luyện"], ["membership.freeze.review", "Duyệt yêu cầu đóng băng gói tập"], ["report.read", "Xem báo cáo"],
   ["staff.manage", "Quản lý nhân viên"], ["audit.read", "Xem nhật ký kiểm toán"],
 ];
 
@@ -28,7 +28,7 @@ async function main() {
   await prisma.role_permissions.createMany({
     data: [
       ["receptionist", "member.read"], ["receptionist", "member.write"], ["receptionist", "class.read"], ["receptionist", "booking.write"], ["receptionist", "attendance.write"], ["receptionist", "payment.record"],
-      ["receptionist", "registration.approve"],
+      ["receptionist", "registration.approve"], ["receptionist", "membership.freeze.review"],
       ["coach", "class.read"], ["coach", "attendance.write"], ["coach", "training.write"],
       ["member", "class.read"], ["member", "booking.write"],
     ].map(([role_code, permission_code]) => ({ role_code, permission_code })),
