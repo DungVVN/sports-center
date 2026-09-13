@@ -8,6 +8,11 @@ function authService(permissions) { return { getAuthentication: vi.fn().mockReso
 function trainingService() { return { members: vi.fn().mockResolvedValue([]), templates: vi.fn().mockResolvedValue([]), plans: vi.fn().mockResolvedValue([]), createPlan: vi.fn().mockResolvedValue({ id: "plan-1" }) }; }
 
 describe("Training routes", () => {
+  it("creates a shared template with its first exercise", async () => {
+    const service = { ...trainingService(), createTemplate: vi.fn().mockResolvedValue({ id: "template-1" }) };
+    await request(createApp({ authService: authService(["training.write"]), trainingService: service })).post("/api/v1/training-templates").set("Authorization", "Bearer token").send({ name: "Sức bền cơ bản", targetGroup: "Người mới", exercises: [{ name: "Squat", sets: 3, reps: 10, rest_seconds: 60 }] }).expect(201);
+    expect(service.createTemplate).toHaveBeenCalledWith(expect.objectContaining({ name: "Sức bền cơ bản" }), "coach-1");
+  });
   it("returns only members the authenticated Coach may train", async () => {
     const service = trainingService();
     await request(createApp({ authService: authService(["training.write"]), trainingService: service })).get("/api/v1/training-members").set("Authorization", "Bearer token").expect(200);
