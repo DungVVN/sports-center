@@ -1,0 +1,141 @@
+import { randomUUID } from "node:crypto";
+import { env } from "../../config/env.js";
+import { AppError } from "../../shared/errors/app-error.js";
+import { createSessionToken, generateVerificationCode, hashVerificationCode, readSessionToken, verificationCodeMatches } from "../../shared/auth/session-token.js";
+import { hashPassword, verifyPassword } from "../../shared/auth/password.js";
+
+function normalizeEmail(email) {
+  return email.trim().toLowerCase();
+}
+
+function normalizePhone(phone) {
+  return phone.replace(/[\s.-]/g, "");
+}
+
+function publicUser(user) {
+  return { id: user.id, email: user.email, displayName: user.display_name, role: user.role, status: user.status };
+}
+
+export function createAuthService({ repository, verificationDelivery, auditService = { record: async () => {} } }) {
+  async function issueVerification({ channel, recipient, userId }) {
+    const code = generateVerificationCode();
+    const expiresAt = new Date(Date.now() + env.verificationCodeTtlMinutes * 60_000);
+    await repository.createVerification({ channel, codeHash: hashVerificationCode(code), expiresAt, userId });
+    const delivery = await verificationDelivery.deliver({ channel, code, recipient });
+    return { channel, expiresAt, ...(env.nodeEnv === "development" ? { developmentCode: delivery.developmentCode } : {}) };
+  }
+
+  return {
+    async register(input) {
+      const email = normalizeEmail(input.email);
+      const phone = normalizePhone(input.phone);
+      const [existingUser, existingMember] = await Promise.all([
+        repository.findUserByEmail(email),
+        repository.findMemberByEmailOrPhone({ email, phone }),
+      ]);
+      if (existingUser || existingMember) {
+        throw new AppError({ statusCode: 409, code: "ACCOUNT_ALREADY_EXISTS", message: "Email hoặc số điện thoại đã được sử dụng." });
+      }
+
+      const registration = await repository.createRegistration({
+        email,
+        fullName: input.fullName.trim(),
+        memberCode: `MBR-${randomUUID().replaceAll("-", "").slice(0, 10).toUpperCase()}`,
+        passwordHash: await hashPassword(input.password),
+        phone,
+      });
+      await auditService.record({ actorUserId: registration.user.id, action: "member.registration.created", entityType: "member", entityId: registration.member.id, summary: "Hội viên tự đăng ký tài khoản." });
+      const verifications = await Promise.all([
+        issueVerification({ channel: "email", recipient: email, userId: registration.user.id }),
+        issueVerification({ channel: "phone", recipient: phone, userId: registration.user.id }),
+      ]);
+      return { user: publicUser(registration.user), memberId: registration.member.id, verifications };
+    },
+
+    async resendVerification({ channel, userId }) {
+      const [user, member] = await Promise.all([repository.findUserById(userId), repository.findMemberByUserId(userId)]);
+      if (!user) throw new AppError({ statusCode: 404, code: "ACCOUNT_NOT_FOUND", message: "Không tìm thấy tài khoản." });
+      if (user.status !== "pending_verification") {
+        throw new AppError({ statusCode: 409, code: "VERIFICATION_NOT_REQUIRED", message: "Tài khoản này không còn cần xác thực." });
+      }
+      const recipient = channel === "email" ? user.email : member?.phone;
+      if (!recipient) throw new AppError({ statusCode: 422, code: "VERIFICATION_RECIPIENT_UNAVAILABLE", message: "Không tìm thấy thông tin nhận mã xác thực." });
+      return issueVerification({ channel, recipient, userId });
+    },
+
+    async verifyRegistration({ channel, code, userId }) {
+      const verification = await repository.findLatestVerification({ channel, userId });
+      if (!verification) throw new AppError({ statusCode: 404, code: "VERIFICATION_NOT_FOUND", message: "Không tìm thấy mã xác thực." });
+      if (verification.verified_at) return { status: "already_verified" };
+      if (verification.expires_at <= new Date()) throw new AppError({ statusCode: 422, code: "VERIFICATION_EXPIRED", message: "Mã xác thực đã hết hạn." });
+      if (verification.attempts >= 5) throw new AppError({ statusCode: 429, code: "VERIFICATION_ATTEMPTS_EXCEEDED", message: "Bạn đã nhập mã quá nhiều lần. Vui lòng yêu cầu mã mới." });
+
+      await repository.incrementVerificationAttempts(verification.id);
+      if (!verificationCodeMatches(code, verification.code_hash)) {
+        throw new AppError({ statusCode: 422, code: "VERIFICATION_CODE_INVALID", message: "Mã xác thực không chính xác." });
+      }
+      await repository.markVerificationVerified(verification.id);
+      if (await repository.areRegistrationChannelsVerified(userId)) {
+        await repository.updateUserStatus(userId, "pending_approval");
+        await auditService.record({ actorUserId: userId, action: "member.registration.verified", entityType: "user", entityId: userId, summary: "Đã xác thực email và số điện thoại, chờ Lễ tân duyệt." });
+        return { status: "pending_approval" };
+      }
+      return { status: "pending_verification" };
+    },
+
+    async login({ email: rawEmail, password }) {
+      const user = await repository.findUserByEmail(normalizeEmail(rawEmail));
+      if (!user || !await verifyPassword(password, user.password_hash)) {
+        throw new AppError({ statusCode: 401, code: "INVALID_CREDENTIALS", message: "Email hoặc mật khẩu không đúng." });
+      }
+      if (user.status !== "active") {
+        const messageByStatus = {
+          pending_verification: "Vui lòng xác thực email và số điện thoại trước khi đăng nhập.",
+          pending_approval: "Tài khoản đang chờ Lễ tân duyệt.",
+          suspended: "Tài khoản đã bị tạm ngưng.",
+        };
+        throw new AppError({ statusCode: 403, code: "ACCOUNT_NOT_ACTIVE", message: messageByStatus[user.status] ?? "Tài khoản chưa thể đăng nhập." });
+      }
+      const expiresAt = new Date(Date.now() + env.authSessionTtlHours * 60 * 60_000);
+      const session = await repository.createSession({ expiresAt, userId: user.id });
+      const token = await createSessionToken({ sessionId: session.id, userId: user.id, expiresAt });
+      return { token, expiresAt, user: publicUser(user) };
+    },
+
+    async logout(token) {
+      const { sessionId } = await readSessionToken(token);
+      await repository.revokeSession(sessionId);
+    },
+
+    async getAuthentication(token) {
+      const claims = await readSessionToken(token);
+      const authenticated = await repository.findSessionUser(claims.sessionId, claims.userId);
+      if (!authenticated || authenticated.user.status !== "active") {
+        throw new AppError({ statusCode: 401, code: "UNAUTHENTICATED", message: "Phiên đăng nhập không còn hiệu lực." });
+      }
+      const permissions = await repository.getPermissions(authenticated.user.role);
+      return {
+        sessionId: authenticated.session.id,
+        user: publicUser(authenticated.user),
+        permissions: permissions.map(({ permission_code: permissionCode }) => permissionCode),
+      };
+    },
+
+    async getMe(token) {
+      const authentication = await this.getAuthentication(token);
+      return { user: authentication.user, permissions: authentication.permissions };
+    },
+
+    listPendingRegistrations() {
+      return repository.listPendingRegistrations();
+    },
+
+    async approveRegistration({ approvedBy, userId }) {
+      const approved = await repository.approveRegistration({ approvedBy, userId });
+      if (!approved) throw new AppError({ statusCode: 404, code: "ACCOUNT_NOT_FOUND", message: "Không tìm thấy đăng ký hội viên." });
+      if (!approved.approved) throw new AppError({ statusCode: 409, code: "REGISTRATION_NOT_PENDING", message: "Tài khoản không ở trạng thái chờ duyệt." });
+      await auditService.record({ actorUserId: approvedBy, action: "member.registration.approved", entityType: "member", entityId: approved.member.id, summary: "Lễ tân đã duyệt tài khoản hội viên.", newValue: { userStatus: "active" } });
+      return { user: publicUser(approved.user), member: approved.member };
+    },
+  };
+}

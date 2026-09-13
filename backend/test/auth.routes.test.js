@@ -1,0 +1,46 @@
+import request from "supertest";
+import { describe, expect, it, vi } from "vitest";
+import { createApp } from "../src/app.js";
+
+function makeService() {
+  return {
+    register: vi.fn().mockResolvedValue({ user: { id: "b7f2c76c-9c97-4d5a-91b8-936e2acff972" }, memberId: "17d813e0-a5e7-48e8-92bb-81fa123a8240", verifications: [] }),
+    verifyRegistration: vi.fn().mockResolvedValue({ status: "pending_verification" }),
+    resendVerification: vi.fn().mockResolvedValue({ channel: "email" }),
+    login: vi.fn().mockResolvedValue({ token: "signed-token", expiresAt: new Date("2026-10-01T00:00:00.000Z"), user: { id: "b7f2c76c-9c97-4d5a-91b8-936e2acff972", role: "member" } }),
+    logout: vi.fn().mockResolvedValue(undefined),
+    getAuthentication: vi.fn().mockResolvedValue({ user: { id: "staff-1", role: "receptionist" }, permissions: ["registration.approve"] }),
+    listPendingRegistrations: vi.fn().mockResolvedValue([]),
+    approveRegistration: vi.fn().mockResolvedValue({ user: { id: "b7f2c76c-9c97-4d5a-91b8-936e2acff972" } }),
+  };
+}
+
+describe("Auth routes", () => {
+  it("validates public registration before invoking the service", async () => {
+    const service = makeService();
+    const response = await request(createApp({ authService: service })).post("/api/v1/auth/register").send({ email: "not-email" }).expect(422);
+    expect(response.body.error.code).toBe("VALIDATION_ERROR");
+    expect(service.register).not.toHaveBeenCalled();
+  });
+
+  it("registers a valid member", async () => {
+    const service = makeService();
+    const response = await request(createApp({ authService: service })).post("/api/v1/auth/register").send({ fullName: "Nguyễn Minh Anh", email: "anh@example.com", phone: "0901234567", password: "Strongpass1" }).expect(201);
+    expect(response.body.success).toBe(true);
+    expect(service.register).toHaveBeenCalledWith(expect.objectContaining({ email: "anh@example.com" }));
+  });
+
+  it("sets an HTTP-only session cookie on successful login", async () => {
+    const service = makeService();
+    const response = await request(createApp({ authService: service })).post("/api/v1/auth/login").send({ email: "anh@example.com", password: "Strongpass1" }).expect(200);
+    expect(response.headers["set-cookie"][0]).toContain("sports_center_session=signed-token");
+    expect(response.headers["set-cookie"][0]).toContain("HttpOnly");
+    expect(response.body.data).not.toHaveProperty("token");
+  });
+
+  it("uses the authenticated permission for receptionist approval", async () => {
+    const service = makeService();
+    await request(createApp({ authService: service })).post("/api/v1/auth/registrations/b7f2c76c-9c97-4d5a-91b8-936e2acff972/approve").set("Authorization", "Bearer session-token").expect(200);
+    expect(service.approveRegistration).toHaveBeenCalledWith({ approvedBy: "staff-1", userId: "b7f2c76c-9c97-4d5a-91b8-936e2acff972" });
+  });
+});

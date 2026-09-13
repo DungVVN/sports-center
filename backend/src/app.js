@@ -1,8 +1,14 @@
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import express from "express";
 import helmet from "helmet";
 import swaggerUi from "swagger-ui-express";
 import { env } from "./config/env.js";
+import { authRepository } from "./modules/auth/auth.repository.js";
+import { createAuthRouter } from "./modules/auth/auth.routes.js";
+import { createAuthService } from "./modules/auth/auth.service.js";
+import { verificationDeliveryService } from "./modules/auth/verification-delivery.service.js";
+import { auditService } from "./shared/audit/audit.service.js";
 import { openApiSpec } from "./openapi/spec.js";
 import { sendSuccess } from "./shared/http/response.js";
 import { errorHandler } from "./shared/middleware/error-handler.js";
@@ -13,7 +19,7 @@ function isAllowedOrigin(origin) {
   return !origin || env.corsOrigins.includes(origin);
 }
 
-export function createApp() {
+export function createApp({ authService = createAuthService({ repository: authRepository, verificationDelivery: verificationDeliveryService, auditService }) } = {}) {
   const app = express();
 
   app.disable("x-powered-by");
@@ -24,6 +30,7 @@ export function createApp() {
       callback(null, isAllowedOrigin(origin));
     },
   }));
+  app.use(cookieParser());
   app.use(express.json({ limit: "1mb" }));
   app.use(requestId);
 
@@ -32,6 +39,7 @@ export function createApp() {
   }));
   app.get("/openapi.json", (request, response) => response.json(openApiSpec));
   app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(openApiSpec, { explorer: true }));
+  app.use(`${env.apiBasePath}/auth`, createAuthRouter(authService));
 
   app.use(notFound);
   app.use(errorHandler);
