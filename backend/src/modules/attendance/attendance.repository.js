@@ -2,6 +2,7 @@ import { prisma } from "../../database.js";
 
 export const attendanceRepository = {
   booking: (id) => prisma.bookings.findUnique({ where: { id } }),
+  classSession: (id) => prisma.class_sessions.findUnique({ where: { id }, select: { coach_user_id: true } }),
   records: (classId) => prisma.attendance_records.findMany({ where: { class_session_id: classId }, orderBy: { recorded_at: "asc" } }),
   record: (id) => prisma.attendance_records.findUnique({ where: { id } }),
   upsert: (data) => prisma.attendance_records.upsert({
