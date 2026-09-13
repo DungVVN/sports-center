@@ -3,6 +3,7 @@ import { env } from "../../config/env.js";
 import { AppError } from "../../shared/errors/app-error.js";
 import { createSessionToken, generateVerificationCode, hashVerificationCode, readSessionToken, verificationCodeMatches } from "../../shared/auth/session-token.js";
 import { hashPassword, verifyPassword } from "../../shared/auth/password.js";
+import { createLoginAttemptLimiter } from "../../shared/security/login-attempt-limiter.js";
 
 function normalizeEmail(email) {
   return email.trim().toLowerCase();
@@ -16,7 +17,12 @@ function publicUser(user) {
   return { id: user.id, email: user.email, displayName: user.display_name, role: user.role, status: user.status };
 }
 
-export function createAuthService({ repository, verificationDelivery, auditService = { record: async () => {} } }) {
+export function createAuthService({
+  repository,
+  verificationDelivery,
+  auditService = { record: async () => {} },
+  loginLimiter = createLoginAttemptLimiter({ maxAttempts: env.authLoginMaxAttempts, windowMinutes: env.authLoginWindowMinutes }),
+}) {
   async function issueVerification({ channel, recipient, userId }) {
     const code = generateVerificationCode();
     const expiresAt = new Date(Date.now() + env.verificationCodeTtlMinutes * 60_000);
@@ -84,8 +90,12 @@ export function createAuthService({ repository, verificationDelivery, auditServi
     },
 
     async login({ email: rawEmail, password }) {
-      const user = await repository.findUserByEmail(normalizeEmail(rawEmail));
+      const email = normalizeEmail(rawEmail);
+      loginLimiter.assertAllowed(email);
+      const user = await repository.findUserByEmail(email);
       if (!user || !await verifyPassword(password, user.password_hash)) {
+        loginLimiter.recordFailure(email);
+        await auditService.record({ action: "auth.login_failed", entityType: "auth_attempt", summary: "Đăng nhập thất bại." });
         throw new AppError({ statusCode: 401, code: "INVALID_CREDENTIALS", message: "Email hoặc mật khẩu không đúng." });
       }
       if (user.status !== "active") {
@@ -98,6 +108,14 @@ export function createAuthService({ repository, verificationDelivery, auditServi
       }
       const expiresAt = new Date(Date.now() + env.authSessionTtlHours * 60 * 60_000);
       const session = await repository.createSession({ expiresAt, userId: user.id });
+      loginLimiter.clear(email);
+      await auditService.record({
+        actorUserId: user.id,
+        action: "auth.login_succeeded",
+        entityType: "auth_session",
+        entityId: session.id,
+        summary: "Đăng nhập thành công.",
+      });
       const token = await createSessionToken({ sessionId: session.id, userId: user.id, expiresAt });
       return { token, expiresAt, user: publicUser(user) };
     },
