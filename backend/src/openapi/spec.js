@@ -9,6 +9,10 @@ export const openApiSpec = {
   },
   servers: [{ url: env.apiBasePath }],
   paths: {
+    "/classes/{id}/attendance": { get: { tags: ["Attendance"], summary: "Danh sách điểm danh lớp", security: [{ sessionCookie: [] }], responses: { 200: { description: "Điểm danh" } } } },
+    "/attendance/check-in": { post: { tags: ["Attendance"], summary: "Điểm danh theo booking", security: [{ sessionCookie: [] }], responses: { 200: { description: "Đã điểm danh" } } } },
+    "/attendance/{id}/check-out": { post: { tags: ["Attendance"], summary: "Check-out theo lượt điểm danh", security: [{ sessionCookie: [] }], parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }], responses: { 200: { description: "Đã check-out" } } } },
+    "/attendance/{id}/corrections": { post: { tags: ["Attendance"], summary: "Sửa điểm danh có lý do", security: [{ sessionCookie: [] }], responses: { 200: { description: "Đã sửa và audit" } } } },
     "/bookings": { get: { tags: ["Bookings"], summary: "Danh sách đặt chỗ", security: [{ sessionCookie: [] }], responses: { 200: { description: "Danh sách booking" } } }, post: { tags: ["Bookings"], summary: "Đặt chỗ hoặc vào danh sách chờ", security: [{ sessionCookie: [] }], responses: { 201: { description: "Booking confirmed hoặc waitlisted" } } } },
     "/bookings/{id}/cancel": { patch: { tags: ["Bookings"], summary: "Hủy booking trước giờ học 5 tiếng", security: [{ sessionCookie: [] }], parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }], responses: { 200: { description: "Đã hủy" }, 422: { description: "Hủy quá muộn" } } } },
     "/classes": { get: { tags: ["Classes"], summary: "Danh sách lớp học", security: [{ sessionCookie: [] }], responses: { 200: { description: "Lớp học" } } }, post: { tags: ["Classes"], summary: "Tạo lớp học nháp", security: [{ sessionCookie: [] }], responses: { 201: { description: "Lớp học mới" } } } },
