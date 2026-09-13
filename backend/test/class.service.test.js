@@ -1,0 +1,32 @@
+import { describe, expect, it, vi } from "vitest";
+import { createClassService } from "../src/modules/classes/class.service.js";
+
+const input = { name: "Yoga sáng", type: "group", coachUserId: "coach-1", roomId: "room-1", startsAt: "2026-09-15T01:00:00.000Z", endsAt: "2026-09-15T02:00:00.000Z", capacity: 20 };
+
+function dependencies({ room = { id: "room-1" }, coach = { id: "coach-1" } } = {}) {
+  return {
+    repository: { findRoom: vi.fn().mockResolvedValue(room), findCoach: vi.fn().mockResolvedValue(coach), create: vi.fn().mockResolvedValue({ id: "class-1" }) },
+    auditService: { record: vi.fn().mockResolvedValue(undefined) },
+  };
+}
+
+describe("Class service", () => {
+  it("rejects an unavailable Coach before creating a class", async () => {
+    const { repository, auditService } = dependencies({ coach: null });
+    await expect(createClassService({ repository, auditService }).create(input, "manager-1")).rejects.toMatchObject({ code: "COACH_NOT_AVAILABLE" });
+    expect(repository.create).not.toHaveBeenCalled();
+  });
+
+  it("rejects an end time before start time", async () => {
+    const { repository, auditService } = dependencies();
+    await expect(createClassService({ repository, auditService }).create({ ...input, endsAt: input.startsAt }, "manager-1")).rejects.toMatchObject({ code: "INVALID_CLASS_TIME" });
+    expect(repository.create).not.toHaveBeenCalled();
+  });
+
+  it("creates a draft class with an audit entry", async () => {
+    const { repository, auditService } = dependencies();
+    await expect(createClassService({ repository, auditService }).create(input, "manager-1")).resolves.toEqual({ id: "class-1" });
+    expect(repository.create).toHaveBeenCalledWith(expect.objectContaining({ name: "Yoga sáng", coach_user_id: "coach-1", room_id: "room-1", capacity: 20 }));
+    expect(auditService.record).toHaveBeenCalledWith(expect.objectContaining({ action: "class.created", actorUserId: "manager-1" }));
+  });
+});
