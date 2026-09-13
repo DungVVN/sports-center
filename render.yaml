@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: sports-center-api
+    runtime: node
+    rootDir: backend
+    buildCommand: npm ci && npm run build
+    preDeployCommand: npm run db:migrate
+    startCommand: npm start
+    healthCheckPath: /api/v1/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: API_BASE_PATH
+        value: /api/v1
+      - key: CORS_ORIGIN
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: MIGRATE_DATABASE_URL
+        sync: false
+      - key: AUTH_JWT_SECRET
+        generateValue: true
+      - key: VERIFICATION_CODE_SECRET
+        generateValue: true
+      - key: VERIFICATION_DELIVERY_MODE
+        value: development
