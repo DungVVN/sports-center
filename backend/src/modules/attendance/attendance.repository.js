@@ -4,6 +4,8 @@ export const attendanceRepository = {
   booking: (id) => prisma.bookings.findUnique({ where: { id } }),
   classSession: (id) => prisma.class_sessions.findUnique({ where: { id }, select: { coach_user_id: true } }),
   records: (classId) => prisma.attendance_records.findMany({ where: { class_session_id: classId }, orderBy: { recorded_at: "asc" } }),
+  memberByUser: (userId) => prisma.members.findUnique({ where: { user_id: userId }, select: { id: true } }),
+  recordsForMember: (memberId) => prisma.attendance_records.findMany({ where: { member_id: memberId }, orderBy: { recorded_at: "desc" } }),
   record: (id) => prisma.attendance_records.findUnique({ where: { id } }),
   upsert: (data) => prisma.attendance_records.upsert({
     where: { class_session_id_member_id: { class_session_id: data.classSessionId, member_id: data.memberId } },

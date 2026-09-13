@@ -4,6 +4,7 @@ export function createAttendanceService({ repository, auditService }) {
   async function ensureCoachScope(classId, actor) { if (actor.role !== "coach") return; const session = await repository.classSession(classId); if (!session || session.coach_user_id !== actor.id) throw new AppError({ statusCode: 403, code: "ATTENDANCE_SCOPE_DENIED", message: "Coach chỉ có thể thao tác điểm danh cho lớp mình phụ trách." }); }
   return {
     async list(classId, actor) { await ensureCoachScope(classId, actor); return repository.records(classId); },
+    async ownRecords(actor) { const member = await repository.memberByUser(actor.id); if (!member) throw new AppError({ statusCode: 404, code: "MEMBER_PROFILE_NOT_FOUND", message: "Tài khoản chưa có hồ sơ hội viên." }); return repository.recordsForMember(member.id); },
     async checkIn(bookingId, actor) {
       const booking = await repository.booking(bookingId);
       if (!booking || !["confirmed", "attended"].includes(booking.status)) throw new AppError({ statusCode: 422, code: "BOOKING_NOT_ELIGIBLE", message: "Booking không đủ điều kiện điểm danh." });

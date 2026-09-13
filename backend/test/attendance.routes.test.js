@@ -8,9 +8,14 @@ const attendanceId = "33333333-3333-4333-8333-333333333333";
 const actorId = "44444444-4444-4444-8444-444444444444";
 
 function authService(permissions, role = "coach") { return { getAuthentication: vi.fn().mockResolvedValue({ user: { id: actorId, role }, permissions }) }; }
-function attendanceService() { return { list: vi.fn().mockResolvedValue([]), checkIn: vi.fn().mockResolvedValue({ id: attendanceId }), checkOut: vi.fn().mockResolvedValue({ id: attendanceId }), correct: vi.fn().mockResolvedValue({ id: attendanceId, status: "late" }) }; }
+function attendanceService() { return { ownRecords: vi.fn().mockResolvedValue([]), list: vi.fn().mockResolvedValue([]), checkIn: vi.fn().mockResolvedValue({ id: attendanceId }), checkOut: vi.fn().mockResolvedValue({ id: attendanceId }), correct: vi.fn().mockResolvedValue({ id: attendanceId, status: "late" }) }; }
 
 describe("Attendance routes", () => {
+  it("lets a Member read only their own attendance history without attendance.write", async () => {
+    const service = attendanceService();
+    await request(createApp({ authService: authService([], "member"), attendanceService: service })).get("/api/v1/members/me/attendance").set("Authorization", "Bearer token").expect(200);
+    expect(service.ownRecords).toHaveBeenCalledWith({ id: actorId, role: "member" });
+  });
   it("lists attendance under the authenticated Coach scope", async () => {
     const service = attendanceService();
     await request(createApp({ authService: authService(["attendance.write"]), attendanceService: service })).get(`/api/v1/classes/${classId}/attendance`).set("Authorization", "Bearer token").expect(200);
