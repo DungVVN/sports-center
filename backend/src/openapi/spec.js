@@ -9,6 +9,12 @@ export const openApiSpec = {
   },
   servers: [{ url: env.apiBasePath }],
   paths: {
+    "/audit-logs": { get: { tags: ["Audit"], summary: "Nhật ký kiểm toán", security: [{ sessionCookie: [] }], responses: { 200: { description: "Nhật ký" } } } },
+    "/dashboards/{role}": { get: { tags: ["Dashboard"], summary: "Tổng quan theo vai trò", security: [{ sessionCookie: [] }], responses: { 200: { description: "Chỉ số dashboard" } } } },
+    "/notifications": { get: { tags: ["Notifications"], summary: "Thông báo trong hệ thống", security: [{ sessionCookie: [] }], responses: { 200: { description: "Thông báo" } } } },
+    "/notifications/{id}/read": { patch: { tags: ["Notifications"], summary: "Đánh dấu đã đọc", security: [{ sessionCookie: [] }], responses: { 200: { description: "Đã đọc" } } } },
+    "/reports/revenue": { get: { tags: ["Reports"], summary: "Doanh thu theo payment paid_at", security: [{ sessionCookie: [] }], responses: { 200: { description: "Doanh thu" } } } },
+    "/reports/attendance": { get: { tags: ["Reports"], summary: "Báo cáo điểm danh", security: [{ sessionCookie: [] }], responses: { 200: { description: "Điểm danh" } } } },
     "/training-templates": { get: { tags: ["Training"], summary: "Mẫu giáo án", security: [{ sessionCookie: [] }], responses: { 200: { description: "Mẫu" } } }, post: { tags: ["Training"], summary: "Tạo mẫu giáo án", security: [{ sessionCookie: [] }], responses: { 201: { description: "Mẫu mới" } } } },
     "/training-plans": { get: { tags: ["Training"], summary: "Danh sách giáo án", security: [{ sessionCookie: [] }], responses: { 200: { description: "Giáo án" } } }, post: { tags: ["Training"], summary: "Tạo giáo án cá nhân", security: [{ sessionCookie: [] }], responses: { 201: { description: "Giáo án mới" } } } },
     "/training-plans/{id}": { patch: { tags: ["Training"], summary: "Cập nhật giáo án", security: [{ sessionCookie: [] }], responses: { 200: { description: "Đã cập nhật" } } } },
