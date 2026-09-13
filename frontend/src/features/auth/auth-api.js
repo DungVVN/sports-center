@@ -7,4 +7,6 @@ export const authApi = Object.freeze({
   confirmVerification: (input) => apiClient.post("/auth/verification/confirm", input),
   resendVerification: (input) => apiClient.post("/auth/verification/resend", input),
   me: () => apiClient.get("/auth/me"),
+  pendingRegistrations: () => apiClient.get("/auth/registrations/pending"),
+  approveRegistration: (userId) => apiClient.post(`/auth/registrations/${userId}/approve`),
 });
