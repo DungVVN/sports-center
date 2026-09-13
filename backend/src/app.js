@@ -20,6 +20,9 @@ import { createMembershipService } from "./modules/memberships/membership.servic
 import { classRepository } from "./modules/classes/class.repository.js";
 import { createClassRouter } from "./modules/classes/class.routes.js";
 import { createClassService } from "./modules/classes/class.service.js";
+import { bookingRepository } from "./modules/bookings/booking.repository.js";
+import { createBookingRouter } from "./modules/bookings/booking.routes.js";
+import { createBookingService } from "./modules/bookings/booking.service.js";
 import { auditService } from "./shared/audit/audit.service.js";
 import { openApiSpec } from "./openapi/spec.js";
 import { sendSuccess } from "./shared/http/response.js";
@@ -31,7 +34,7 @@ function isAllowedOrigin(origin) {
   return !origin || env.corsOrigins.includes(origin);
 }
 
-export function createApp({ authService = createAuthService({ repository: authRepository, verificationDelivery: verificationDeliveryService, auditService }), staffService = createStaffService({ repository: staffRepository, auditService }), memberService = createMemberService({ repository: memberRepository, auditService }), membershipService = createMembershipService({ repository: membershipRepository, auditService }), classService = createClassService({ repository: classRepository, auditService }) } = {}) {
+export function createApp({ authService = createAuthService({ repository: authRepository, verificationDelivery: verificationDeliveryService, auditService }), staffService = createStaffService({ repository: staffRepository, auditService }), memberService = createMemberService({ repository: memberRepository, auditService }), membershipService = createMembershipService({ repository: membershipRepository, auditService }), classService = createClassService({ repository: classRepository, auditService }), bookingService = createBookingService({ repository: bookingRepository, auditService }) } = {}) {
   const app = express();
 
   app.disable("x-powered-by");
@@ -56,6 +59,7 @@ export function createApp({ authService = createAuthService({ repository: authRe
   app.use(`${env.apiBasePath}/members`, createMemberRouter(memberService, authService));
   app.use(env.apiBasePath, createMembershipRouter(membershipService, authService));
   app.use(env.apiBasePath, createClassRouter(classService, authService));
+  app.use(env.apiBasePath, createBookingRouter(bookingService, authService));
 
   app.use(notFound);
   app.use(errorHandler);
