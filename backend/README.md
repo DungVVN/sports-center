@@ -1,6 +1,6 @@
-# Sports Center Database Workspace
+# Sports Center Backend
 
-This workspace currently contains only the Node.js database/Prisma foundation. It does not contain a Backend API yet. The `project/` folder at the repository root is only the original Figma UI reference and is not a deployment source.
+This folder contains the Node.js/Express API, Prisma database layer, OpenAPI contract, validation, permission middleware and domain modules for the Sports Center MVP. The `project/` folder at the repository root is only the original Figma UI reference and is not a deployment source.
 
 ## Database
 
@@ -13,6 +13,10 @@ This workspace currently contains only the Node.js database/Prisma foundation. I
 Run `npm run db:migrate` only when Prisma CLI is available in the deployment environment. The initial migration has already been applied to the Neon production database. Later business-rule changes are additive migrations and must not modify an applied migration.
 
 Do not commit a real Neon connection string. Copy `.env.example` to `.env` only on a trusted local machine or configure the variables in Render.
+
+## Demo accounts
+
+Use `DEMO_ACCOUNT_PASSWORD` at runtime, never in source control, then run `npm run db:seed-demo-accounts`. The script upserts two active accounts for each role and creates the matching `staff_profiles` or `members` record. It is intended only for an approved non-production demo environment. With the API running, `npm run test:runtime-auth` checks login, authenticated identity and logout for all eight accounts.
 
 ## Confirmed business decisions
 

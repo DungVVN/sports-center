@@ -4,7 +4,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "predev": "prisma generate",
     "dev": "node --watch src/server.js",
+    "prestart": "prisma generate",
     "start": "node src/server.js",
     "postinstall": "prisma generate",
     "test": "vitest run",
@@ -13,7 +15,9 @@
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
     "db:migrate": "prisma migrate deploy",
-    "db:seed": "prisma db seed"
+    "db:seed": "prisma db seed",
+    "db:seed-demo-accounts": "node prisma/seed-demo-accounts.js",
+    "test:runtime-auth": "node scripts/auth-runtime-smoke.js"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.0.0",
