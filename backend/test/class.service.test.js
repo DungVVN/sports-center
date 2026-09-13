@@ -5,7 +5,7 @@ const input = { name: "Yoga sáng", type: "group", coachUserId: "coach-1", roomI
 
 function dependencies({ room = { id: "room-1" }, coach = { id: "coach-1" } } = {}) {
   return {
-    repository: { findRoom: vi.fn().mockResolvedValue(room), findCoach: vi.fn().mockResolvedValue(coach), find: vi.fn().mockResolvedValue({ id: "class-1", starts_at: new Date(input.startsAt), ends_at: new Date(input.endsAt) }), create: vi.fn().mockResolvedValue({ id: "class-1" }), update: vi.fn().mockResolvedValue({ id: "class-1" }) },
+    repository: { findRoom: vi.fn().mockResolvedValue(room), findCoach: vi.fn().mockResolvedValue(coach), hasScheduleConflict: vi.fn().mockResolvedValue(null), find: vi.fn().mockResolvedValue({ id: "class-1", room_id: "room-1", coach_user_id: "coach-1", starts_at: new Date(input.startsAt), ends_at: new Date(input.endsAt) }), create: vi.fn().mockResolvedValue({ id: "class-1" }), update: vi.fn().mockResolvedValue({ id: "class-1" }) },
     auditService: { record: vi.fn().mockResolvedValue(undefined) },
   };
 }
@@ -28,6 +28,12 @@ describe("Class service", () => {
     await expect(createClassService({ repository, auditService }).create(input, "manager-1")).resolves.toEqual({ id: "class-1" });
     expect(repository.create).toHaveBeenCalledWith(expect.objectContaining({ name: "Yoga sáng", coach_user_id: "coach-1", room_id: "room-1", capacity: 20 }));
     expect(auditService.record).toHaveBeenCalledWith(expect.objectContaining({ action: "class.created", actorUserId: "manager-1" }));
+  });
+
+  it("rejects an overlapping room or Coach schedule", async () => {
+    const { repository, auditService } = dependencies(); repository.hasScheduleConflict.mockResolvedValue({ id: "existing-class" });
+    await expect(createClassService({ repository, auditService }).create(input, "manager-1")).rejects.toMatchObject({ code: "CLASS_SCHEDULE_CONFLICT" });
+    expect(repository.create).not.toHaveBeenCalled();
   });
 
   it("updates schedule, room and coach after validating the referenced resources", async () => {
