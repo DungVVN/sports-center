@@ -60,6 +60,17 @@ enum class_status {
   completed
 }
 
+enum class_change_type {
+  cancel
+  reschedule
+}
+
+enum class_change_status {
+  pending
+  approved
+  rejected
+}
+
 enum booking_status {
   confirmed
   waitlisted
@@ -287,6 +298,20 @@ model class_sessions {
   created_by    String?      @db.Uuid
   created_at    DateTime     @default(now()) @db.Timestamptz(6)
   updated_at    DateTime     @updatedAt @db.Timestamptz(6)
+}
+
+model class_change_requests {
+  id               String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  class_session_id String              @db.Uuid
+  type             class_change_type
+  proposed_starts_at DateTime?         @db.Timestamptz(6)
+  proposed_ends_at DateTime?           @db.Timestamptz(6)
+  reason           String
+  status           class_change_status @default(pending)
+  requested_by     String              @db.Uuid
+  reviewed_by      String?             @db.Uuid
+  reviewed_at      DateTime?           @db.Timestamptz(6)
+  created_at       DateTime            @default(now()) @db.Timestamptz(6)
 }
 
 model bookings {
