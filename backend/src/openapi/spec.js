@@ -9,6 +9,10 @@ export const openApiSpec = {
   },
   servers: [{ url: env.apiBasePath }],
   paths: {
+    "/training-templates": { get: { tags: ["Training"], summary: "Mẫu giáo án", security: [{ sessionCookie: [] }], responses: { 200: { description: "Mẫu" } } }, post: { tags: ["Training"], summary: "Tạo mẫu giáo án", security: [{ sessionCookie: [] }], responses: { 201: { description: "Mẫu mới" } } } },
+    "/training-plans": { get: { tags: ["Training"], summary: "Danh sách giáo án", security: [{ sessionCookie: [] }], responses: { 200: { description: "Giáo án" } } }, post: { tags: ["Training"], summary: "Tạo giáo án cá nhân", security: [{ sessionCookie: [] }], responses: { 201: { description: "Giáo án mới" } } } },
+    "/training-plans/{id}": { patch: { tags: ["Training"], summary: "Cập nhật giáo án", security: [{ sessionCookie: [] }], responses: { 200: { description: "Đã cập nhật" } } } },
+    "/training-results": { post: { tags: ["Training"], summary: "Ghi nhận kết quả tập", security: [{ sessionCookie: [] }], responses: { 201: { description: "Kết quả mới" } } } },
     "/payments": { get: { tags: ["Payments"], summary: "Danh sách giao dịch", security: [{ sessionCookie: [] }], responses: { 200: { description: "Giao dịch" } } }, post: { tags: ["Payments"], summary: "Tạo giao dịch chờ xác nhận", security: [{ sessionCookie: [] }], responses: { 201: { description: "Giao dịch pending" } } } },
     "/payments/{id}": { get: { tags: ["Payments"], summary: "Chi tiết giao dịch", security: [{ sessionCookie: [] }], responses: { 200: { description: "Giao dịch" } } } },
     "/payments/{id}/confirm": { post: { tags: ["Payments"], summary: "Lễ tân xác nhận tiền mặt/chuyển khoản", security: [{ sessionCookie: [] }], responses: { 200: { description: "Đã xác nhận; gói được kích hoạt khi paid" } } } },

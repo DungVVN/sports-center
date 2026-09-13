@@ -396,6 +396,30 @@ model training_plans {
   updated_at        DateTime @updatedAt @db.Timestamptz(6)
 }
 
+model training_plan_templates {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String
+  target_group String
+  description String?
+  is_active   Boolean  @default(true)
+  created_by  String   @db.Uuid
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime @updatedAt @db.Timestamptz(6)
+}
+
+model training_template_exercises {
+  id               String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  template_id      String  @db.Uuid
+  position         Int
+  name             String
+  sets             Int
+  reps             Int?
+  duration_seconds Int?
+  rest_seconds     Int
+  instructions     String?
+  @@unique([template_id, position])
+}
+
 model training_plan_exercises {
   id               String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   plan_id          String  @db.Uuid
