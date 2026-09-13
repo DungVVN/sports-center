@@ -1,0 +1,37 @@
+import request from "supertest";
+import { describe, expect, it, vi } from "vitest";
+import { createApp } from "../src/app.js";
+
+const memberId = "11111111-1111-4111-8111-111111111111";
+const membershipId = "22222222-2222-4222-8222-222222222222";
+const paymentId = "33333333-3333-4333-8333-333333333333";
+function authService(permissions) { return { getAuthentication: vi.fn().mockResolvedValue({ user: { id: "receptionist-1", role: "receptionist" }, permissions }) }; }
+function paymentService() { return { list: vi.fn().mockResolvedValue([]), create: vi.fn().mockResolvedValue({ id: paymentId, status: "pending" }), get: vi.fn(), confirm: vi.fn().mockResolvedValue({ id: paymentId, status: "paid" }), providerCallback: vi.fn() }; }
+
+describe("Payment routes", () => {
+  it("creates a cash payment with its linked pending membership", async () => {
+    const service = paymentService();
+    await request(createApp({ authService: authService(["payment.record"]), paymentService: service })).post("/api/v1/payments").set("Authorization", "Bearer token")
+      .send({ memberId, membershipId, amountVnd: 500000, method: "cash", notes: "Thu tại quầy" }).expect(201);
+    expect(service.create).toHaveBeenCalledWith({ memberId, membershipId, amountVnd: 500000, method: "cash", notes: "Thu tại quầy" }, "receptionist-1");
+  });
+
+  it("requires an online provider for online payments", async () => {
+    const service = paymentService();
+    await request(createApp({ authService: authService(["payment.record"]), paymentService: service })).post("/api/v1/payments").set("Authorization", "Bearer token")
+      .send({ memberId, amountVnd: 500000, method: "online" }).expect(422);
+    expect(service.create).not.toHaveBeenCalled();
+  });
+
+  it("allows receptionist confirmation only when payment.record exists", async () => {
+    const service = paymentService();
+    await request(createApp({ authService: authService(["payment.record"]), paymentService: service })).post(`/api/v1/payments/${paymentId}/confirm`).set("Authorization", "Bearer token").send({ status: "paid" }).expect(200);
+    expect(service.confirm).toHaveBeenCalledWith(paymentId, "paid", "receptionist-1");
+  });
+
+  it("blocks users without payment.record", async () => {
+    const service = paymentService();
+    await request(createApp({ authService: authService([]), paymentService: service })).get("/api/v1/payments").set("Authorization", "Bearer token").expect(403);
+    expect(service.list).not.toHaveBeenCalled();
+  });
+});

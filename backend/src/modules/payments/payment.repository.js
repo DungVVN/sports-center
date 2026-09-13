@@ -1,9 +1,7 @@
 import { prisma } from "../../database.js";
 export const paymentRepository = {
   list: (filters) => prisma.payments.findMany({ where: filters, orderBy: { created_at: "desc" } }), payment: (id) => prisma.payments.findUnique({ where: { id } }), membership: (id) => prisma.member_memberships.findUnique({ where: { id } }), member: (id) => prisma.members.findUnique({ where: { id } }),
-  create: (data) => prisma.payments.create({ data }),
+  createWithEvent: (data, event) => prisma.$transaction(async (tx) => { const payment = await tx.payments.create({ data }); await tx.payment_events.create({ data: { ...event, payment_id: payment.id, amount_vnd: payment.amount_vnd } }); return payment; }),
   paymentByCode: (transactionCode) => prisma.payments.findUnique({ where: { transaction_code: transactionCode } }),
-  mark: (id, status, paidAt) => prisma.payments.update({ where: { id }, data: { status, ...(paidAt && { paid_at: paidAt }) } }),
-  event: (data) => prisma.payment_events.create({ data }),
-  activateMembership: (id, paymentId) => prisma.member_memberships.update({ where: { id }, data: { status: "active", activated_at: new Date(), activation_payment_id: paymentId } }),
+  complete: ({ id, status, paidAt, eventType, actorUserId, membershipId }) => prisma.$transaction(async (tx) => { const changed = await tx.payments.updateMany({ where: { id, status: "pending" }, data: { status, ...(paidAt && { paid_at: paidAt }) } }); if (changed.count !== 1) return null; const payment = await tx.payments.findUnique({ where: { id } }); await tx.payment_events.create({ data: { payment_id: id, event_type: eventType, previous_status: "pending", new_status: status, amount_vnd: payment.amount_vnd, actor_user_id: actorUserId } }); if (status === "paid" && membershipId) await tx.member_memberships.update({ where: { id: membershipId }, data: { status: "active", activated_at: new Date(), activation_payment_id: id } }); return payment; }),
 };
