@@ -1,7 +1,5 @@
 import { ApiError } from "./api-error.js";
-
-const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000/api/v1";
-const apiBaseUrl = configuredBaseUrl.replace(/\/$/, "");
+import { apiBaseUrl } from "../config/runtime.js";
 
 function buildUrl(path) {
   return `${apiBaseUrl}/${path.replace(/^\//, "")}`;
