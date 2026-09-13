@@ -37,6 +37,8 @@ import { createInsightRouter } from "./modules/insights/insight.routes.js";
 import { createInsightService } from "./modules/insights/insight.service.js";
 import { createAuditRouter } from "./modules/audit/audit.routes.js";
 import { createAssignmentRouter } from "./modules/assignments/assignment.routes.js";
+import { assignmentRepository } from "./modules/assignments/assignment.repository.js";
+import { createAssignmentService } from "./modules/assignments/assignment.service.js";
 import { auditService } from "./shared/audit/audit.service.js";
 import { openApiSpec } from "./openapi/spec.js";
 import { sendSuccess } from "./shared/http/response.js";
@@ -50,6 +52,7 @@ function isAllowedOrigin(origin) {
 
 export function createApp({ authService = createAuthService({ repository: authRepository, verificationDelivery: verificationDeliveryService, auditService }), staffService = createStaffService({ repository: staffRepository, auditService }), memberService = createMemberService({ repository: memberRepository, auditService }), membershipService = createMembershipService({ repository: membershipRepository, auditService }), classService = createClassService({ repository: classRepository, auditService }), bookingService = createBookingService({ repository: bookingRepository, auditService }), attendanceService = createAttendanceService({ repository: attendanceRepository, auditService }), paymentService = createPaymentService({ repository: paymentRepository, auditService }), trainingService = createTrainingService({ repository: trainingRepository, auditService }), insightService = createInsightService({ repository: insightRepository }) } = {}) {
   const app = express();
+  const assignmentService = createAssignmentService({ repository: assignmentRepository, auditService });
 
   app.disable("x-powered-by");
   app.use(helmet());
@@ -79,7 +82,7 @@ export function createApp({ authService = createAuthService({ repository: authRe
   app.use(env.apiBasePath, createTrainingRouter(trainingService, authService));
   app.use(env.apiBasePath, createInsightRouter(insightService, authService));
   app.use(env.apiBasePath, createAuditRouter(authService));
-  app.use(env.apiBasePath, createAssignmentRouter(authService));
+  app.use(env.apiBasePath, createAssignmentRouter(assignmentService, authService));
 
   app.use(notFound);
   app.use(errorHandler);
