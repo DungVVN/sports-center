@@ -11,6 +11,9 @@ import { verificationDeliveryService } from "./modules/auth/verification-deliver
 import { staffRepository } from "./modules/staff/staff.repository.js";
 import { createStaffRouter } from "./modules/staff/staff.routes.js";
 import { createStaffService } from "./modules/staff/staff.service.js";
+import { memberRepository } from "./modules/members/member.repository.js";
+import { createMemberRouter } from "./modules/members/member.routes.js";
+import { createMemberService } from "./modules/members/member.service.js";
 import { auditService } from "./shared/audit/audit.service.js";
 import { openApiSpec } from "./openapi/spec.js";
 import { sendSuccess } from "./shared/http/response.js";
@@ -22,7 +25,7 @@ function isAllowedOrigin(origin) {
   return !origin || env.corsOrigins.includes(origin);
 }
 
-export function createApp({ authService = createAuthService({ repository: authRepository, verificationDelivery: verificationDeliveryService, auditService }), staffService = createStaffService({ repository: staffRepository, auditService }) } = {}) {
+export function createApp({ authService = createAuthService({ repository: authRepository, verificationDelivery: verificationDeliveryService, auditService }), staffService = createStaffService({ repository: staffRepository, auditService }), memberService = createMemberService({ repository: memberRepository, auditService }) } = {}) {
   const app = express();
 
   app.disable("x-powered-by");
@@ -44,6 +47,7 @@ export function createApp({ authService = createAuthService({ repository: authRe
   app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(openApiSpec, { explorer: true }));
   app.use(`${env.apiBasePath}/auth`, createAuthRouter(authService));
   app.use(`${env.apiBasePath}/staff`, createStaffRouter(staffService, authService));
+  app.use(`${env.apiBasePath}/members`, createMemberRouter(memberService, authService));
 
   app.use(notFound);
   app.use(errorHandler);
