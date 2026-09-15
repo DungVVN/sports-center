@@ -5,8 +5,8 @@ import { createApp } from "../src/app.js";
 const classId = "17d813e0-a5e7-48e8-92bb-81fa123a8240";
 const bookingId = "64409e25-1169-48ef-b7c8-05adbc0e4b7f";
 
-function authService(role = "member") {
-  return { getAuthentication: vi.fn().mockResolvedValue({ user: { id: "user-1", role }, permissions: ["booking.write"] }) };
+function authService(role = "member", permissions = ["booking.write"]) {
+  return { getAuthentication: vi.fn().mockResolvedValue({ user: { id: "user-1", role }, permissions }) };
 }
 
 function bookingService() {
@@ -26,7 +26,7 @@ describe("Booking routes", () => {
 
   it("rejects malformed member id before it reaches the booking service", async () => {
     const service = bookingService();
-    const response = await request(createApp({ authService: authService(), bookingService: service })).get("/api/v1/bookings?memberId=not-a-uuid").set("Authorization", "Bearer token").expect(422);
+    const response = await request(createApp({ authService: authService("member", ["booking.read"]), bookingService: service })).get("/api/v1/bookings?memberId=not-a-uuid").set("Authorization", "Bearer token").expect(422);
     expect(response.body.error.code).toBe("VALIDATION_ERROR");
     expect(service.list).not.toHaveBeenCalled();
   });
@@ -35,6 +35,15 @@ describe("Booking routes", () => {
     const service = bookingService();
     const noPermission = { getAuthentication: vi.fn().mockResolvedValue({ user: { id: "user-1", role: "member" }, permissions: [] }) };
     await request(createApp({ authService: noPermission, bookingService: service })).post("/api/v1/bookings").set("Authorization", "Bearer token").send({ classId }).expect(403);
+    expect(service.create).not.toHaveBeenCalled();
+  });
+
+  it("lets a Manager view bookings but not create one", async () => {
+    const service = bookingService();
+    const app = createApp({ authService: authService("manager", ["booking.read"]), bookingService: service });
+    await request(app).get("/api/v1/bookings").set("Authorization", "Bearer token").expect(200);
+    await request(app).post("/api/v1/bookings").set("Authorization", "Bearer token").send({ classId }).expect(403);
+    expect(service.list).toHaveBeenCalledWith(undefined, { id: "user-1", role: "manager" });
     expect(service.create).not.toHaveBeenCalled();
   });
 

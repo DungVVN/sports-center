@@ -6,7 +6,7 @@ function scheduleConflict() { return new AppError({ statusCode: 422, code: "CLAS
 
 export function createClassService({ repository, auditService }) {
   return {
-    list: () => repository.list(), changes: (status) => repository.changes(status), rooms: () => repository.rooms(), coaches: () => repository.coaches(),
+    async list(actor) { const [classes, coaches] = await Promise.all([actor?.role === "coach" ? repository.listForCoach(actor.id) : repository.list(), repository.coaches()]); const coachNameById = new Map(coaches.map((coach) => [coach.id, coach.display_name])); return classes.map((item) => ({ ...item, coach_name: coachNameById.get(item.coach_user_id) ?? "Chưa phân công" })); }, changes: (status) => repository.changes(status), rooms: () => repository.rooms(), async coaches(actor) { if (actor?.role === "coach") return repository.coach(actor.id); if (actor?.role === "member") return repository.coachesForMemberUser(actor.id); return repository.coaches(); },
     async create(input, actorUserId) {
       if (!await repository.findRoom(input.roomId)) throw new AppError({ statusCode: 422, code: "ROOM_NOT_FOUND", message: "Không tìm thấy phòng học." });
       if (!await repository.findCoach(input.coachUserId)) throw new AppError({ statusCode: 422, code: "COACH_NOT_AVAILABLE", message: "Huấn luyện viên không khả dụng." });

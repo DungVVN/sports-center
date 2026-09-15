@@ -1,0 +1,5 @@
+.app-nav__subitem--active,
+.app-mobile-nav__item--active,
+.app-mobile-nav__subitem--active {
+  font-weight: var(--font-weight-semibold);
+}

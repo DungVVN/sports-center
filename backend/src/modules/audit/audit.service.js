@@ -1,1 +1,5 @@
-export function createAuditLogService({ repository }) { return { list: () => repository.list() }; }
+export function createAuditLogService({ repository }) {
+  return {
+    list: (pagination) => repository.list(pagination),
+  };
+}

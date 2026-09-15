@@ -2,6 +2,7 @@ import { prisma } from "../../database.js";
 
 export const classRepository = {
   list: () => prisma.class_sessions.findMany({ orderBy: { starts_at: "asc" } }),
+  listForCoach: (coachUserId) => prisma.class_sessions.findMany({ where: { coach_user_id: coachUserId }, orderBy: { starts_at: "asc" } }),
   find: (id) => prisma.class_sessions.findUnique({ where: { id } }),
   findRoom: (id) => prisma.rooms.findUnique({ where: { id } }),
   findCoach: (id) => prisma.users.findFirst({ where: { id, role: "coach", status: "active" }, select: { id: true } }),
@@ -11,6 +12,15 @@ export const classRepository = {
   }),
   rooms: () => prisma.rooms.findMany({ where: { is_active: true }, orderBy: { name: "asc" } }),
   coaches: () => prisma.users.findMany({ where: { role: "coach", status: "active" }, select: { id: true, display_name: true, email: true } }),
+  coach: (coachUserId) => prisma.users.findMany({ where: { id: coachUserId, role: "coach", status: "active" }, select: { id: true, display_name: true, email: true } }),
+  async coachesForMemberUser(userId) {
+    const member = await prisma.members.findUnique({ where: { user_id: userId }, select: { id: true } });
+    if (!member) return [];
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const assignments = await prisma.member_coach_assignments.findMany({ where: { member_id: member.id, effective_from: { lte: today }, OR: [{ effective_to: null }, { effective_to: { gte: today } }] }, select: { coach_user_id: true } });
+    return prisma.users.findMany({ where: { id: { in: assignments.map((item) => item.coach_user_id) }, role: "coach", status: "active" }, select: { id: true, display_name: true, email: true } });
+  },
   create: (data) => prisma.class_sessions.create({ data }),
   update: (id, data) => prisma.class_sessions.update({ where: { id }, data }),
   createChange: (data) => prisma.class_change_requests.create({ data }),

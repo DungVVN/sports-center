@@ -10,6 +10,8 @@ function makeService() {
     login: vi.fn().mockResolvedValue({ token: "signed-token", expiresAt: new Date("2026-10-01T00:00:00.000Z"), user: { id: "b7f2c76c-9c97-4d5a-91b8-936e2acff972", role: "member" } }),
     logout: vi.fn().mockResolvedValue(undefined),
     getAuthentication: vi.fn().mockResolvedValue({ user: { id: "staff-1", role: "receptionist" }, permissions: ["registration.approve"] }),
+    getOwnProfile: vi.fn().mockResolvedValue({ id: "staff-1", fullName: "Lễ tân Hương", role: "receptionist" }),
+    updateOwnProfile: vi.fn().mockResolvedValue({ id: "staff-1", fullName: "Lễ tân Hương", role: "receptionist" }),
     listPendingRegistrations: vi.fn().mockResolvedValue([]),
     approveRegistration: vi.fn().mockResolvedValue({ user: { id: "b7f2c76c-9c97-4d5a-91b8-936e2acff972" } }),
   };
@@ -42,5 +44,13 @@ describe("Auth routes", () => {
     const service = makeService();
     await request(createApp({ authService: service })).post("/api/v1/auth/registrations/b7f2c76c-9c97-4d5a-91b8-936e2acff972/approve").set("Authorization", "Bearer session-token").expect(200);
     expect(service.approveRegistration).toHaveBeenCalledWith({ approvedBy: "staff-1", userId: "b7f2c76c-9c97-4d5a-91b8-936e2acff972" });
+  });
+
+  it("lets an authenticated user read and update only their own profile", async () => {
+    const service = makeService();
+    await request(createApp({ authService: service })).get("/api/v1/auth/profile").set("Authorization", "Bearer session-token").expect(200);
+    await request(createApp({ authService: service })).patch("/api/v1/auth/profile").set("Authorization", "Bearer session-token").send({ fullName: "Lễ tân Hương", phone: "0901000011", dateOfBirth: null }).expect(200);
+    expect(service.getOwnProfile).toHaveBeenCalledWith("staff-1");
+    expect(service.updateOwnProfile).toHaveBeenCalledWith({ userId: "staff-1", input: { fullName: "Lễ tân Hương", phone: "0901000011", dateOfBirth: null } });
   });
 });

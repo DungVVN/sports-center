@@ -9,9 +9,9 @@ function authService(permissions = []) { return { getAuthentication: vi.fn().moc
 function membershipService() { return { listOwnMemberships: vi.fn().mockResolvedValue([]), requestFreeze: vi.fn().mockResolvedValue({ id: requestId }), freezeRequests: vi.fn().mockResolvedValue([]), reviewFreeze: vi.fn().mockResolvedValue({ id: requestId, status: "approved" }) }; }
 
 describe("Membership self-service freeze routes", () => {
-  it("lets an authenticated member request freeze without member.write and passes server actor", async () => {
+  it("lets a member with membership.freeze.request request freeze and passes server actor", async () => {
     const service = membershipService();
-    await request(createApp({ authService: authService(), membershipService: service })).post(`/api/v1/memberships/${membershipId}/freeze-requests`).set("Authorization", "Bearer token").send({ startsOn: "2026-10-01", endsOn: "2026-10-15", reason: "Đi công tác dài ngày" }).expect(201);
+    await request(createApp({ authService: authService(["membership.freeze.request"]), membershipService: service })).post(`/api/v1/memberships/${membershipId}/freeze-requests`).set("Authorization", "Bearer token").send({ startsOn: "2026-10-01", endsOn: "2026-10-15", reason: "Đi công tác dài ngày" }).expect(201);
     expect(service.requestFreeze).toHaveBeenCalledWith(membershipId, expect.objectContaining({ startsOn: "2026-10-01" }), { id: "member-user", role: "member" });
   });
 

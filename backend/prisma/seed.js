@@ -27,7 +27,7 @@ async function main() {
   });
   await prisma.role_permissions.createMany({
     data: [
-      ["receptionist", "member.read"], ["receptionist", "member.write"], ["receptionist", "class.read"], ["receptionist", "booking.write"], ["receptionist", "attendance.write"], ["receptionist", "payment.record"],
+      ["receptionist", "member.read"], ["receptionist", "member.write"], ["receptionist", "class.read"], ["receptionist", "booking.write"], ["receptionist", "payment.record"],
       ["receptionist", "registration.approve"], ["receptionist", "membership.freeze.review"],
       ["coach", "class.read"], ["coach", "attendance.write"], ["coach", "training.write"],
       ["member", "class.read"], ["member", "booking.write"],

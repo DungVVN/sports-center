@@ -11,6 +11,27 @@ function dependencies({ room = { id: "room-1" }, coach = { id: "coach-1" } } = {
 }
 
 describe("Class service", () => {
+  it("returns only assigned classes to a Coach", async () => {
+    const repository = {
+      listForCoach: vi.fn().mockResolvedValue([{ id: "class-1", coach_user_id: "coach-1" }]),
+      coaches: vi.fn().mockResolvedValue([{ id: "coach-1", display_name: "Coach Bình" }]),
+    };
+    const service = createClassService({ repository, auditService: { record: vi.fn() } });
+
+    await expect(service.list({ id: "coach-1", role: "coach" })).resolves.toEqual([
+      expect.objectContaining({ id: "class-1", coach_name: "Coach Bình" }),
+    ]);
+    expect(repository.listForCoach).toHaveBeenCalledWith("coach-1");
+  });
+
+  it("returns only the assigned Coach directory to a Member", async () => {
+    const repository = { coachesForMemberUser: vi.fn().mockResolvedValue([{ id: "coach-1" }]) };
+    const service = createClassService({ repository, auditService: { record: vi.fn() } });
+
+    await expect(service.coaches({ id: "member-user-1", role: "member" })).resolves.toEqual([{ id: "coach-1" }]);
+    expect(repository.coachesForMemberUser).toHaveBeenCalledWith("member-user-1");
+  });
+
   it("rejects an unavailable Coach before creating a class", async () => {
     const { repository, auditService } = dependencies({ coach: null });
     await expect(createClassService({ repository, auditService }).create(input, "manager-1")).rejects.toMatchObject({ code: "COACH_NOT_AVAILABLE" });

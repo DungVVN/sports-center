@@ -9,6 +9,14 @@ function dependencies() {
 }
 
 describe("Training service scope", () => {
+  it("uses the Coach's booking and assignment scope for the member picker", async () => {
+    const { repository, auditService } = dependencies();
+    repository.membersForCoach.mockResolvedValue([{ id: "member-from-class" }]);
+
+    await expect(createTrainingService({ repository, auditService }).members({ id: "coach-1", role: "coach" })).resolves.toEqual([{ id: "member-from-class" }]);
+    expect(repository.membersForCoach).toHaveBeenCalledWith("coach-1");
+  });
+
   it("limits unfiltered Coach plans to current assignments", async () => {
     const { repository, auditService } = dependencies();
     await expect(createTrainingService({ repository, auditService }).plans(undefined, { id: "coach-1", role: "coach" })).resolves.toEqual([{ id: "plan-1" }]);

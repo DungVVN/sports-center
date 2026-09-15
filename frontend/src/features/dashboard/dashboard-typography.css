@@ -1,0 +1,11 @@
+.dashboard-home__header p {
+  font-weight: var(--font-weight-semibold);
+}
+
+.dashboard-change {
+  font-weight: var(--font-weight-medium);
+}
+
+.dashboard-change--neutral {
+  font-weight: var(--font-weight-regular);
+}

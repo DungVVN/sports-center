@@ -1,0 +1,54 @@
+.audit-log-table {
+  min-width: 79rem;
+}
+
+.audit-log-table th:nth-child(1),
+.audit-log-table th:nth-child(2) { min-width: 9rem; }
+.audit-log-table th:nth-child(3) { min-width: 10rem; }
+.audit-log-table th:nth-child(4) { min-width: 10.5rem; }
+.audit-log-table th:nth-child(5) { min-width: 14rem; }
+.audit-log-table th:nth-child(6) { min-width: 13rem; }
+.audit-log-table th:nth-child(7) { min-width: 10rem; }
+
+.audit-log-table__time {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.audit-log-table__action {
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.audit-log-table__entity {
+  display: grid;
+  gap: 3px;
+}
+
+.audit-log-table__entity span {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.audit-log-table__entity strong {
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.audit-log-table__identifier code {
+  color: var(--color-text-muted);
+  display: block;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+@media (max-width: 767px) {
+  .audit-log-table { min-width: 75rem; }
+}

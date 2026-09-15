@@ -19,7 +19,7 @@ export function App() {
   const [session, setSession] = useState(null);
   const [restoring, setRestoring] = useState(true);
   useEffect(() => { void Promise.resolve().then(async () => { try { setSession(await authApi.me()); } catch { /* No valid server session; show the public authentication flow. */ } finally { setRestoring(false); } }); }, []);
-  if (restoring) return <main className="app-bootstrap" aria-busy="true" />;
+  if (restoring) return <main aria-busy="true" aria-live="polite" className="app-bootstrap"><span aria-hidden="true" className="app-bootstrap__spinner" /><p>Đang khôi phục phiên làm việc…</p></main>;
   const content = session ? <DashboardPlaceholder session={session} onLogout={() => { setSession(null); setView("login"); }} /> : {
     login: <LoginPage onLoggedIn={setSession} onRegister={() => setView("register")} />,
     register: <RegisterPage onLogin={() => setView("login")} onRegistered={(value) => { setRegistration(value); setView("verify"); }} />,

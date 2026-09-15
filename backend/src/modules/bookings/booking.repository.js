@@ -1,11 +1,49 @@
 import { prisma } from "../../database.js";
 
 export const bookingRepository = {
-  list: (memberId) => prisma.bookings.findMany({
-    where: memberId ? { member_id: memberId } : undefined,
-    include: { class_session: { select: { id: true, name: true, starts_at: true, ends_at: true } } },
-    orderBy: { booked_at: "desc" },
-  }),
+  list: async ({ memberId, coachUserId } = {}) => {
+    const classIds = coachUserId
+      ? (await prisma.class_sessions.findMany({ where: { coach_user_id: coachUserId }, select: { id: true } })).map((item) => item.id)
+      : null;
+    const bookings = await prisma.bookings.findMany({
+      where: { ...(memberId ? { member_id: memberId } : {}), ...(classIds ? { class_session_id: { in: classIds } } : {}) },
+      orderBy: { booked_at: "desc" },
+    });
+    const sessions = await prisma.class_sessions.findMany({
+      where: { id: { in: bookings.map((booking) => booking.class_session_id) } },
+      select: { id: true, name: true, coach_user_id: true, starts_at: true, ends_at: true },
+    });
+    const coaches = await prisma.users.findMany({
+      where: { id: { in: sessions.map((session) => session.coach_user_id) } },
+      select: { id: true, display_name: true },
+    });
+    const members = await prisma.members.findMany({
+      where: { id: { in: bookings.map((booking) => booking.member_id) } },
+      select: { id: true, full_name: true, member_code: true },
+    });
+    const sessionById = new Map(sessions.map((session) => [session.id, session]));
+    const coachById = new Map(coaches.map((coach) => [coach.id, coach]));
+    const memberById = new Map(members.map((member) => [member.id, member]));
+    return bookings.map((booking) => ({
+      ...booking,
+      class_session: (() => {
+        const session = sessionById.get(booking.class_session_id);
+        return session
+          ? {
+              ...session,
+              coach: coachById.get(session.coach_user_id) ?? null,
+            }
+          : null;
+      })(),
+      member: memberById.get(booking.member_id) ?? null,
+    }));
+  },
+  listForClass: async (classId, memberId) => {
+    const bookings = await prisma.bookings.findMany({ where: { class_session_id: classId, ...(memberId ? { member_id: memberId } : {}) }, orderBy: { booked_at: "desc" } });
+    const members = await prisma.members.findMany({ where: { id: { in: bookings.map((booking) => booking.member_id) } }, select: { id: true, full_name: true, member_code: true } });
+    const memberById = new Map(members.map((member) => [member.id, member]));
+    return bookings.map((booking) => ({ ...booking, member: memberById.get(booking.member_id) ?? null }));
+  },
   find: (id) => prisma.bookings.findUnique({ where: { id } }),
   class: (id) => prisma.class_sessions.findUnique({ where: { id } }),
   member: (id) => prisma.members.findUnique({ where: { id } }),
