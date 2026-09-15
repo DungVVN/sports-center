@@ -17,4 +17,14 @@ describe("apiClient", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ success: false, error: { code: "VALIDATION_ERROR", message: "Dữ liệu không hợp lệ." } }), { status: 422, headers: { "content-type": "application/json" } })));
     await expect(apiClient.get("/members")).rejects.toMatchObject({ name: ApiError.name, code: "VALIDATION_ERROR", status: 422 });
   });
+
+  it("notifies the application when the server rejects an expired session", async () => {
+    const onAuthenticationExpired = vi.fn();
+    window.addEventListener("sports-center:authentication-expired", onAuthenticationExpired);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ success: false, error: { code: "UNAUTHENTICATED", message: "Bạn cần đăng nhập để tiếp tục." } }), { status: 401, headers: { "content-type": "application/json" } })));
+
+    await expect(apiClient.get("/dashboards/manager")).rejects.toMatchObject({ status: 401 });
+    expect(onAuthenticationExpired).toHaveBeenCalledTimes(1);
+    window.removeEventListener("sports-center:authentication-expired", onAuthenticationExpired);
+  });
 });

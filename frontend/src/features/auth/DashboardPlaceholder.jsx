@@ -85,8 +85,11 @@ export function DashboardPlaceholder({ session, onLogout }) {
     return () => window.clearInterval(timer);
   }, [session.user.role]);
   async function logout() {
-    await authApi.logout();
-    onLogout();
+    try {
+      await authApi.logout();
+    } finally {
+      onLogout();
+    }
   }
   async function read(id) {
     try {

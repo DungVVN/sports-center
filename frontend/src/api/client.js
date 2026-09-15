@@ -1,6 +1,8 @@
 import { ApiError } from "./api-error.js";
 import { apiBaseUrl } from "../config/runtime.js";
 
+export const authenticationExpiredEvent = "sports-center:authentication-expired";
+
 function buildUrl(path) {
   return `${apiBaseUrl}/${path.replace(/^\//, "")}`;
 }
@@ -34,6 +36,9 @@ export async function request(path, { method = "GET", body, headers, signal } = 
 
   const payload = await parseResponse(response);
   if (!response.ok || !payload?.success) {
+    if (response.status === 401 && typeof window !== "undefined") {
+      window.dispatchEvent(new Event(authenticationExpiredEvent));
+    }
     throw new ApiError({
       status: response.status,
       code: payload?.error?.code ?? "REQUEST_FAILED",

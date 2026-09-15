@@ -11,8 +11,10 @@ Trong GitHub, bật branch protection cho `main` và yêu cầu hai checks `Back
 
 1. Trong Render chọn **New + → Blueprint**, kết nối repository `DungVVN/sports-center` và chọn `render.yaml`.
 2. Khai báo giá trị thật cho `DATABASE_URL`, `MIGRATE_DATABASE_URL` và `CORS_ORIGIN` trong Render Environment.
-3. Khi có domain Vercel, đặt `CORS_ORIGIN` bằng domain đó, ví dụ `https://sports-center.vercel.app`.
+3. Khi có domain Vercel, đặt `CORS_ORIGIN` bằng **đúng origin HTTPS** đó, ví dụ `https://sports-center.vercel.app` (không có dấu `/` cuối). Nếu cần cho phép nhiều frontend, ngăn cách các origin bằng dấu phẩy.
 4. Render tự deploy sau mỗi commit mới trên `main`; trước khi start, nó chạy `npm run db:migrate`.
+
+API dùng cookie phiên `HttpOnly; Secure; SameSite=None` ở production để trình duyệt gửi cookie từ frontend Vercel sang API Render. Không dùng HTTP cho các URL production.
 
 ## Frontend trên Vercel
 

@@ -28,7 +28,9 @@ const ownProfileSchema = z.object({ body: z.object({
 function sessionCookie(response, token, expiresAt) {
   response.cookie("sports_center_session", token, {
     httpOnly: true,
-    sameSite: "lax",
+    // Vercel and Render have different sites. Browsers only attach this
+    // cross-site session cookie to fetch requests when it is SameSite=None.
+    sameSite: env.nodeEnv === "production" ? "none" : "lax",
     secure: env.nodeEnv === "production",
     expires: expiresAt,
     path: env.apiBasePath,
@@ -58,7 +60,7 @@ export function createAuthRouter(authService) {
   router.post("/logout", authRequired, async (request, response, next) => {
     try {
       await authService.logout(request.auth.token);
-      response.clearCookie("sports_center_session", { httpOnly: true, sameSite: "lax", secure: env.nodeEnv === "production", path: env.apiBasePath });
+      response.clearCookie("sports_center_session", { httpOnly: true, sameSite: env.nodeEnv === "production" ? "none" : "lax", secure: env.nodeEnv === "production", path: env.apiBasePath });
       sendSuccess(response, { data: { loggedOut: true } });
     } catch (error) { next(error); }
   });

@@ -6,6 +6,7 @@ import { LoginPage } from "../features/auth/LoginPage.jsx";
 import { PendingApprovalPage } from "../features/auth/PendingApprovalPage.jsx";
 import { RegisterPage } from "../features/auth/RegisterPage.jsx";
 import { VerificationPage } from "../features/auth/VerificationPage.jsx";
+import { authenticationExpiredEvent } from "../api/client.js";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -18,6 +19,14 @@ export function App() {
   const [registration, setRegistration] = useState(null);
   const [session, setSession] = useState(null);
   const [restoring, setRestoring] = useState(true);
+  useEffect(() => {
+    const resetToLogin = () => {
+      setSession(null);
+      setView("login");
+    };
+    window.addEventListener(authenticationExpiredEvent, resetToLogin);
+    return () => window.removeEventListener(authenticationExpiredEvent, resetToLogin);
+  }, []);
   useEffect(() => { void Promise.resolve().then(async () => { try { setSession(await authApi.me()); } catch { /* No valid server session; show the public authentication flow. */ } finally { setRestoring(false); } }); }, []);
   if (restoring) return <main aria-busy="true" aria-live="polite" className="app-bootstrap"><span aria-hidden="true" className="app-bootstrap__spinner" /><p>Đang khôi phục phiên làm việc…</p></main>;
   const content = session ? <DashboardPlaceholder session={session} onLogout={() => { setSession(null); setView("login"); }} /> : {
