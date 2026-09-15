@@ -7,3 +7,4 @@
 /* The header control sits against the viewport edge: show its tooltip inward and below, so hover never creates page overflow. */
 .app-header .tooltip__content{bottom:auto;left:auto;right:0;top:calc(100% + var(--space-8));transform:none}
 .app-header .tooltip__content::after{bottom:100%;left:auto;right:12px;top:auto;border-bottom-color:var(--color-sidebar);border-top-color:transparent;transform:none}
+.app-shell__loading{color:var(--color-text-secondary);margin:var(--space-24) 0}

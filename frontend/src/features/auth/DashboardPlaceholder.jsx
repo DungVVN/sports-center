@@ -1,12 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { AppShell } from "../../components/layout/AppShell.jsx";
 import { dashboardApi } from "../dashboard/dashboard-api.js";
-import { CoachPageContent } from "../../pages/coach/CoachPageContent.jsx";
-import { ManagerPageContent } from "../../pages/manager/ManagerPageContent.jsx";
-import { MemberPageContent } from "../../pages/member/MemberPageContent.jsx";
-import { ReceptionistPageContent } from "../../pages/receptionist/ReceptionistPageContent.jsx";
 import { authApi } from "./auth-api.js";
 import "./auth.css";
+
+const CoachPageContent = lazy(() => import("../../pages/coach/CoachPageContent.jsx").then(({ CoachPageContent: Component }) => ({ default: Component })));
+const ManagerPageContent = lazy(() => import("../../pages/manager/ManagerPageContent.jsx").then(({ ManagerPageContent: Component }) => ({ default: Component })));
+const MemberPageContent = lazy(() => import("../../pages/member/MemberPageContent.jsx").then(({ MemberPageContent: Component }) => ({ default: Component })));
+const ReceptionistPageContent = lazy(() => import("../../pages/receptionist/ReceptionistPageContent.jsx").then(({ ReceptionistPageContent: Component }) => ({ default: Component })));
 
 const labels = {
   manager: "Quản lý trung tâm",
@@ -107,7 +108,9 @@ export function DashboardPlaceholder({ session, onLogout }) {
   };
   const RolePageContent = rolePages[session.user.role] ?? MemberPageContent;
   const content = (
-    <RolePageContent onNavigate={setView} session={session} view={view} />
+    <Suspense fallback={<p className="app-shell__loading" role="status">Đang tải không gian làm việc...</p>}>
+      <RolePageContent onNavigate={setView} session={session} view={view} />
+    </Suspense>
   );
   return (
     <AppShell

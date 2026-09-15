@@ -29,4 +29,13 @@ describe("HTTP foundation", () => {
     expect(response.body.openapi).toBe("3.1.0");
     expect(response.body.paths["/health"]).toBeTruthy();
   });
+
+  it("rejects state-changing requests from an untrusted browser origin", async () => {
+    const response = await request(app)
+      .post("/api/v1/auth/logout")
+      .set("Origin", "https://untrusted.example")
+      .expect(403);
+
+    expect(response.body.error.code).toBe("UNTRUSTED_ORIGIN");
+  });
 });
