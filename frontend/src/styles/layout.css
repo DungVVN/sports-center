@@ -1,0 +1,1116 @@
+/* Shared application frame: every protected page starts on the same content grid. */
+.app-main > :is(.members-page, .staff-page) {
+  min-height: auto;
+  padding: 0;
+}
+
+:is(.members-page, .staff-page) > header {
+  margin: 0 0 var(--space-24);
+}
+
+:is(.members-page, .staff-page) > header h1 {
+  margin: var(--space-4) 0 0;
+}
+
+:is(.members-page, .staff-page) > :not(header) + :not(header) {
+  margin-top: var(--space-24);
+}
+
+:is(.members-grid, .staff-grid) {
+  gap: var(--space-24);
+}
+
+.members-workspace-stacked {
+  display: grid;
+  gap: var(--space-24);
+}
+
+.attendance-monitor { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-card); display: grid; overflow: hidden; }
+.attendance-monitor__picker { align-items: end; display: grid; gap: var(--space-20); grid-template-columns: minmax(15rem, .7fr) minmax(20rem, 1.3fr); padding: var(--space-20) var(--space-24); }
+.attendance-monitor__label { align-items: center; color: var(--color-primary); display: flex; gap: var(--space-12); }
+.attendance-monitor__label div { display: grid; gap: 2px; }
+.attendance-monitor__label span { color: var(--color-text-secondary); font-size: 12px; }
+.attendance-monitor__label strong { color: var(--color-text); font-size: 16px; }
+.attendance-monitor select { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-control); color: var(--color-text); font: inherit; font-weight: 600; height: var(--control-height); padding: 0 var(--space-12); }
+.attendance-monitor select:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(37,99,235,.12); outline: none; }
+.attendance-monitor__summary { background: var(--color-surface-muted); border-top: 1px solid var(--color-border); display: grid; gap: var(--space-24); grid-template-columns: minmax(0, 1fr) auto; padding: var(--space-16) var(--space-24); }
+.attendance-monitor__session { display: grid; gap: var(--space-4); }
+.attendance-monitor__session > span { color: var(--color-text-secondary); font-size: 11px; font-weight: 700; letter-spacing: .06em; }
+.attendance-monitor__session strong { font-size: 16px; }
+.attendance-monitor__session small { color: var(--color-text-secondary); font-size: 12px; }
+.attendance-monitor__metrics { display: grid; gap: var(--space-20); grid-template-columns: repeat(3, minmax(6.5rem, 1fr)); }
+.attendance-monitor__metrics div { display: grid; gap: 2px; position: relative; }
+.attendance-monitor__metrics svg { color: var(--color-text-secondary); margin-bottom: 2px; }
+.attendance-monitor__metrics span { color: var(--color-text-secondary); font-size: 12px; }
+.attendance-monitor__metrics strong { font-size: 18px; font-variant-numeric: tabular-nums; }
+.attendance-monitor__empty { align-items: center; border-top: 1px solid var(--color-border); color: var(--color-text-secondary); display: flex; font-size: 13px; gap: var(--space-8); padding: var(--space-16) var(--space-24); }
+.attendance-session-list .list-heading p { color: var(--color-text-secondary); font-size: 13px; margin: var(--space-4) 0 0; }
+.attendance-session-list__count { color: var(--color-text-secondary); font-size: 13px; font-variant-numeric: tabular-nums; }
+.attendance-session-list tbody tr { transition: background-color .15s; }
+.attendance-session-list tbody tr.is-selected { background: var(--color-surface-muted); }
+.attendance-session-list__summary { align-items: center; background: var(--color-surface-muted); border-top: 1px solid var(--color-border); display: grid; gap: var(--space-24); grid-template-columns: minmax(0, 1fr) auto; margin-top: var(--space-16); padding: var(--space-16); }
+.attendance-session-list__summary > div:first-child { display: grid; gap: var(--space-4); }
+.attendance-session-list__summary > div:first-child span { color: var(--color-text-secondary); font-size: 11px; font-weight: 700; letter-spacing: .06em; }
+.attendance-session-list__summary > div:first-child strong { font-size: 16px; }
+.attendance-session-list__summary > div:first-child small { color: var(--color-text-secondary); font-size: 12px; }
+
+
+.staff-workspace-stacked {
+  display: grid;
+  gap: var(--space-24);
+}
+
+.staff-form--create {
+  align-items: end;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.staff-form--create h2,
+.staff-form--create > button {
+  grid-column: 1 / -1;
+}
+
+/* Training follows its workflow: template first, then plan and progress side by side. */
+.training-template-form {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.training-template-form h2,
+.training-template-form > button {
+  grid-column: 1 / -1;
+}
+
+.training-template-form > button,
+.training-action-form > button {
+  justify-self: start;
+  min-width: 12rem;
+}
+
+.training-action-grid {
+  display: grid;
+  gap: var(--space-24);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.training-action-form {
+  align-content: start;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.training-action-form h2,
+.training-action-form > button,
+.training-result-form label:has(textarea) {
+  grid-column: 1 / -1;
+}
+
+.training-form-heading,
+.training-field-group {
+  grid-column: 1 / -1;
+}
+
+.training-form-heading {
+  border-bottom: 1px solid var(--color-border);
+  display: grid;
+  gap: var(--space-4);
+  padding-bottom: var(--space-12);
+}
+
+.training-form-heading span {
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: .06em;
+}
+
+.training-form-heading h2 {
+  font-size: 18px;
+  margin: 0;
+}
+
+.training-field-group {
+  display: grid;
+  gap: var(--space-12);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.training-field-group h3 {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: var(--font-weight-semibold);
+  grid-column: 1 / -1;
+  letter-spacing: .04em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.staff-form--create > button {
+  justify-self: start;
+  min-width: 12rem;
+}
+
+.members-form--member-create {
+  align-items: end;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.members-form--member-create h2 {
+  grid-column: 1 / -1;
+}
+
+.members-form--member-create > button {
+  grid-column: 1 / -1;
+  justify-self: start;
+  min-width: 12rem;
+}
+
+.members-form--booking-create {
+  align-items: end;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.members-form--booking-create h2,
+.members-form--booking-create > button {
+  grid-column: 1 / -1;
+}
+
+.members-form--payment-create {
+  align-items: end;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.members-form--payment-create h2,
+.members-form--payment-create > label:has(textarea),
+.members-form--payment-create > button {
+  grid-column: 1 / -1;
+}
+
+.members-form--attendance-checkin {
+  align-items: end;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.members-form--attendance-checkin h2,
+.members-form--attendance-checkin small,
+.members-form--attendance-checkin > button {
+  grid-column: 1 / -1;
+}
+
+.members-form--attendance-checkin > button {
+  justify-self: start;
+  min-width: 12rem;
+}
+
+.members-form--payment-create > button {
+  justify-self: start;
+  min-width: 12rem;
+}
+
+.members-form--booking-create > button {
+  justify-self: start;
+  min-width: 12rem;
+}
+
+.payment-table__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+
+.payment-table__actions .button {
+  white-space: nowrap;
+}
+
+.members-form,
+.staff-form {
+  gap: var(--space-16);
+}
+
+.members-list th,
+.members-list td,
+.staff-list th,
+.staff-list td {
+  padding-block: var(--space-12);
+}
+
+/* Shared information hierarchy: headers guide scanning, data stays calm. */
+.members-page .members-list th,
+.staff-page .staff-list th {
+  font-weight: var(--font-weight-semibold);
+}
+
+.app-sidebar .app-nav__subitem--active,
+.app-mobile-nav .app-mobile-nav__subitem--active {
+  font-weight: var(--font-weight-semibold);
+}
+
+.dashboard-home .dashboard-metric strong {
+  font-weight: var(--font-weight-bold);
+}
+
+.attendance-class-picker {
+  color: var(--color-text);
+  display: grid;
+  font-size: 12px;
+  font-weight: 600;
+  gap: var(--space-8);
+  margin: 0 0 var(--space-20);
+  max-width: 26rem;
+}
+
+.attendance-class-picker select {
+  appearance: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  color: var(--color-text);
+  min-height: var(--control-height);
+  padding: 0 var(--space-12);
+  transition: border-color .15s, box-shadow .15s, background-color .15s;
+  width: 100%;
+}
+
+.attendance-class-picker select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+  outline: none;
+}
+
+.dashboard-home {
+  gap: var(--space-24);
+}
+
+/* Membership setup is a working two-column form, not a narrow sidebar beside an empty canvas. */
+.membership-workspace {
+  grid-template-columns: minmax(420px, 0.9fr) minmax(520px, 1.1fr);
+}
+
+.membership-workspace--manager {
+  align-items: start;
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  gap: var(--space-16);
+  grid-template-columns: minmax(23rem, 0.78fr) minmax(0, 1.22fr);
+  padding: var(--space-16);
+}
+
+/* The package workspace is one parent surface with two focused child panels. */
+.membership-workspace--manager > :is(.members-form, .members-list) {
+  background: var(--color-surface);
+  box-shadow: none;
+}
+
+.membership-workspace--manager > .members-list {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+}
+
+.membership-workspace--manager > .members-form {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+/* Receptionists assign packages from one primary form with the related lookup and approvals beside it. */
+.membership-workspace--assignment-only {
+  align-items: stretch;
+  grid-template-columns: minmax(0, 1.35fr) minmax(19rem, 0.65fr);
+}
+
+.membership-workspace--assignment-only > .members-list {
+  grid-column: 1 / -1;
+}
+
+.membership-assignment-sidebar,
+.membership-manager-followup {
+  display: grid;
+  gap: var(--space-24);
+}
+
+.membership-assignment-sidebar {
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  min-height: 100%;
+}
+
+.membership-assignment-sidebar .members-list {
+  height: 100%;
+  min-width: 0;
+}
+
+.membership-assignment-sidebar .members-list:only-child {
+  grid-row: 1 / -1;
+}
+
+.membership-list-content {
+  border-top: 1px solid var(--color-border);
+  margin-top: var(--space-16);
+  padding-top: var(--space-16);
+}
+
+.membership-list-content h3 {
+  font-size: 14px;
+  margin: 0 0 var(--space-12);
+}
+
+/* The receptionist sees a counter-focused schedule, not the manager's class editor. */
+.classes-reception-workspace {
+  display: grid;
+  gap: var(--space-24);
+}
+
+.classes-reception-schedule {
+  min-width: 0;
+}
+
+.classes-reception-schedule .list-heading p {
+  color: var(--color-text-secondary);
+  margin: var(--space-4) 0 0;
+}
+
+.class-approval-list {
+  display: grid;
+  gap: var(--space-12);
+}
+
+.class-approval-panel .change-request {
+  align-items: center;
+  display: flex;
+  gap: var(--space-16);
+  justify-content: space-between;
+}
+
+.class-approval-panel .change-request p {
+  color: var(--color-text-secondary);
+  margin: var(--space-4) 0 0;
+}
+
+.class-approval-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--space-8);
+}
+
+.membership-workspace .members-form label small {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+.membership-workspace .members-form {
+  padding-bottom: calc(var(--space-20) + 44px);
+  position: relative;
+}
+
+.membership-workspace .members-form > button:last-child {
+  bottom: var(--space-20);
+  left: var(--space-20);
+  margin: 0;
+  position: absolute;
+  right: var(--space-20);
+}
+
+/* Manager configures a package at left and reviews its catalogue at right. */
+@media (min-width: 1024px) {
+  .membership-workspace--manager .members-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .membership-workspace--manager .members-form > h2,
+  .membership-workspace--manager .members-form > fieldset,
+  .membership-workspace--manager .members-form > label:has(textarea),
+  .membership-workspace--manager .members-form > button:last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+.selected-member-summary {
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  display: grid;
+  gap: var(--space-12);
+  padding: var(--space-12);
+}
+
+.selected-member-summary > div {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.selected-member-summary > div span,
+.selected-member-summary dt {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.selected-member-summary strong {
+  color: var(--color-text);
+  font-size: 14px;
+}
+
+.selected-member-summary p {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.selected-member-summary dl {
+  display: grid;
+  gap: var(--space-8);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+}
+
+.selected-member-summary dl div {
+  min-width: 0;
+}
+
+.selected-member-summary dt,
+.selected-member-summary dd {
+  margin: 0;
+}
+
+.class-session-select {
+  position: relative;
+}
+
+.class-session-select__trigger {
+  align-items: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  color: var(--color-text);
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  font-weight: 600;
+  height: var(--control-height);
+  justify-content: space-between;
+  padding: 0 var(--space-12);
+  text-align: left;
+  width: 100%;
+}
+
+.class-session-select__trigger:focus-visible,
+.class-session-select__trigger[aria-expanded="true"] {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+  outline: none;
+}
+
+.class-session-select__menu {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  box-shadow: var(--shadow-card);
+  display: grid;
+  left: 0;
+  margin-top: var(--space-4);
+  max-height: 18rem;
+  overflow-y: auto;
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 10;
+}
+
+.class-session-select__menu p {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  margin: 0;
+  padding: var(--space-12);
+}
+
+.class-session-select__option {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+  cursor: pointer;
+  display: grid;
+  font: inherit;
+  gap: var(--space-4);
+  padding: var(--space-12);
+  text-align: left;
+  width: 100%;
+}
+
+.class-session-select__option:last-child {
+  border-bottom: 0;
+}
+
+.class-session-select__option:hover,
+.class-session-select__option:focus-visible,
+.class-session-select__option[aria-selected="true"] {
+  background: var(--color-surface-muted);
+  outline: none;
+}
+
+.class-session-select__option strong {
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.class-session-select__option small {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+}
+
+.selected-member-summary dd {
+  color: var(--color-text);
+  font-size: 12px;
+  margin-top: var(--space-4);
+  overflow-wrap: anywhere;
+}
+
+/* Membership history selector follows the same form-control system as the creation flow. */
+.members-list .field-inline {
+  color: var(--color-text);
+  display: grid;
+  font-size: 12px;
+  font-weight: 600;
+  gap: 6px;
+  margin-top: var(--space-16);
+  max-width: 420px;
+}
+
+.members-list .field-inline select {
+  appearance: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  color: var(--color-text);
+  font: inherit;
+  height: var(--control-height);
+  padding: 0 var(--space-12);
+  transition: border-color .15s, box-shadow .15s;
+  width: 100%;
+}
+
+.members-list .field-inline select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+  outline: none;
+}
+
+.data-table-toolbar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+  margin: 0 0 var(--space-16);
+}
+
+.data-table-toolbar__search {
+  align-items: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  color: var(--color-text-muted);
+  display: flex;
+  flex: 0 1 24rem;
+  height: var(--control-height);
+  min-width: 0;
+  padding: 0 var(--space-12);
+  width: min(100%, 24rem);
+}
+
+.data-table-toolbar__search:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+}
+
+.data-table-toolbar__search input,
+.data-table-toolbar select {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  color: var(--color-text);
+  font: inherit;
+  height: var(--control-height);
+  outline: 0;
+}
+
+.data-table-toolbar__search input {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  flex: 1 1 auto;
+  height: 100%;
+  min-width: 0;
+  padding-left: var(--space-8);
+  width: 100%;
+}
+
+.data-table-toolbar__search input:focus-visible {
+  box-shadow: none;
+  outline: 0;
+}
+
+.data-table-toolbar__search input::-webkit-search-cancel-button,
+.data-table-toolbar__search input::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.data-table-toolbar__search svg {
+  flex: 0 0 auto;
+}
+
+.data-table-toolbar select {
+  min-width: 9rem;
+  padding: 0 var(--space-12);
+}
+
+.data-table-toolbar__clear {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-button);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  gap: var(--space-4);
+  min-height: 30px;
+  padding: 0 var(--space-8);
+}
+
+.data-table-toolbar__clear:hover,
+.data-table-toolbar__clear:focus-visible {
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  outline: none;
+}
+
+.data-table-toolbar__count {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  margin-left: auto;
+}
+
+.filter-menu {
+  position: relative;
+}
+
+.filter-menu__trigger {
+  align-items: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  color: var(--color-text);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  gap: var(--space-8);
+  height: var(--control-height);
+  padding: 0 var(--space-12);
+}
+
+.filter-menu__trigger:hover,
+.filter-menu__trigger:focus-visible {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  outline: none;
+}
+
+.filter-menu__panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  display: grid;
+  gap: var(--space-12);
+  left: 0;
+  min-width: min(42rem, calc(100vw - 5rem));
+  padding: var(--space-12);
+  position: absolute;
+  top: calc(100% + var(--space-8));
+  z-index: 10;
+}
+
+.filter-menu__panel label {
+  color: var(--color-text-secondary);
+  display: grid;
+  font-size: 12px;
+  font-weight: 600;
+  gap: var(--space-4);
+}
+
+.filter-menu__panel select {
+  min-width: 100%;
+}
+
+.payment-filter-group {
+  border: 0;
+  display: grid;
+  gap: var(--space-8);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+}
+
+.payment-filter-group + .payment-filter-group {
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-12);
+}
+
+.payment-filter-group legend {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 0;
+  grid-column: 1 / -1;
+}
+
+.filter-menu__panel .payment-filter-group label {
+  align-items: center;
+  color: var(--color-text);
+  cursor: pointer;
+  display: flex;
+  font-size: 13px;
+  font-weight: 500;
+  gap: var(--space-8);
+}
+
+.payment-filter-group input {
+  accent-color: var(--color-primary);
+  height: 16px;
+  margin: 0;
+  width: 16px;
+}
+
+.payment-filter-group p {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  margin: 0;
+}
+
+@media (max-width: 767px) {
+  .attendance-monitor__picker, .attendance-monitor__summary { grid-template-columns: 1fr; }
+  .attendance-session-list__summary { align-items: stretch; grid-template-columns: 1fr; }
+  .attendance-monitor__metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .filter-menu__panel { min-width: min(20rem, calc(100vw - 2rem)); }
+  .payment-filter-group { grid-template-columns: 1fr; }
+  .payment-filter-group legend { grid-column: auto; }
+}
+
+.sortable-header {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-weight: inherit;
+  gap: var(--space-4);
+  letter-spacing: inherit;
+  min-height: 30px;
+  padding: 0;
+  text-align: left;
+  text-transform: inherit;
+}
+
+.sortable-header:hover,
+.sortable-header:focus-visible {
+  color: var(--color-primary);
+  outline: none;
+}
+
+.members-list .classes-capacity-cell {
+  text-align: center;
+}
+
+.members-list .classes-capacity-cell .sortable-header {
+  justify-content: center;
+}
+
+.staff-role,
+.staff-status {
+  align-items: center;
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  min-height: 28px;
+  padding: 0 var(--space-10);
+  white-space: nowrap;
+}
+
+.staff-role {
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  min-height: auto;
+  padding: 0;
+}
+
+.staff-status--active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.staff-status--suspended {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+/* Package rights are business labels, kept compact so the catalogue stays scannable. */
+.members-list .package-entitlements-cell {
+  min-width: 19rem;
+}
+
+.package-entitlements {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.package-entitlements li {
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+  padding: 6px var(--space-8);
+  white-space: nowrap;
+}
+
+.package-benefits {
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+/* Global hierarchy for all operational pages: labels guide, values carry the emphasis. */
+.app-main :is(.members-page, .staff-page) > header > p {
+  font-weight: var(--font-weight-semibold);
+}
+
+.app-main :is(.members-list, .staff-list) th {
+  font-weight: var(--font-weight-semibold);
+}
+
+.app-main :is(.members-list, .staff-list) td {
+  font-weight: var(--font-weight-regular);
+}
+
+.app-main :is(.members-list, .staff-list) td > strong {
+  font-weight: var(--font-weight-semibold);
+}
+
+@media (min-width: 1024px) {
+  .membership-workspace .entitlement-fieldset {
+    column-gap: var(--space-12);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    row-gap: var(--space-12);
+  }
+
+  .membership-workspace .entitlement-fieldset legend {
+    grid-column: 1 / -1;
+  }
+
+  .members-list .field-inline {
+    max-width: 30rem;
+  }
+
+  .members-list .package-entitlements-cell {
+    min-width: 0;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .app-main > :is(.members-page, .staff-page) {
+    padding: 0;
+  }
+
+  .membership-workspace .entitlement-fieldset {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .selected-member-summary dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .members-form--member-create {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .training-template-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .staff-form--create {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .members-form--payment-create {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .members-form--attendance-checkin {
+    grid-template-columns: 1fr;
+  }
+
+  .membership-workspace .entitlement-fieldset legend {
+    grid-column: 1 / -1;
+  }
+
+  .membership-workspace--assignment-only {
+    grid-template-columns: 1fr;
+  }
+
+  .membership-workspace--manager > .members-form,
+  .membership-workspace--manager > .members-list,
+  .membership-workspace--assignment-only > .members-list {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .membership-assignment-sidebar {
+    grid-template-rows: auto;
+    min-height: auto;
+  }
+
+  .membership-assignment-sidebar .members-list {
+    height: auto;
+  }
+}
+
+@media (max-width: 767px) {
+  :is(.members-page, .staff-page) > header {
+    margin-bottom: var(--space-20);
+  }
+
+  :is(.members-page, .staff-page) > :not(header) + :not(header) {
+    margin-top: var(--space-20);
+  }
+
+  :is(.members-grid, .staff-grid) {
+    gap: var(--space-20);
+  }
+
+  .members-form--member-create {
+    grid-template-columns: 1fr;
+  }
+
+  .training-template-form,
+  .training-action-form,
+  .training-action-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .training-field-group {
+    grid-template-columns: 1fr;
+  }
+
+  .training-template-form > button,
+  .training-action-form > button {
+    justify-self: stretch;
+    width: 100%;
+  }
+
+  .members-form--member-create > button {
+    justify-self: stretch;
+    width: 100%;
+  }
+
+  .staff-form--create {
+    grid-template-columns: 1fr;
+  }
+
+  .staff-form--create > button {
+    justify-self: stretch;
+    width: 100%;
+  }
+
+  .members-form--booking-create {
+    grid-template-columns: 1fr;
+  }
+
+  .members-form--booking-create > button {
+    justify-self: stretch;
+    width: 100%;
+  }
+
+  .members-form--payment-create {
+    grid-template-columns: 1fr;
+  }
+
+  .members-form--payment-create > button {
+    justify-self: stretch;
+    width: 100%;
+  }
+
+  .members-form--attendance-checkin > button {
+    justify-self: stretch;
+    width: 100%;
+  }
+
+  .membership-workspace .entitlement-fieldset {
+    grid-template-columns: 1fr;
+  }
+
+  .membership-workspace--manager {
+    gap: var(--space-12);
+    padding: var(--space-12);
+  }
+
+  .membership-workspace--manager > .members-form,
+  .membership-workspace--manager > .members-list,
+  .membership-workspace--assignment-only > .members-list {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .selected-member-summary dl {
+    grid-template-columns: 1fr;
+  }
+
+  .data-table-toolbar__search,
+  .data-table-toolbar select {
+    width: 100%;
+  }
+
+  .data-table-toolbar__count {
+    margin-left: 0;
+  }
+
+  .filter-menu,
+  .filter-menu__trigger {
+    width: 100%;
+  }
+
+  .filter-menu__panel {
+    left: 0;
+    right: 0;
+  }
+
+  .class-approval-panel .change-request {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .class-approval-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

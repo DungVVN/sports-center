@@ -360,6 +360,13 @@ model attendance_corrections {
   created_at      DateTime          @default(now()) @db.Timestamptz(6)
 }
 
+model attendance_submissions {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  class_session_id String   @unique @db.Uuid
+  submitted_by     String   @db.Uuid
+  submitted_at     DateTime @default(now()) @db.Timestamptz(6)
+}
+
 model facility_checkins {
   id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   member_id     String   @db.Uuid

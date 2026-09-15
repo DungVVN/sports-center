@@ -4,6 +4,7 @@
   --color-bg: #F5F8FC; --color-surface: #FFFFFF; --color-surface-muted: #EEF3F9; --color-surface-hover: #F8FAFD; --color-border: #E4EBF5; --color-border-strong: #CBD8E8; --color-text: #102A43; --color-text-secondary: #64748B; --color-text-muted: #94A3B8;
   --color-primary: #2563EB; --color-primary-hover: #1D4ED8; --color-accent: #F97316; --color-accent-hover: #EA6C0A; --color-teal: #0F766E; --color-success: #16A34A; --color-warning: #D97706; --color-danger: #DC2626; --color-danger-hover: #B91C1C; --color-info: #0284C7; --color-sidebar: #0B1F33;
   --font-sans: "Be Vietnam Pro", system-ui, -apple-system, sans-serif; --font-mono: "JetBrains Mono", "Courier New", monospace;
+  --font-weight-regular: 400; --font-weight-medium: 500; --font-weight-semibold: 600; --font-weight-bold: 700;
   --space-4: 4px; --space-8: 8px; --space-12: 12px; --space-16: 16px; --space-20: 20px; --space-24: 24px; --space-32: 32px; --space-40: 40px; --space-48: 48px;
   --radius-small: 8px; --radius-button-small: 10px; --radius-control: 10px; --radius-button-large: 12px; --radius-card: 16px;
   --control-height-sm: 30px; --control-height: 40px; --control-height-lg: 44px;

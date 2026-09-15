@@ -21,3 +21,4 @@
 .button__spinner { animation: button-spin 700ms linear infinite; border: 2px solid currentColor; border-radius: 999px; border-top-color: transparent; height: 13px; width: 13px; }
 @keyframes button-spin { to { transform: rotate(360deg); } }
 @media (max-width: 767px) { .button { min-height: 44px; } }
+.button--primary > span { color: #fff !important; }

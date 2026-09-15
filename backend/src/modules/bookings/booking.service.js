@@ -13,7 +13,13 @@ export function createBookingService({ repository, auditService }) {
   }
 
   return {
-    async list(memberId, actor) { return repository.list(await scopedMemberId(actor, memberId)); },
+    async list(memberId, actor) { return repository.list({ memberId: await scopedMemberId(actor, memberId), coachUserId: actor.role === "coach" ? actor.id : undefined }); },
+    async listForClass(classId, actor) {
+      const session = await repository.class(classId);
+      if (!session) throw new AppError({ statusCode: 404, code: "CLASS_NOT_FOUND", message: "Không tìm thấy lớp học." });
+      if (actor.role === "coach" && session.coach_user_id !== actor.id) throw new AppError({ statusCode: 403, code: "BOOKING_CLASS_SCOPE_DENIED", message: "Coach chỉ có thể xem booking của lớp mình phụ trách." });
+      return repository.listForClass(classId, actor.role === "member" ? await scopedMemberId(actor) : undefined);
+    },
     async create({ memberId: requestedMemberId, classId }, actor) {
       const memberId = await scopedMemberId(actor, requestedMemberId);
       if (!memberId || !await repository.member(memberId)) throw new AppError({ statusCode: 404, code: "MEMBER_NOT_FOUND", message: "Không tìm thấy hội viên." });

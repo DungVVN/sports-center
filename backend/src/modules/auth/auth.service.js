@@ -17,6 +17,38 @@ function publicUser(user) {
   return { id: user.id, email: user.email, displayName: user.display_name, role: user.role, status: user.status };
 }
 
+function ownProfileView({ user, member, staffProfile, contacts }) {
+  const isMember = user.role === "member";
+  return {
+    id: user.id,
+    fullName: user.display_name,
+    email: user.email,
+    avatarUrl: user.avatar_url ?? null,
+    role: user.role,
+    status: user.status,
+    phone: isMember ? member?.phone ?? null : staffProfile?.phone ?? null,
+    dateOfBirth: isMember ? member?.date_of_birth ?? null : staffProfile?.date_of_birth ?? null,
+    ...(isMember
+      ? {
+          memberCode: member?.member_code ?? null,
+          gender: member?.gender ?? null,
+          joinedAt: member?.joined_at ?? null,
+          contacts: contacts.map((contact) => ({
+            id: contact.id,
+            fullName: contact.full_name,
+            relationship: contact.relationship,
+            phone: contact.phone,
+            isPrimary: contact.is_primary,
+          })),
+        }
+      : {
+          employeeCode: staffProfile?.employee_code ?? null,
+          hiredAt: staffProfile?.hired_at ?? null,
+          specialties: staffProfile?.specialties ?? [],
+        }),
+  };
+}
+
 export function createAuthService({
   repository,
   verificationDelivery,
@@ -142,6 +174,28 @@ export function createAuthService({
     async getMe(token) {
       const authentication = await this.getAuthentication(token);
       return { user: authentication.user, permissions: authentication.permissions };
+    },
+
+    async getOwnProfile(userId) {
+      const profile = await repository.findOwnProfile(userId);
+      if (!profile) throw new AppError({ statusCode: 404, code: "PROFILE_NOT_FOUND", message: "Không tìm thấy hồ sơ cá nhân." });
+      return ownProfileView(profile);
+    },
+
+    async updateOwnProfile({ input, userId }) {
+      const before = await this.getOwnProfile(userId);
+      await repository.updateOwnProfile(userId, input);
+      const updated = await this.getOwnProfile(userId);
+      await auditService.record({
+        actorUserId: userId,
+        action: "profile.updated",
+        entityType: before.role === "member" ? "member" : "staff_profile",
+        entityId: userId,
+        summary: "Đã cập nhật hồ sơ cá nhân.",
+        previousValue: { fullName: before.fullName, phone: before.phone, dateOfBirth: before.dateOfBirth, gender: before.gender ?? null },
+        newValue: { fullName: updated.fullName, phone: updated.phone, dateOfBirth: updated.dateOfBirth, gender: updated.gender ?? null },
+      });
+      return updated;
     },
 
     listPendingRegistrations() {

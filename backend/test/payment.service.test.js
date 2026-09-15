@@ -13,6 +13,17 @@ function dependencies({ membership = { id: membershipId, member_id: memberId, st
 }
 
 describe("Payment service", () => {
+  it("includes the paying member and linked membership in the receipt list", async () => {
+    const { repository, auditService } = dependencies();
+    repository.listWithDetails = vi.fn().mockResolvedValue([{
+      id: "payment-1",
+      amount_vnd: 500000n,
+      member: { id: memberId, full_name: "Nguyễn Minh An", member_code: "MBR-001", phone: "0900000000", email: "an@example.test" },
+      membership: { id: membershipId, package_name_snapshot: "Gói Tiêu chuẩn", status: "active", expires_on: new Date("2026-12-12") },
+    }]);
+    await expect(createPaymentService({ repository, auditService }).list()).resolves.toEqual([expect.objectContaining({ amountVnd: "500000", member: expect.objectContaining({ fullName: "Nguyễn Minh An" }), membership: expect.objectContaining({ packageName: "Gói Tiêu chuẩn", status: "active" }) })]);
+  });
+
   it("rejects a client amount that differs from the membership price snapshot", async () => {
     const { repository, auditService } = dependencies();
     await expect(createPaymentService({ repository, auditService }).create({ ...input, amountVnd: 499000 }, "receptionist-1")).rejects.toMatchObject({ code: "PAYMENT_AMOUNT_MISMATCH" });

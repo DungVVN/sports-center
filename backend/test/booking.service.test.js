@@ -2,6 +2,40 @@ import { describe, expect, it, vi } from "vitest";
 import { createBookingService } from "../src/modules/bookings/booking.service.js";
 
 describe("booking service", () => {
+  it("limits a Coach booking list to classes they are assigned to", async () => {
+    const repository = { list: vi.fn().mockResolvedValue([]) };
+    const service = createBookingService({ repository, auditService: { record: vi.fn() } });
+
+    await service.list(undefined, { id: "coach-1", role: "coach" });
+
+    expect(repository.list).toHaveBeenCalledWith({ memberId: undefined, coachUserId: "coach-1" });
+  });
+
+  it("limits a Member booking list to their own member profile", async () => {
+    const repository = {
+      memberByUser: vi.fn().mockResolvedValue({ id: "member-1" }),
+      list: vi.fn().mockResolvedValue([]),
+    };
+    const service = createBookingService({ repository, auditService: { record: vi.fn() } });
+
+    await service.list(undefined, { id: "member-user-1", role: "member" });
+
+    expect(repository.list).toHaveBeenCalledWith({ memberId: "member-1", coachUserId: undefined });
+  });
+
+  it("does not expose other members' bookings when a Member views a class", async () => {
+    const repository = {
+      class: vi.fn().mockResolvedValue({ id: "class-1", coach_user_id: "coach-1" }),
+      memberByUser: vi.fn().mockResolvedValue({ id: "member-1" }),
+      listForClass: vi.fn().mockResolvedValue([]),
+    };
+    const service = createBookingService({ repository, auditService: { record: vi.fn() } });
+
+    await service.listForClass("class-1", { id: "member-user-1", role: "member" });
+
+    expect(repository.listForClass).toHaveBeenCalledWith("class-1", "member-1");
+  });
+
   it("checks membership eligibility at the scheduled class time", async () => {
     const repository = {
       member: vi.fn().mockResolvedValue({ id: "member-1" }),

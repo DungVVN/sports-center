@@ -1,0 +1,85 @@
+/*
+ * Manager package pages use their own wide workspace rather than the shared,
+ * narrow member-grid layout.
+ */
+.packages-page .package-page-layout {
+  display: grid;
+  gap: var(--space-24);
+  grid-template-columns: minmax(0, 1fr);
+  max-width: none;
+  width: 100%;
+}
+
+.packages-page .package-page-layout--create .package-create-form,
+.packages-page .package-page-layout--catalog .package-catalog-list {
+  width: min(100%, 100rem);
+}
+
+.package-create-form {
+  display: grid;
+  gap: var(--space-16) var(--space-20);
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+
+.package-create-form > h2,
+.package-create-form > .entitlement-fieldset,
+.package-create-form > label:has(textarea),
+.package-create-form > button {
+  grid-column: 1 / -1;
+}
+
+.package-create-form__identity {
+  grid-column: span 6;
+}
+
+.package-create-form__metric {
+  grid-column: span 4;
+}
+
+.package-create-form > button {
+  justify-self: start;
+  min-width: 14rem;
+}
+
+.package-create-form .entitlement-fieldset {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.package-catalog-list .table-scroll {
+  max-width: 100%;
+}
+
+.package-catalog-list table {
+  min-width: 68rem;
+}
+
+@media (max-width: 1023px) {
+  .package-create-form .entitlement-fieldset {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  .packages-page .package-page-layout--create .package-create-form,
+  .packages-page .package-page-layout--catalog .package-catalog-list {
+    width: 100%;
+  }
+
+  .package-create-form {
+    grid-template-columns: 1fr;
+  }
+
+  .package-create-form__identity,
+  .package-create-form__metric {
+    grid-column: auto;
+  }
+
+  .package-create-form .entitlement-fieldset {
+    grid-template-columns: 1fr;
+  }
+
+  .package-create-form > button {
+    justify-self: stretch;
+    width: 100%;
+  }
+}

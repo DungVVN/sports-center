@@ -2,6 +2,56 @@ import { prisma } from "../../database.js";
 
 export const memberRepository = {
   list() { return prisma.members.findMany({ orderBy: { created_at: "desc" } }); },
+  async listWithOverview() {
+    const members = await this.list();
+    if (!members.length) return [];
+
+    const memberIds = members.map((member) => member.id);
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const [memberships, assignments] = await Promise.all([
+      prisma.member_memberships.findMany({
+        where: { member_id: { in: memberIds } },
+        orderBy: { created_at: "desc" },
+        select: { member_id: true, package_name_snapshot: true, status: true, expires_on: true, created_at: true },
+      }),
+      prisma.member_coach_assignments.findMany({
+        where: {
+          member_id: { in: memberIds },
+          effective_from: { lte: today },
+          OR: [{ effective_to: null }, { effective_to: { gte: today } }],
+        },
+        orderBy: { effective_from: "desc" },
+        select: { member_id: true, coach_user_id: true },
+      }),
+    ]);
+    const coachIds = [...new Set(assignments.map((assignment) => assignment.coach_user_id))];
+    const coaches = coachIds.length
+      ? await prisma.users.findMany({ where: { id: { in: coachIds } }, select: { id: true, display_name: true } })
+      : [];
+    const coachNameById = new Map(coaches.map((coach) => [coach.id, coach.display_name]));
+    const coachByMemberId = new Map();
+    for (const assignment of assignments) {
+      if (!coachByMemberId.has(assignment.member_id)) {
+        coachByMemberId.set(assignment.member_id, coachNameById.get(assignment.coach_user_id) ?? null);
+      }
+    }
+    const membershipPriority = { active: 0, expiring_soon: 1, frozen: 2, pending_payment: 3, expired: 4, cancelled: 5 };
+    const membershipByMemberId = new Map();
+    for (const membership of memberships) {
+      const current = membershipByMemberId.get(membership.member_id);
+      if (!current || membershipPriority[membership.status] < membershipPriority[current.status]) {
+        membershipByMemberId.set(membership.member_id, membership);
+      }
+    }
+    return members.map((member) => ({
+      member,
+      overview: {
+        coachName: coachByMemberId.get(member.id) ?? null,
+        membership: membershipByMemberId.get(member.id) ?? null,
+      },
+    }));
+  },
   find(id) { return prisma.members.findUnique({ where: { id } }); },
   findByUserId(userId) { return prisma.members.findUnique({ where: { user_id: userId } }); },
   contacts(memberId) { return prisma.member_emergency_contacts.findMany({ where: { member_id: memberId }, orderBy: { is_primary: "desc" } }); },

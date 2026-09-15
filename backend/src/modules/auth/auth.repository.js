@@ -9,6 +9,59 @@ export const authRepository = {
     return prisma.users.findUnique({ where: { id } });
   },
 
+  async findOwnProfile(userId) {
+    const user = await this.findUserById(userId);
+    if (!user) return null;
+    const [member, staffProfile] = await Promise.all([
+      prisma.members.findUnique({ where: { user_id: userId } }),
+      prisma.staff_profiles.findUnique({ where: { user_id: userId } }),
+    ]);
+    const contacts = member
+      ? await prisma.member_emergency_contacts.findMany({
+          where: { member_id: member.id },
+          orderBy: [{ is_primary: "desc" }, { full_name: "asc" }],
+        })
+      : [];
+    return { user, member, staffProfile, contacts };
+  },
+
+  async updateOwnProfile(userId, input) {
+    return prisma.$transaction(async (transaction) => {
+      const user = await transaction.users.update({
+        where: { id: userId },
+        data: { display_name: input.fullName, avatar_url: input.avatarUrl ?? null },
+      });
+      if (user.role === "member") {
+        const member = await transaction.members.update({
+          where: { user_id: userId },
+          data: {
+            full_name: input.fullName,
+            phone: input.phone,
+            date_of_birth: input.dateOfBirth ? new Date(input.dateOfBirth) : null,
+            gender: input.gender ?? null,
+          },
+        });
+        if (input.contacts) {
+          await transaction.member_emergency_contacts.deleteMany({ where: { member_id: member.id } });
+          if (input.contacts.length) {
+            await transaction.member_emergency_contacts.createMany({
+              data: input.contacts.map((contact) => ({ ...contact, member_id: member.id })),
+            });
+          }
+        }
+      } else {
+        await transaction.staff_profiles.update({
+          where: { user_id: userId },
+          data: {
+            phone: input.phone,
+            date_of_birth: input.dateOfBirth ? new Date(input.dateOfBirth) : null,
+          },
+        });
+      }
+      return user;
+    });
+  },
+
   findMemberByUserId(userId) {
     return prisma.members.findUnique({ where: { user_id: userId } });
   },

@@ -16,6 +16,14 @@ const verificationSchema = z.object({ body: z.object({ userId: id, channel: z.en
 const resendSchema = z.object({ body: z.object({ userId: id, channel: z.enum(["email", "phone"]) }) });
 const loginSchema = z.object({ body: z.object({ email: z.string().trim().email(), password: z.string().min(1).max(72) }) });
 const userIdParams = z.object({ params: z.object({ userId: id }) });
+const ownProfileSchema = z.object({ body: z.object({
+  fullName: z.string().trim().min(2).max(120),
+  phone: z.string().trim().regex(/^(?:\+84|0)\d{9,10}$/, "Số điện thoại Việt Nam chưa hợp lệ."),
+  dateOfBirth: z.string().date().nullable(),
+  avatarUrl: z.string().url("Đường dẫn ảnh đại diện không hợp lệ.").max(2048).nullable().optional(),
+  gender: z.string().trim().max(30).nullable().optional(),
+  contacts: z.array(z.object({ fullName: z.string().trim().min(2).max(120), relationship: z.string().trim().min(2).max(60), phone: z.string().trim().regex(/^(?:\+84|0)\d{9,10}$/, "Số điện thoại Việt Nam chưa hợp lệ."), isPrimary: z.boolean() })).max(3).optional(),
+}).refine((input) => !input.contacts || input.contacts.filter((contact) => contact.isPrimary).length <= 1, { message: "Chỉ được chọn một liên hệ khẩn cấp chính.", path: ["contacts"] }) });
 
 function sessionCookie(response, token, expiresAt) {
   response.cookie("sports_center_session", token, {
@@ -55,6 +63,12 @@ export function createAuthRouter(authService) {
     } catch (error) { next(error); }
   });
   router.get("/me", authRequired, (request, response) => sendSuccess(response, { data: { user: request.auth.user, permissions: request.auth.permissions } }));
+  router.get("/profile", authRequired, async (request, response, next) => {
+    try { sendSuccess(response, { data: await authService.getOwnProfile(request.auth.user.id) }); } catch (error) { next(error); }
+  });
+  router.patch("/profile", authRequired, validateRequest(ownProfileSchema), async (request, response, next) => {
+    try { sendSuccess(response, { data: await authService.updateOwnProfile({ userId: request.auth.user.id, input: request.validated.body }) }); } catch (error) { next(error); }
+  });
   router.get("/registrations/pending", authRequired, requirePermission("registration.approve"), async (request, response, next) => {
     try { sendSuccess(response, { data: await authService.listPendingRegistrations() }); } catch (error) { next(error); }
   });

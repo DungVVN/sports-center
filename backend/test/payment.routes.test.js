@@ -21,7 +21,7 @@ describe("Payment routes", () => {
     expect(service.create).toHaveBeenCalledWith({ memberId, membershipId, amountVnd: 500000, method: "cash", notes: "Thu tại quầy" }, "receptionist-1");
   });
 
-  it("requires an online provider for online payments", async () => {
+  it("rejects a payment method other than cash", async () => {
     const service = paymentService();
     await request(createApp({ authService: authService(["payment.record"]), paymentService: service })).post("/api/v1/payments").set("Authorization", "Bearer token")
       .send({ memberId, amountVnd: 500000, method: "online" }).expect(422);
@@ -34,9 +34,20 @@ describe("Payment routes", () => {
     expect(service.confirm).toHaveBeenCalledWith(paymentId, "paid", "receptionist-1");
   });
 
-  it("blocks users without payment.record", async () => {
+  it("blocks users without payment.read", async () => {
     const service = paymentService();
     await request(createApp({ authService: authService([]), paymentService: service })).get("/api/v1/payments").set("Authorization", "Bearer token").expect(403);
     expect(service.list).not.toHaveBeenCalled();
+  });
+
+  it("lets a Manager view payments but not record or confirm them", async () => {
+    const service = paymentService();
+    const app = createApp({ authService: authService(["payment.read"], "manager"), paymentService: service });
+    await request(app).get("/api/v1/payments").set("Authorization", "Bearer token").expect(200);
+    await request(app).post("/api/v1/payments").set("Authorization", "Bearer token").send({ memberId, amountVnd: 500000, method: "cash" }).expect(403);
+    await request(app).post(`/api/v1/payments/${paymentId}/confirm`).set("Authorization", "Bearer token").send({ status: "paid" }).expect(403);
+    expect(service.list).toHaveBeenCalledWith(undefined);
+    expect(service.create).not.toHaveBeenCalled();
+    expect(service.confirm).not.toHaveBeenCalled();
   });
 });
