@@ -7,6 +7,7 @@ import { MembersPage } from "../../features/members/MembersPage.jsx";
 import { MembershipsPage } from "../../features/memberships/MembershipsPage.jsx";
 import { PaymentsPage } from "../../features/payments/PaymentsPage.jsx";
 import { ProfilePage } from "../../features/auth/ProfilePage.jsx";
+import { SupportStaffPage } from "../../features/support/SupportStaffPage.jsx";
 
 export function ReceptionistPageContent({ onNavigate, session, view }) {
   const pages = {
@@ -19,6 +20,7 @@ export function ReceptionistPageContent({ onNavigate, session, view }) {
     payments: <PaymentsPage session={session} />,
     profile: <ProfilePage />,
     registrations: <RegistrationApprovalPage />,
+    support: <SupportStaffPage />,
   };
 
   return pages[view] ?? pages.dashboard;

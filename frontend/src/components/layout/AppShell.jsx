@@ -37,6 +37,7 @@ const icons = {
   staff: UserRoundCog,
   reports: LayoutDashboard,
   audit: ClipboardCheck,
+  support: ReceiptText,
 };
 
 function isActive(item, currentView) {

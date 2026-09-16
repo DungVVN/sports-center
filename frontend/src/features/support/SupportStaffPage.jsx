@@ -1,0 +1,14 @@
+import { useCallback, useEffect, useState } from "react";
+import { Button } from "../../components/ui/Button.jsx";
+import { supportApi } from "./support-api.js";
+import "../members/members.css";
+
+export function SupportStaffPage() {
+  const [tickets, setTickets] = useState([]); const [selected, setSelected] = useState(null); const [reply, setReply] = useState(""); const [status, setStatus] = useState("in_progress"); const [error, setError] = useState("");
+  const load = useCallback(async () => { try { setTickets(await supportApi.list()); } catch (caught) { setError(caught.message); } }, []);
+  useEffect(() => { void Promise.resolve().then(load); }, [load]);
+  async function open(id) { setError(""); try { setSelected(await supportApi.detail(id)); } catch (caught) { setError(caught.message); } }
+  async function assign(id) { setError(""); try { await supportApi.assignSelf(id); await load(); await open(id); } catch (caught) { setError(caught.message); } }
+  async function submit(event) { event.preventDefault(); setError(""); try { await supportApi.respond(selected.ticket.id, { body: reply, status }); setReply(""); await load(); await open(selected.ticket.id); } catch (caught) { setError(caught.message); } }
+  return <main className="members-page"><header><p>Hỗ trợ</p><h1>Yêu cầu cần xử lý</h1></header>{error && <p className="auth-alert" role="alert">{error}</p>}<section className="members-grid"><section className="members-list"><div className="list-heading"><h2>Danh sách ticket</h2><Button onClick={load} size="sm" type="button" variant="ghost">Tải lại</Button></div>{tickets.length === 0 ? <p>Không có ticket.</p> : tickets.map((ticket) => <article key={ticket.id}><strong>{ticket.ticket_code} · {ticket.subject}</strong><p>{ticket.status} · {ticket.priority} · {ticket.assigned_to ? "Đã có người phụ trách" : "Chưa phân công"}</p><Button onClick={() => open(ticket.id)} size="sm" type="button" variant="secondary">Xử lý</Button></article>)}</section>{selected && <section className="members-list"><div className="list-heading"><h2>{selected.ticket.ticket_code}</h2><Button onClick={() => setSelected(null)} size="sm" type="button" variant="ghost">Đóng</Button></div><p>{selected.ticket.body}</p><Button onClick={() => assign(selected.ticket.id)} size="sm" type="button" variant="secondary">Nhận phụ trách</Button><h3>Trao đổi</h3>{selected.responses.map((item) => <article key={item.id}><p>{item.body}</p></article>)}<form className="members-form" onSubmit={submit}><label>Phản hồi<textarea onChange={(event) => setReply(event.target.value)} required value={reply} /></label><label>Trạng thái<select onChange={(event) => setStatus(event.target.value)} value={status}><option value="in_progress">Đang xử lý</option><option value="resolved">Đã xử lý</option><option value="closed">Đã đóng</option></select></label><Button type="submit">Gửi phản hồi</Button></form></section>}</section></main>;
+}

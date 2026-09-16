@@ -35,6 +35,7 @@ const navigationByRole = {
     { id: "staff", label: "Nhân viên" },
     { id: "reports", label: "Báo cáo" },
     { id: "audit", label: "Kiểm toán" },
+    { id: "support", label: "Hỗ trợ" },
   ],
   receptionist: [
     { id: "dashboard", label: "Tổng quan" },
@@ -46,6 +47,7 @@ const navigationByRole = {
     { id: "bookings", label: "Đặt chỗ" },
     { id: "attendance", label: "Điểm danh" },
     { id: "payments", label: "Thanh toán" },
+    { id: "support", label: "Hỗ trợ" },
   ],
   coach: [
     { id: "dashboard", label: "Tổng quan" },
