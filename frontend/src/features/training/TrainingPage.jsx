@@ -42,6 +42,7 @@ export function TrainingPage({ session }) {
   const [result, setResult] = useState(newResult);
   const [sessionForm, setSessionForm] = useState(newSession);
   const [sessions, setSessions] = useState([]);
+  const [aiDrafts, setAiDrafts] = useState([]);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -54,14 +55,16 @@ export function TrainingPage({ session }) {
   const plansPagination = usePagination(plans);
   const load = useCallback(async () => {
     try {
-      const [nextTemplates, nextMembers, nextPlans] = await Promise.all([
+      const [nextTemplates, nextMembers, nextPlans, nextAiDrafts] = await Promise.all([
         trainingApi.templates(),
         trainingApi.members(),
         trainingApi.plans(),
+        session?.user?.role === "coach" ? trainingApi.aiSuggestions() : Promise.resolve([]),
       ]);
       setTemplates(nextTemplates);
       setMembers(nextMembers);
       setPlans(nextPlans);
+      setAiDrafts(nextAiDrafts);
     } catch (caught) {
       setError(caught.message);
     }
@@ -104,6 +107,7 @@ export function TrainingPage({ session }) {
       </header>
       {error && <p className="auth-alert">{error}</p>}
       {notice && <p className="auth-success">{notice}</p>}
+      {session?.user?.role === "coach" && <section className="members-list"><div className="list-heading"><h2>Gợi ý AI cần Coach duyệt</h2><Button onClick={load} size="sm" variant="ghost">Tải lại</Button></div>{aiDrafts.flatMap((group) => group.suggestions).length === 0 ? <p>Chưa có gợi ý mới.</p> : aiDrafts.flatMap((group) => group.suggestions).map((draft) => <article key={`${draft.subject}-${draft.body}`}><strong>{draft.subject}</strong><p>{draft.body}</p><small>Chỉ dùng sau khi Coach tự rà soát và quyết định.</small></article>)}</section>}
       {canCreateTemplate && (
         <form
           className="members-form training-template-form"
