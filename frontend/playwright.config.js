@@ -1,7 +1,10 @@
+import { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "@playwright/test";
 import { loadEnv } from "vite";
 
-const env = loadEnv(process.env.NODE_ENV ?? "test", process.cwd(), "");
+const configDir = dirname(fileURLToPath(import.meta.url));
+const env = loadEnv(process.env.NODE_ENV ?? "test", configDir, "");
 const baseURL = process.env.E2E_BASE_URL ?? env.E2E_BASE_URL;
 
 if (!baseURL) {
