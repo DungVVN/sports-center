@@ -7,7 +7,7 @@ const input = { memberId, membershipId, amountVnd: 500000, method: "cash" };
 
 function dependencies({ membership = { id: membershipId, member_id: memberId, status: "pending_payment", price_vnd_snapshot: 500000n } } = {}) {
   return {
-    repository: { member: vi.fn().mockResolvedValue({ id: memberId }), membership: vi.fn().mockResolvedValue(membership), createWithEvent: vi.fn().mockResolvedValue({ id: "payment-1", amount_vnd: 500000n }), payment: vi.fn(), complete: vi.fn() },
+    repository: { member: vi.fn().mockResolvedValue({ id: memberId }), membership: vi.fn().mockResolvedValue(membership), createWithEvent: vi.fn().mockResolvedValue({ id: "payment-1", transaction_code: "PAY-001", amount_vnd: 500000n }), payment: vi.fn(), paymentByCode: vi.fn(), complete: vi.fn() },
     auditService: { record: vi.fn().mockResolvedValue(undefined) },
   };
 }
@@ -41,5 +41,11 @@ describe("Payment service", () => {
     repository.payment.mockResolvedValue({ id: "payment-1", status: "pending", method: "cash", membership_id: membershipId, amount_vnd: 500000n }); repository.complete.mockResolvedValue(null);
     await expect(createPaymentService({ repository, auditService }).confirm("payment-1", "paid", "receptionist-1")).rejects.toMatchObject({ code: "PAYMENT_ALREADY_CONFIRMED" });
     expect(auditService.record).not.toHaveBeenCalled();
+  });
+
+  it("creates an online sandbox payment only with a selected provider", async () => {
+    const { repository, auditService } = dependencies();
+    await expect(createPaymentService({ repository, auditService }).create({ ...input, method: "online", provider: "momo" }, "receptionist-1")).resolves.toMatchObject({ sandboxPaymentUrl: expect.stringContaining("/sandbox/momo/PAY-001") });
+    expect(repository.createWithEvent).toHaveBeenCalledWith(expect.objectContaining({ method: "online", provider: "momo" }), expect.any(Object));
   });
 });

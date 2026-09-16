@@ -9,7 +9,7 @@ import { membershipApi } from "../memberships/membership-api.js";
 import { paymentApi } from "./payment-api.js";
 import "../members/members.css";
 
-const emptyForm = { memberId: "", membershipId: "", amountVnd: "", notes: "" };
+const emptyForm = { memberId: "", membershipId: "", amountVnd: "", method: "cash", provider: "vnpay", notes: "" };
 const paymentStatus = {
   pending: "Chờ xác nhận",
   paid: "Đã thanh toán",
@@ -27,6 +27,7 @@ export function PaymentsPage({ session }) {
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [sandboxPaymentUrl, setSandboxPaymentUrl] = useState("");
   const [paymentSearch, setPaymentSearch] = useState("");
   const [paymentStatusFilters, setPaymentStatusFilters] = useState([]);
   const [paymentMethodFilters, setPaymentMethodFilters] = useState([]);
@@ -128,16 +129,18 @@ export function PaymentsPage({ session }) {
     event.preventDefault();
     setError("");
     setNotice("");
+    setSandboxPaymentUrl("");
     setSubmitting(true);
     try {
-      await paymentApi.create({
+      const payment = await paymentApi.create({
         ...form,
         membershipId: form.membershipId || undefined,
         amountVnd: Number(form.amountVnd),
       });
+      setSandboxPaymentUrl(payment.sandboxPaymentUrl ?? "");
       setForm(emptyForm);
       setMemberships([]);
-      setNotice("Đã lập phiếu thu tiền mặt, chờ Lễ tân xác nhận đã thu.");
+      setNotice(payment.sandboxPaymentUrl ? "Đã tạo giao dịch sandbox. Mở liên kết để mô phỏng thanh toán." : "Đã lập phiếu thu tiền mặt, chờ Lễ tân xác nhận đã thu.");
       await load();
     } catch (caught) {
       setError(caught.message);
@@ -183,7 +186,22 @@ export function PaymentsPage({ session }) {
       )}
       <div className="members-workspace-stacked">
         {isCashier && <form className="members-form members-form--payment-create" onSubmit={create}>
-          <h2>Lập phiếu thu tiền mặt</h2>
+          <h2>Lập phiếu thu</h2>
+          <label>
+            Phương thức
+            <select name="method" onChange={updateForm} value={form.method}>
+              <option value="cash">Tiền mặt tại quầy</option>
+              <option value="online">Thanh toán sandbox</option>
+            </select>
+          </label>
+          {form.method === "online" && <label>
+            Cổng sandbox
+            <select name="provider" onChange={updateForm} value={form.provider}>
+              <option value="vnpay">VNPay</option>
+              <option value="momo">MoMo</option>
+              <option value="zalopay">ZaloPay</option>
+            </select>
+          </label>}
           <label>
             Hội viên
             <select
@@ -234,6 +252,7 @@ export function PaymentsPage({ session }) {
             Lập phiếu thu
           </Button>
         </form>}
+        {sandboxPaymentUrl && <p className="auth-success" role="status">Liên kết sandbox: <a href={sandboxPaymentUrl} rel="noreferrer" target="_blank">Mở thanh toán sandbox</a></p>}
         <section className="members-list">
           <div className="list-heading">
             <h2>{isCashier ? "Phiếu thu tại quầy" : "Danh sách phiếu thu"}</h2>

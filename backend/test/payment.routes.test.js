@@ -21,7 +21,7 @@ describe("Payment routes", () => {
     expect(service.create).toHaveBeenCalledWith({ memberId, membershipId, amountVnd: 500000, method: "cash", notes: "Thu tại quầy" }, "receptionist-1");
   });
 
-  it("rejects a payment method other than cash", async () => {
+  it("requires a provider for an online payment", async () => {
     const service = paymentService();
     await request(createApp({ authService: authService(["payment.record"]), paymentService: service })).post("/api/v1/payments").set("Authorization", "Bearer token")
       .send({ memberId, amountVnd: 500000, method: "online" }).expect(422);
