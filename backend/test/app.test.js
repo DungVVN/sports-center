@@ -28,6 +28,8 @@ describe("HTTP foundation", () => {
 
     expect(response.body.openapi).toBe("3.1.0");
     expect(response.body.paths["/health"]).toBeTruthy();
+    expect(response.body.paths["/reports/{type}/export"]).toBeTruthy();
+    expect(response.body.paths["/ai-assist/deliveries"]).toBeTruthy();
   });
 
   it("rejects state-changing requests from an untrusted browser origin", async () => {
