@@ -5,7 +5,7 @@ import { sendSuccess } from "../../shared/http/response.js";
 import { validateRequest } from "../../shared/validation/validate-request.js";
 
 const id = z.string().uuid();
-const reportQuery = z.object({ period: z.enum(["day", "week", "month", "quarter", "year", "custom"]).optional(), from: z.string().date().optional(), to: z.string().date().optional() }).superRefine((value, context) => { if (value.period === "custom" && (!value.from || !value.to)) context.addIssue({ code: "custom", message: "Khoảng tùy chọn cần ngày bắt đầu và kết thúc." }); if (value.from && value.to && value.from > value.to) context.addIssue({ code: "custom", message: "Ngày bắt đầu phải trước hoặc bằng ngày kết thúc." }); });
+const reportQuery = z.object({ period: z.enum(["day", "week", "month", "quarter", "year", "custom"]).optional(), from: z.string().date().optional(), to: z.string().date().optional(), coachUserId: z.string().uuid().optional() }).superRefine((value, context) => { if (value.period === "custom" && (!value.from || !value.to)) context.addIssue({ code: "custom", message: "Khoảng tùy chọn cần ngày bắt đầu và kết thúc." }); if (value.from && value.to && value.from > value.to) context.addIssue({ code: "custom", message: "Ngày bắt đầu phải trước hoặc bằng ngày kết thúc." }); });
 
 export function createInsightRouter(service, authService) {
   const router = Router(); const auth = authenticate(authService);

@@ -79,8 +79,8 @@ export function createInsightService({ repository }) {
     },
     async attendance(query) {
       const { from, to, period } = range(query);
-      const [byStatus, rows] = await Promise.all([repository.attendance(from, to), repository.attendanceRecords(from, to)]);
-      return { period, from, to, byStatus, summary: attendanceTotals(byStatus), trend: attendanceTrend(rows, from, to) };
+      const [byStatus, rows] = await Promise.all([repository.attendance(from, to, query.coachUserId), repository.attendanceRecords(from, to, query.coachUserId)]);
+      return { period, from, to, coachUserId: query.coachUserId ?? null, byStatus, summary: attendanceTotals(byStatus), trend: attendanceTrend(rows, from, to) };
     },
     async dashboard(role, actor, query = {}) {
       if (role !== actor.role) throw new AppError({ statusCode: 403, code: "DASHBOARD_ROLE_FORBIDDEN", message: "Bạn chỉ có thể xem dashboard của vai trò hiện tại." });
