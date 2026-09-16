@@ -7,7 +7,7 @@ const input = { memberId, membershipId, amountVnd: 500000, method: "cash" };
 
 function dependencies({ membership = { id: membershipId, member_id: memberId, status: "pending_payment", price_vnd_snapshot: 500000n } } = {}) {
   return {
-    repository: { member: vi.fn().mockResolvedValue({ id: memberId }), membership: vi.fn().mockResolvedValue(membership), createWithEvent: vi.fn().mockResolvedValue({ id: "payment-1", transaction_code: "PAY-001", amount_vnd: 500000n }), payment: vi.fn(), paymentByCode: vi.fn(), complete: vi.fn() },
+    repository: { member: vi.fn().mockResolvedValue({ id: memberId }), membership: vi.fn().mockResolvedValue(membership), createWithEvent: vi.fn().mockResolvedValue({ id: "payment-1", transaction_code: "PAY-001", amount_vnd: 500000n }), payment: vi.fn(), paymentEvents: vi.fn().mockResolvedValue([]), memberByUser: vi.fn().mockResolvedValue({ id: memberId }), paymentByCode: vi.fn(), complete: vi.fn() },
     auditService: { record: vi.fn().mockResolvedValue(undefined) },
   };
 }
@@ -41,6 +41,15 @@ describe("Payment service", () => {
     repository.payment.mockResolvedValue({ id: "payment-1", status: "pending", method: "cash", membership_id: membershipId, amount_vnd: 500000n }); repository.complete.mockResolvedValue(null);
     await expect(createPaymentService({ repository, auditService }).confirm("payment-1", "paid", "receptionist-1")).rejects.toMatchObject({ code: "PAYMENT_ALREADY_CONFIRMED" });
     expect(auditService.record).not.toHaveBeenCalled();
+  });
+
+  it("shows a Member only their own immutable receipt events", async () => {
+    const { repository, auditService } = dependencies();
+    repository.listWithDetails = vi.fn().mockResolvedValue([{ id: "payment-1", amount_vnd: 500000n }]);
+    repository.paymentEvents.mockResolvedValue([{ event_type: "payment_created" }]);
+    const receipt = await createPaymentService({ repository, auditService }).ownReceipt("payment-1", { id: "user-1" });
+    expect(repository.listWithDetails).toHaveBeenCalledWith({ id: "payment-1", member_id: memberId });
+    expect(receipt.events).toEqual([{ event_type: "payment_created" }]);
   });
 
   it("creates an online sandbox payment only with a selected provider", async () => {

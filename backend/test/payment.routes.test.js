@@ -6,7 +6,7 @@ const memberId = "11111111-1111-4111-8111-111111111111";
 const membershipId = "22222222-2222-4222-8222-222222222222";
 const paymentId = "33333333-3333-4333-8333-333333333333";
 function authService(permissions, role = "receptionist") { return { getAuthentication: vi.fn().mockResolvedValue({ user: { id: "receptionist-1", role }, permissions }) }; }
-function paymentService() { return { ownPayments: vi.fn().mockResolvedValue([]), list: vi.fn().mockResolvedValue([]), create: vi.fn().mockResolvedValue({ id: paymentId, status: "pending" }), get: vi.fn(), confirm: vi.fn().mockResolvedValue({ id: paymentId, status: "paid" }), providerCallback: vi.fn() }; }
+function paymentService() { return { ownPayments: vi.fn().mockResolvedValue([]), ownReceipt: vi.fn().mockResolvedValue({ id: paymentId, events: [] }), list: vi.fn().mockResolvedValue([]), create: vi.fn().mockResolvedValue({ id: paymentId, status: "pending" }), get: vi.fn(), confirm: vi.fn().mockResolvedValue({ id: paymentId, status: "paid" }), providerCallback: vi.fn() }; }
 
 describe("Payment routes", () => {
   it("lets a Member view their own payment statuses without payment.record", async () => {
@@ -26,6 +26,11 @@ describe("Payment routes", () => {
     await request(createApp({ authService: authService(["payment.record"]), paymentService: service })).post("/api/v1/payments").set("Authorization", "Bearer token")
       .send({ memberId, amountVnd: 500000, method: "online" }).expect(422);
     expect(service.create).not.toHaveBeenCalled();
+  });
+  it("lets a Member view only a receipt addressed to their own account", async () => {
+    const service = paymentService();
+    await request(createApp({ authService: authService([], "member"), paymentService: service })).get(`/api/v1/members/me/payments/${paymentId}`).set("Authorization", "Bearer token").expect(200);
+    expect(service.ownReceipt).toHaveBeenCalledWith(paymentId, { id: "receptionist-1", role: "member" });
   });
 
   it("allows receptionist confirmation only when payment.record exists", async () => {
