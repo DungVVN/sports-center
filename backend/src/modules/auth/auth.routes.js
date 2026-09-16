@@ -15,6 +15,7 @@ const registrationSchema = z.object({ body: z.object({
 const verificationSchema = z.object({ body: z.object({ userId: id, channel: z.enum(["email", "phone"]), code: z.string().regex(/^\d{6}$/) }) });
 const resendSchema = z.object({ body: z.object({ userId: id, channel: z.enum(["email", "phone"]) }) });
 const loginSchema = z.object({ body: z.object({ email: z.string().trim().email(), password: z.string().min(1).max(72) }) });
+const passwordSchema = z.object({ body: z.object({ currentPassword: z.string().min(1).max(72), newPassword: z.string().min(8).max(72).regex(/[a-z]/).regex(/[A-Z]/).regex(/\d/) }) });
 const userIdParams = z.object({ params: z.object({ userId: id }) });
 const ownProfileSchema = z.object({ body: z.object({
   fullName: z.string().trim().min(2).max(120),
@@ -64,6 +65,7 @@ export function createAuthRouter(authService) {
       sendSuccess(response, { data: { loggedOut: true } });
     } catch (error) { next(error); }
   });
+  router.post("/password/change", authRequired, validateRequest(passwordSchema), async (request, response, next) => { try { await authService.changePassword({ ...request.validated.body, userId: request.auth.user.id }); response.clearCookie("sports_center_session", { httpOnly: true, sameSite: env.nodeEnv === "production" ? "none" : "lax", secure: env.nodeEnv === "production", path: env.apiBasePath }); sendSuccess(response, { data: { changed: true } }); } catch (error) { next(error); } });
   router.get("/me", authRequired, (request, response) => sendSuccess(response, { data: { user: request.auth.user, permissions: request.auth.permissions } }));
   router.get("/profile", authRequired, async (request, response, next) => {
     try { sendSuccess(response, { data: await authService.getOwnProfile(request.auth.user.id) }); } catch (error) { next(error); }
