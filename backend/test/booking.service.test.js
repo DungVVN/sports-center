@@ -48,6 +48,22 @@ describe("booking service", () => {
     expect(repository.activeMembership).toHaveBeenCalledWith("member-1", expect.any(Date));
   });
 
+  it("allows a higher-tier package when its resolved inherited booking entitlement exists", async () => {
+    const repository = {
+      member: vi.fn().mockResolvedValue({ id: "member-1" }),
+      class: vi.fn().mockResolvedValue({ id: "class-1", status: "published", starts_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) }),
+      activeMembership: vi.fn().mockResolvedValue({ package_id: "premium-package" }),
+      entitlement: vi.fn().mockResolvedValue({ package_id: "basic-package", entitlement: "group_class_booking" }),
+      createWithCapacity: vi.fn().mockResolvedValue({ duplicate: false, booking: { id: "booking-1", status: "confirmed" } }),
+    };
+    const auditService = { record: vi.fn().mockResolvedValue(undefined) };
+    const service = createBookingService({ repository, auditService });
+
+    await expect(service.create({ memberId: "member-1", classId: "class-1" }, { id: "receptionist-1", role: "receptionist" })).resolves.toMatchObject({ id: "booking-1" });
+    expect(repository.entitlement).toHaveBeenCalledWith("premium-package");
+    expect(repository.createWithCapacity).toHaveBeenCalledWith(expect.objectContaining({ memberId: "member-1", classId: "class-1" }));
+  });
+
   it("allows a receptionist to cancel a booking inside the member self-cancellation window", async () => {
     const repository = {
       find: vi.fn().mockResolvedValue({ id: "booking-1", status: "confirmed", member_id: "member-1", class_session_id: "class-1" }),

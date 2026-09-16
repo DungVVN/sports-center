@@ -1,5 +1,14 @@
 import { prisma } from "../../database.js";
 
+async function bookingEntitlement(database, packageId) {
+  const membershipPackage = await database.membership_packages.findUnique({ where: { id: packageId }, select: { tier_rank: true } });
+  if (!membershipPackage) return null;
+  const eligiblePackages = await database.membership_packages.findMany({ where: { tier_rank: { lte: membershipPackage.tier_rank } }, select: { id: true, tier_rank: true } });
+  const tiersByPackageId = new Map(eligiblePackages.map((item) => [item.id, item.tier_rank]));
+  const entitlements = await database.membership_package_entitlements.findMany({ where: { package_id: { in: eligiblePackages.map((item) => item.id) }, entitlement: "group_class_booking" } });
+  return entitlements.sort((left, right) => (tiersByPackageId.get(right.package_id) ?? 0) - (tiersByPackageId.get(left.package_id) ?? 0))[0] ?? null;
+}
+
 export const bookingRepository = {
   list: async ({ memberId, coachUserId } = {}) => {
     const classIds = coachUserId
@@ -49,7 +58,7 @@ export const bookingRepository = {
   member: (id) => prisma.members.findUnique({ where: { id } }),
   memberByUser: (userId) => prisma.members.findUnique({ where: { user_id: userId } }),
   activeMembership: (memberId, accessAt) => prisma.member_memberships.findFirst({ where: { member_id: memberId, status: { in: ["active", "expiring_soon"] }, starts_on: { lte: accessAt }, OR: [{ expires_on: { gte: accessAt } }, { grace_expires_at: { gte: accessAt } }] }, orderBy: { expires_on: "desc" } }),
-  entitlement: (packageId) => prisma.membership_package_entitlements.findUnique({ where: { package_id_entitlement: { package_id: packageId, entitlement: "group_class_booking" } } }),
+  entitlement: (packageId) => bookingEntitlement(prisma, packageId),
   createWithCapacity: ({ bookingCode, memberId, classId, bookedBy }) => prisma.$transaction(async (tx) => {
     const existing = await tx.bookings.findFirst({ where: { member_id: memberId, class_session_id: classId, status: { in: ["confirmed", "waitlisted"] } } });
     if (existing) return { duplicate: true, booking: existing };
@@ -57,15 +66,25 @@ export const bookingRepository = {
     const confirmed = await tx.bookings.count({ where: { class_session_id: classId, status: "confirmed" } });
     const status = confirmed >= session.capacity ? "waitlisted" : "confirmed";
     const booking = await tx.bookings.create({ data: { booking_code: bookingCode, member_id: memberId, class_session_id: classId, status, booked_by: bookedBy } });
+    if (status === "waitlisted") {
+      const member = await tx.members.findUnique({ where: { id: memberId }, select: { user_id: true } });
+      if (member?.user_id) await tx.notifications.create({ data: { recipient_user_id: member.user_id, category: "member", title: "Bạn đang trong danh sách chờ", body: "Lớp hiện đã đủ chỗ. Hệ thống sẽ tự động xác nhận khi có chỗ trống và bạn còn đủ điều kiện tham gia.", link_path: `/bookings/${booking.id}` } });
+    }
     return { duplicate: false, booking };
   }, { isolationLevel: "Serializable" }),
   cancel: (id, reason) => prisma.bookings.update({ where: { id }, data: { status: "cancelled", cancelled_at: new Date(), cancel_reason: reason } }),
   promoteWaitlisted: async (classId) => prisma.$transaction(async (tx) => {
-    const next = await tx.bookings.findFirst({ where: { class_session_id: classId, status: "waitlisted" }, orderBy: { booked_at: "asc" } });
-    if (!next) return null;
-    const booking = await tx.bookings.update({ where: { id: next.id }, data: { status: "confirmed" } });
-    const member = await tx.members.findUnique({ where: { id: next.member_id } });
-    if (member?.user_id) await tx.notifications.create({ data: { recipient_user_id: member.user_id, category: "member", title: "Đã có chỗ trong lớp", body: "Bạn đã được xác nhận từ danh sách chờ.", link_path: `/bookings/${booking.id}` } });
-    return booking;
-  }),
+    const session = await tx.class_sessions.findUnique({ where: { id: classId }, select: { starts_at: true } });
+    if (!session) return null;
+    const waitlisted = await tx.bookings.findMany({ where: { class_session_id: classId, status: "waitlisted" }, orderBy: { booked_at: "asc" } });
+    for (const candidate of waitlisted) {
+      const membership = await tx.member_memberships.findFirst({ where: { member_id: candidate.member_id, status: { in: ["active", "expiring_soon"] }, starts_on: { lte: session.starts_at }, OR: [{ expires_on: { gte: session.starts_at } }, { grace_expires_at: { gte: session.starts_at } }] }, orderBy: { expires_on: "desc" } });
+      if (!membership || !await bookingEntitlement(tx, membership.package_id)) continue;
+      const booking = await tx.bookings.update({ where: { id: candidate.id }, data: { status: "confirmed" } });
+      const member = await tx.members.findUnique({ where: { id: candidate.member_id }, select: { user_id: true } });
+      if (member?.user_id) await tx.notifications.create({ data: { recipient_user_id: member.user_id, category: "member", title: "Đã có chỗ trong lớp", body: "Bạn đã được xác nhận từ danh sách chờ vì có chỗ trống.", link_path: `/bookings/${booking.id}` } });
+      return booking;
+    }
+    return null;
+  }, { isolationLevel: "Serializable" }),
 };
