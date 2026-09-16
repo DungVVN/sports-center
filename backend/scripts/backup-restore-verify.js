@@ -1,5 +1,6 @@
 import "dotenv/config";
-import { access, mkdir, rm, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { access, mkdir, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { spawn } from "node:child_process";
@@ -28,16 +29,43 @@ function run(command, args) {
   });
 }
 
+async function postgresBinary(command) {
+  const environmentKey = command === "pg_dump" ? "PG_DUMP_BIN" : "PG_RESTORE_BIN";
+  if (process.env[environmentKey]) return process.env[environmentKey];
+
+  const executable = process.platform === "win32" ? `${command}.exe` : command;
+  if (process.env.POSTGRES_BIN_DIR) return join(process.env.POSTGRES_BIN_DIR, executable);
+  if (process.platform !== "win32") return command;
+
+  const installRoot = join(process.env.ProgramFiles ?? "C:\\Program Files", "PostgreSQL");
+  try {
+    const versions = await readdir(installRoot, { withFileTypes: true });
+    const candidates = versions
+      .filter((entry) => entry.isDirectory() && /^\d+(?:\.\d+)?$/.test(entry.name))
+      .map((entry) => entry.name)
+      .sort((left, right) => Number(right) - Number(left));
+    const detected = candidates
+      .map((version) => join(installRoot, version, "bin", executable))
+      .find((path) => existsSync(path));
+    if (detected) return detected;
+  } catch {
+    // Fall back to PATH so non-standard installations remain supported.
+  }
+  return executable;
+}
+
 const backupDir = join(tmpdir(), "sports-center-backups");
 const backupPath = join(backupDir, `restore-verify-${Date.now()}.dump`);
 const startedAt = new Date();
 await mkdir(backupDir, { recursive: true });
 await mkdir(dirname(recordPath), { recursive: true });
+const pgDump = await postgresBinary("pg_dump");
+const pgRestore = await postgresBinary("pg_restore");
 
 try {
-  await run("pg_dump", ["--format=custom", "--no-owner", "--no-privileges", `--file=${backupPath}`, sourceUrl]);
+  await run(pgDump, ["--format=custom", "--no-owner", "--no-privileges", `--file=${backupPath}`, sourceUrl]);
   await access(backupPath);
-  await run("pg_restore", ["--clean", "--if-exists", "--no-owner", "--no-privileges", `--dbname=${verifyUrl}`, backupPath]);
+  await run(pgRestore, ["--clean", "--if-exists", "--no-owner", "--no-privileges", `--dbname=${verifyUrl}`, backupPath]);
 
   const client = new Client({ connectionString: verifyUrl });
   await client.connect();

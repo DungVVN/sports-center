@@ -9,6 +9,8 @@ Required environment variables:
 - `BACKUP_RESTORE_CONFIRM=restore-verify`: explicit overwrite acknowledgement.
 - `BACKUP_RESTORE_RECORD_PATH`: optional JSON result path. If omitted, the script writes under `backend/backup-restore-results/`.
 
+On Windows, the script automatically finds a standard PostgreSQL installation under `C:\\Program Files\\PostgreSQL`. For a custom installation, set `POSTGRES_BIN_DIR`, or use `PG_DUMP_BIN` and `PG_RESTORE_BIN` to point to the two executables.
+
 From `backend/`, run:
 
 ```powershell
