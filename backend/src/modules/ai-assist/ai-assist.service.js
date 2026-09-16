@@ -1,2 +1,18 @@
 import { AppError } from "../../shared/errors/app-error.js";
-export function createAiAssistService({ repository }) { return { async suggestions(actor) { if (actor.role !== "coach") throw new AppError({ statusCode: 403, code: "AI_ASSIST_COACH_ONLY", message: "Chỉ Coach có thể xem bản nháp AI." }); const [classes, plans] = await Promise.all([repository.coachClasses(actor.id), repository.stalePlans(actor.id)]); return [{ type: "coach_review_required", label: "Bản nháp AI — cần Coach duyệt trước khi gửi", suggestions: [...classes.map((item) => ({ subject: `Nhắc lịch lớp ${item.name}`, body: `Kiểm tra danh sách hội viên trước buổi ${item.starts_at.toLocaleString("vi-VN")}.` })), ...plans.map((item) => ({ subject: `Cập nhật giáo án ${item.name}`, body: "Giáo án chưa cập nhật trong 14 ngày; hãy rà lại trước khi chia sẻ với hội viên." }))] }]; } }; }
+
+export function createAiAssistService({ repository }) {
+  return {
+    async suggestions(actor) {
+      if (actor.role !== "coach") throw new AppError({ statusCode: 403, code: "AI_ASSIST_COACH_ONLY", message: "Chỉ Coach có thể xem bản nháp AI." });
+      const [classes, plans, bookings, attendance, expiringMembers] = await Promise.all([repository.coachClasses(actor.id), repository.stalePlans(actor.id), repository.upcomingBookings(actor.id), repository.attendancePending(actor.id), repository.expiringMembers(actor.id)]);
+      const suggestions = [
+        ...classes.map((item) => ({ subject: `Nhắc lịch lớp ${item.name}`, body: `Kiểm tra danh sách hội viên trước buổi ${item.starts_at.toLocaleString("vi-VN")}.` })),
+        ...bookings.filter((item) => item.booking_count > 0).map((item) => ({ subject: `Rà booking lớp ${item.name}`, body: `Lớp có ${item.booking_count} booking đang chờ diễn ra; Coach cần tự rà danh sách trước giờ học.` })),
+        ...attendance.map((item) => ({ subject: `Điểm danh chưa nộp: ${item.name}`, body: "Buổi học đã kết thúc nhưng chưa có điểm danh; hãy kiểm tra và nộp theo quy trình." })),
+        ...plans.map((item) => ({ subject: `Cập nhật giáo án ${item.name}`, body: "Giáo án chưa cập nhật trong 14 ngày; hãy rà lại trước khi chia sẻ với hội viên." })),
+        ...expiringMembers.map((item) => ({ subject: `Gói tập sắp hết hạn: ${item.member_name}`, body: `Gói tập hết hạn vào ${item.expires_on.toLocaleDateString("vi-VN")}; chỉ dùng như lời nhắc để Coach trao đổi phù hợp, không thay thế tư vấn cá nhân.` })),
+      ];
+      return [{ type: "coach_review_required", label: "Bản nháp AI — cần Coach duyệt trước khi gửi", suggestions }];
+    },
+  };
+}
