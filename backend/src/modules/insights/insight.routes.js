@@ -14,5 +14,6 @@ export function createInsightRouter(service, authService) {
   router.get("/dashboards/:role", auth, validateRequest(z.object({ query: reportQuery })), async (req, res, next) => { try { sendSuccess(res, { data: await service.dashboard(req.params.role, req.auth.user, req.validated.query) }); } catch (error) { next(error); } });
   router.get("/reports/revenue", auth, requirePermission("report.read"), validateRequest(z.object({ query: reportQuery })), async (req, res, next) => { try { sendSuccess(res, { data: await service.revenue(req.validated.query) }); } catch (error) { next(error); } });
   router.get("/reports/attendance", auth, requirePermission("report.read"), validateRequest(z.object({ query: reportQuery })), async (req, res, next) => { try { sendSuccess(res, { data: await service.attendance(req.validated.query) }); } catch (error) { next(error); } });
+  router.get("/reports/:type/export", auth, requirePermission("report.read"), validateRequest(z.object({ params: z.object({ type: z.enum(["revenue", "attendance"]) }), query: reportQuery })), async (req, res, next) => { try { const report = await service.exportReport(req.validated.params.type, req.validated.query); res.type("text/csv; charset=utf-8").attachment(report.filename).send(report.content); } catch (error) { next(error); } });
   return router;
 }
