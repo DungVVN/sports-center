@@ -1,15 +1,17 @@
+import "dotenv/config";
 import { access, mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { spawn } from "node:child_process";
 import { Client } from "pg";
 
-const sourceUrl = process.env.DATABASE_URL;
+const sourceUrl = process.env.DATABASE_URL ?? process.env.MIGRATE_DATABASE_URL;
 const verifyUrl = process.env.BACKUP_RESTORE_VERIFY_DATABASE_URL;
 const confirmation = process.env.BACKUP_RESTORE_CONFIRM;
 const recordPath = process.env.BACKUP_RESTORE_RECORD_PATH ?? join(process.cwd(), "backup-restore-results", `restore-verify-${Date.now()}.json`);
 
-if (!sourceUrl || !verifyUrl) throw new Error("DATABASE_URL và BACKUP_RESTORE_VERIFY_DATABASE_URL là bắt buộc.");
+if (!sourceUrl) throw new Error("DATABASE_URL hoặc MIGRATE_DATABASE_URL là bắt buộc cho database nguồn.");
+if (!verifyUrl) throw new Error("BACKUP_RESTORE_VERIFY_DATABASE_URL là bắt buộc cho database kiểm thử riêng.");
 if (confirmation !== "restore-verify") throw new Error("Đặt BACKUP_RESTORE_CONFIRM=restore-verify để xác nhận ghi đè database kiểm thử.");
 
 const source = new URL(sourceUrl);
