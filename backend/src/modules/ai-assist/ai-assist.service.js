@@ -1,6 +1,6 @@
 import { AppError } from "../../shared/errors/app-error.js";
 
-export function createAiAssistService({ repository }) {
+export function createAiAssistService({ repository, auditService }) {
   return {
     async suggestions(actor) {
       if (actor.role !== "coach") throw new AppError({ statusCode: 403, code: "AI_ASSIST_COACH_ONLY", message: "Chỉ Coach có thể xem bản nháp AI." });
@@ -13,6 +13,14 @@ export function createAiAssistService({ repository }) {
         ...expiringMembers.map((item) => ({ subject: `Gói tập sắp hết hạn: ${item.member_name}`, body: `Gói tập hết hạn vào ${item.expires_on.toLocaleDateString("vi-VN")}; chỉ dùng như lời nhắc để Coach trao đổi phù hợp, không thay thế tư vấn cá nhân.` })),
       ];
       return [{ type: "coach_review_required", label: "Bản nháp AI — cần Coach duyệt trước khi gửi", suggestions }];
+    },
+    async deliver(input, actor) {
+      if (actor.role !== "coach") throw new AppError({ statusCode: 403, code: "AI_ASSIST_COACH_ONLY", message: "Chỉ Coach có thể duyệt và gửi bản nháp AI." });
+      const member = await repository.memberForCoach(input.memberId, actor.id);
+      if (!member) throw new AppError({ statusCode: 403, code: "AI_ASSIST_MEMBER_SCOPE_DENIED", message: "Coach chỉ được gửi hướng dẫn cho hội viên trong phạm vi của mình." });
+      const delivery = await repository.createDelivery({ coachUserId: actor.id, memberId: member.id, memberUserId: member.user_id, subject: input.subject, body: input.body });
+      await auditService.record({ actorUserId: actor.id, action: "ai_suggestion.delivered", entityType: "ai_suggestion_delivery", entityId: delivery.id, summary: "Coach đã duyệt và gửi hướng dẫn AI cho hội viên." });
+      return delivery;
     },
   };
 }

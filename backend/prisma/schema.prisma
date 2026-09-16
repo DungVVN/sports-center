@@ -503,6 +503,20 @@ model notifications {
   created_at        DateTime              @default(now()) @db.Timestamptz(6)
 }
 
+model ai_suggestion_deliveries {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  coach_user_id   String   @db.Uuid
+  member_id       String   @db.Uuid
+  subject         String
+  body            String
+  reviewed_at     DateTime @default(now()) @db.Timestamptz(6)
+  delivered_at    DateTime @default(now()) @db.Timestamptz(6)
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([coach_user_id, delivered_at])
+  @@index([member_id, delivered_at])
+}
+
 model training_sessions {
   id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   plan_id        String   @db.Uuid

@@ -29,4 +29,19 @@ export const aiAssistRepository = {
     const nameById = new Map(members.map((item) => [item.id, item.full_name]));
     return memberships.map((item) => ({ ...item, member_name: nameById.get(item.member_id) ?? "Hội viên" }));
   },
+  async memberForCoach(memberId, coachId) {
+    const member = await prisma.members.findUnique({ where: { id: memberId }, select: { id: true, user_id: true, full_name: true } });
+    if (!member?.user_id) return null;
+    const assigned = await prisma.member_coach_assignments.findFirst({ where: { member_id: memberId, ...activeAssignmentWhere(coachId) }, select: { id: true } });
+    if (assigned) return member;
+    const classes = await prisma.class_sessions.findMany({ where: { coach_user_id: coachId }, select: { id: true } });
+    if (!classes.length) return null;
+    const booking = await prisma.bookings.findFirst({ where: { member_id: memberId, class_session_id: { in: classes.map((item) => item.id) }, status: { in: ["confirmed", "waitlisted", "attended", "absent"] } }, select: { id: true } });
+    return booking ? member : null;
+  },
+  createDelivery: (data) => prisma.$transaction(async (tx) => {
+    const delivery = await tx.ai_suggestion_deliveries.create({ data: { coach_user_id: data.coachUserId, member_id: data.memberId, subject: data.subject, body: data.body } });
+    await tx.notifications.create({ data: { recipient_user_id: data.memberUserId, category: "member", title: data.subject, body: data.body, link_path: "/training" } });
+    return delivery;
+  }),
 };
