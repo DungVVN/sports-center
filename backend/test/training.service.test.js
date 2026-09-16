@@ -3,7 +3,7 @@ import { createTrainingService } from "../src/modules/training/training.service.
 
 function dependencies() {
   return {
-    repository: { membersForCoach: vi.fn().mockResolvedValue([{ id: "member-1" }]), plansForMembers: vi.fn().mockResolvedValue([{ id: "plan-1" }]), plans: vi.fn().mockResolvedValue([{ id: "manager-plan" }]), member: vi.fn(), assigned: vi.fn().mockResolvedValue(true), template: vi.fn(), templateExercises: vi.fn(), createPlan: vi.fn(), replaceExercises: vi.fn(), plan: vi.fn().mockResolvedValue({ id: "plan-1", member_id: "member-1" }), session: vi.fn(), createSession: vi.fn().mockResolvedValue({ id: "session-1" }), updateSession: vi.fn().mockResolvedValue({ id: "session-1" }), sessions: vi.fn().mockResolvedValue([]) },
+    repository: { membersForCoach: vi.fn().mockResolvedValue([{ id: "member-1" }]), plansForMembers: vi.fn().mockResolvedValue([{ id: "plan-1" }]), plans: vi.fn().mockResolvedValue([{ id: "manager-plan" }]), member: vi.fn(), assigned: vi.fn().mockResolvedValue(true), template: vi.fn(), templateExercises: vi.fn(), createPlan: vi.fn(), replaceExercises: vi.fn(), plan: vi.fn().mockResolvedValue({ id: "plan-1", member_id: "member-1" }), session: vi.fn(), createSession: vi.fn().mockResolvedValue({ id: "session-1" }), updateSession: vi.fn().mockResolvedValue({ id: "session-1" }), sessions: vi.fn().mockResolvedValue([{ id: "session-1" }, { id: "session-2" }]), sessionExercises: vi.fn().mockResolvedValue([]), reorderSessions: vi.fn().mockResolvedValue([]) },
     auditService: { record: vi.fn() },
   };
 }
@@ -37,5 +37,11 @@ describe("Training service scope", () => {
     expect(repository.assigned).toHaveBeenCalledWith("member-1", "coach-1");
     expect(repository.updateSession).toHaveBeenCalledWith("session-1", expect.objectContaining({ status: "completed", coach_comment: "Đã hoàn thành tốt", completed_at: expect.any(Date) }));
     expect(result).toEqual({ id: "session-1" });
+  });
+
+  it("only accepts a complete session ordering for an assigned Coach", async () => {
+    const { repository, auditService } = dependencies();
+    await createTrainingService({ repository, auditService }).reorderSessions("plan-1", ["session-2", "session-1"], { id: "coach-1", role: "coach" });
+    expect(repository.reorderSessions).toHaveBeenCalledWith("plan-1", ["session-2", "session-1"]);
   });
 });

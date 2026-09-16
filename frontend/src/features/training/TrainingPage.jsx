@@ -30,7 +30,7 @@ const newResult = {
   valueText: "",
   coachComment: "",
 };
-const newSession = { planId: "", position: "1", title: "", scheduledOn: new Date().toISOString().slice(0, 10) };
+const newSession = { planId: "", position: "1", title: "", scheduledOn: new Date().toISOString().slice(0, 10), exerciseName: "", sets: "3", reps: "10", restSeconds: "60" };
 const planStatusLabels = { active: "Đang áp dụng", completed: "Đã hoàn thành" };
 
 export function TrainingPage({ session }) {
@@ -84,6 +84,7 @@ export function TrainingPage({ session }) {
     }
   }
   async function loadSessions(planId) { if (!planId) { setSessions([]); return; } try { setSessions(await trainingApi.sessions(planId)); } catch (caught) { setError(caught.message); } }
+  async function moveSession(index, direction) { const reordered = [...sessions]; const target = index + direction; if (target < 0 || target >= reordered.length) return; [reordered[index], reordered[target]] = [reordered[target], reordered[index]]; await submit(async () => { await trainingApi.reorderSessions(sessionForm.planId, reordered.map((item) => item.id)); await loadSessions(sessionForm.planId); }, "Đã cập nhật thứ tự buổi tập."); }
   function memberName(memberId) {
     const member = membersById.get(memberId);
     return member ? (
@@ -378,14 +379,18 @@ export function TrainingPage({ session }) {
             Lưu kết quả
           </Button>
         </form>
-        <form className="members-form training-action-form" onSubmit={(event) => { event.preventDefault(); void submit(async () => { await trainingApi.createSession(sessionForm.planId, { position: Number(sessionForm.position), title: sessionForm.title, scheduledOn: sessionForm.scheduledOn || undefined }); setSessionForm(newSession); await loadSessions(sessionForm.planId); }, "Đã thêm buổi tập vào lộ trình."); }}>
+        <form className="members-form training-action-form" onSubmit={(event) => { event.preventDefault(); void submit(async () => { await trainingApi.createSession(sessionForm.planId, { position: Number(sessionForm.position), title: sessionForm.title, scheduledOn: sessionForm.scheduledOn || undefined, exercises: [{ name: sessionForm.exerciseName, sets: Number(sessionForm.sets), reps: Number(sessionForm.reps), rest_seconds: Number(sessionForm.restSeconds) }] }); setSessionForm(newSession); await loadSessions(sessionForm.planId); }, "Đã thêm buổi tập vào lộ trình."); }}>
           <div className="training-form-heading"><span>03 · Lịch buổi tập</span><h2>Thêm và ghi nhận buổi tập</h2></div>
           <label>Giáo án<select onChange={(event) => { const planId = event.target.value; setSessionForm({ ...sessionForm, planId }); void loadSessions(planId); }} required value={sessionForm.planId}><option value="">Chọn giáo án</option>{plans.filter((item) => item.status === "active").map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
           <label>Thứ tự buổi<input min="1" onChange={(event) => setSessionForm({ ...sessionForm, position: event.target.value })} required type="number" value={sessionForm.position} /></label>
           <label>Nội dung<input onChange={(event) => setSessionForm({ ...sessionForm, title: event.target.value })} required value={sessionForm.title} /></label>
           <label>Ngày dự kiến<input onChange={(event) => setSessionForm({ ...sessionForm, scheduledOn: event.target.value })} type="date" value={sessionForm.scheduledOn} /></label>
+          <label>Bài tập đầu tiên<input onChange={(event) => setSessionForm({ ...sessionForm, exerciseName: event.target.value })} required value={sessionForm.exerciseName} /></label>
+          <label>Số hiệp<input min="1" onChange={(event) => setSessionForm({ ...sessionForm, sets: event.target.value })} required type="number" value={sessionForm.sets} /></label>
+          <label>Số lần<input min="1" onChange={(event) => setSessionForm({ ...sessionForm, reps: event.target.value })} required type="number" value={sessionForm.reps} /></label>
+          <label>Nghỉ (giây)<input min="0" onChange={(event) => setSessionForm({ ...sessionForm, restSeconds: event.target.value })} required type="number" value={sessionForm.restSeconds} /></label>
           <Button loading={submitting} type="submit">Thêm buổi</Button>
-          {sessions.length > 0 && <div className="training-field-group"><h3>Buổi đã lên lịch</h3>{sessions.map((item) => <article key={item.id}><strong>Buổi {item.position}: {item.title}</strong><p>{item.status} · {item.scheduled_on ? new Date(item.scheduled_on).toLocaleDateString("vi-VN") : "Chưa đặt ngày"}</p><Button disabled={submitting || item.status !== "pending"} onClick={() => void submit(async () => { await trainingApi.updateSession(item.id, { status: "completed", coachComment: "Đã hoàn thành buổi tập" }); await loadSessions(sessionForm.planId); }, "Đã ghi nhận buổi tập hoàn thành.")} size="sm" type="button" variant="secondary">Hoàn thành</Button> <Button disabled={submitting || item.status !== "pending"} onClick={() => void submit(async () => { await trainingApi.updateSession(item.id, { status: "skipped", coachComment: "Coach ghi nhận bỏ buổi" }); await loadSessions(sessionForm.planId); }, "Đã ghi nhận bỏ buổi tập.")} size="sm" type="button" variant="ghost">Bỏ buổi</Button></article>)}</div>}
+          {sessions.length > 0 && <div className="training-field-group"><h3>Buổi đã lên lịch</h3>{sessions.map((item, index) => <article key={item.id}><strong>Buổi {item.position}: {item.title}</strong><p>{item.status} · {item.scheduled_on ? new Date(item.scheduled_on).toLocaleDateString("vi-VN") : "Chưa đặt ngày"}</p><p>Bài tập: {item.exercises.map((exercise) => exercise.name).join(", ")}</p><Button disabled={submitting || index === 0} onClick={() => void moveSession(index, -1)} size="sm" type="button" variant="ghost">Lên</Button> <Button disabled={submitting || index === sessions.length - 1} onClick={() => void moveSession(index, 1)} size="sm" type="button" variant="ghost">Xuống</Button> <Button disabled={submitting || item.status !== "pending"} onClick={() => void submit(async () => { await trainingApi.updateSession(item.id, { status: "completed", coachComment: "Đã hoàn thành buổi tập" }); await loadSessions(sessionForm.planId); }, "Đã ghi nhận buổi tập hoàn thành.")} size="sm" type="button" variant="secondary">Hoàn thành</Button> <Button disabled={submitting || item.status !== "pending"} onClick={() => void submit(async () => { await trainingApi.updateSession(item.id, { status: "skipped", coachComment: "Coach ghi nhận bỏ buổi" }); await loadSessions(sessionForm.planId); }, "Đã ghi nhận bỏ buổi tập.")} size="sm" type="button" variant="ghost">Bỏ buổi</Button></article>)}</div>}
         </form>
       </div>
       <section className="members-list">

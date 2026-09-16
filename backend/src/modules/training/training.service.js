@@ -15,6 +15,8 @@ export function createTrainingService({ repository, auditService }) {
     await ensureCoachAssignment(plan.member_id, actor);
     return plan;
   };
+  const sessionsWithExercises = async (planId) => Promise.all((await repository.sessions(planId)).map(async (item) => ({ ...item, exercises: await repository.sessionExercises(item.id) })));
+  const sameIds = (actual, requested) => actual.length === requested.length && actual.every((item) => requested.includes(item.id));
 
   return {
     async templates() { const templates = await repository.templates(); return Promise.all(templates.map(async (template) => ({ ...template, exercises: await repository.templateExercises(template.id) }))); },
@@ -28,7 +30,7 @@ export function createTrainingService({ repository, auditService }) {
     async ownProgress(actor) {
       const memberId = await ownMemberId(actor);
       const [plans, results] = await Promise.all([repository.plans(memberId), repository.results(memberId)]);
-      const sessions = (await Promise.all(plans.map((plan) => repository.sessions(plan.id)))).flat();
+      const sessions = (await Promise.all(plans.map((plan) => sessionsWithExercises(plan.id)))).flat();
       return { plans, results, sessions };
     },
     async plans(memberId, actor) {
@@ -47,13 +49,16 @@ export function createTrainingService({ repository, auditService }) {
       await auditService.record({ actorUserId: actor.id, action: "training_plan.created", entityType: "training_plan", entityId: plan.id, summary: "Đã tạo giáo án cá nhân hóa." });
       return plan;
     },
-    async sessions(planId, actor) { await planForActor(planId, actor); return repository.sessions(planId); },
+    async sessions(planId, actor) { await planForActor(planId, actor); return sessionsWithExercises(planId); },
     async createSession(planId, input, actor) {
       await planForActor(planId, actor);
       const result = await repository.createSession({ plan_id: planId, position: input.position, title: input.title, scheduled_on: input.scheduledOn ? new Date(input.scheduledOn) : null });
+      await repository.replaceSessionExercises(result.id, input.exercises);
       await auditService.record({ actorUserId: actor.id, action: "training_session.created", entityType: "training_session", entityId: result.id, summary: "Đã thêm buổi tập vào lộ trình." });
       return result;
     },
+    async reorderSessions(planId, ids, actor) { await planForActor(planId, actor); const existing = await repository.sessions(planId); if (!sameIds(existing, ids)) throw new AppError({ statusCode: 422, code: "TRAINING_SESSION_ORDER_INVALID", message: "Danh sách sắp xếp buổi tập không hợp lệ." }); return repository.reorderSessions(planId, ids); },
+    async reorderSessionExercises(sessionId, ids, actor) { const session = await repository.session(sessionId); if (!session) throw new AppError({ statusCode: 404, code: "TRAINING_SESSION_NOT_FOUND", message: "Không tìm thấy buổi tập." }); await planForActor(session.plan_id, actor); const existing = await repository.sessionExercises(sessionId); if (!sameIds(existing, ids)) throw new AppError({ statusCode: 422, code: "TRAINING_EXERCISE_ORDER_INVALID", message: "Danh sách sắp xếp bài tập không hợp lệ." }); return repository.reorderSessionExercises(sessionId, ids); },
     async updateSession(id, input, actor) {
       const existing = await repository.session(id);
       if (!existing) throw new AppError({ statusCode: 404, code: "TRAINING_SESSION_NOT_FOUND", message: "Không tìm thấy buổi tập." });

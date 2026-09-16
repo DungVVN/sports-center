@@ -40,7 +40,7 @@ describe("Training routes", () => {
   it("lets a permitted Coach create and complete a scheduled session", async () => {
     const service = trainingService();
     const sessionId = "33333333-3333-4333-8333-333333333333";
-    await request(createApp({ authService: authService(["training.write"]), trainingService: service })).post(`/api/v1/training-plans/${templateId}/sessions`).set("Authorization", "Bearer token").send({ position: 1, title: "Buổi chân", scheduledOn: "2026-09-20" }).expect(201);
+    await request(createApp({ authService: authService(["training.write"]), trainingService: service })).post(`/api/v1/training-plans/${templateId}/sessions`).set("Authorization", "Bearer token").send({ position: 1, title: "Buổi chân", scheduledOn: "2026-09-20", exercises: [{ name: "Squat", sets: 3, reps: 10, rest_seconds: 60 }] }).expect(201);
     await request(createApp({ authService: authService(["training.write"]), trainingService: service })).patch(`/api/v1/training-sessions/${sessionId}`).set("Authorization", "Bearer token").send({ status: "completed", coachComment: "Đã hoàn thành" }).expect(200);
     expect(service.createSession).toHaveBeenCalledWith(templateId, expect.objectContaining({ title: "Buổi chân" }), { id: "coach-1", role: "coach" });
     expect(service.updateSession).toHaveBeenCalledWith(sessionId, expect.objectContaining({ status: "completed" }), { id: "coach-1", role: "coach" });

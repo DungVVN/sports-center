@@ -33,6 +33,10 @@ export const trainingRepository = {
   session: (id) => prisma.training_sessions.findUnique({ where: { id } }),
   createSession: (data) => prisma.training_sessions.create({ data }),
   updateSession: (id, data) => prisma.training_sessions.update({ where: { id }, data }),
+  sessionExercises: (sessionId) => prisma.training_session_exercises.findMany({ where: { session_id: sessionId }, orderBy: { position: "asc" } }),
+  replaceSessionExercises: async (sessionId, exercises) => prisma.$transaction(async (tx) => { await tx.training_session_exercises.deleteMany({ where: { session_id: sessionId } }); await tx.training_session_exercises.createMany({ data: exercises.map((item, index) => ({ session_id: sessionId, position: index + 1, ...item })) }); }),
+  reorderSessions: async (planId, ids) => prisma.$transaction(async (tx) => { await Promise.all(ids.map((id, index) => tx.training_sessions.update({ where: { id }, data: { position: -(index + 1) } }))); await Promise.all(ids.map((id, index) => tx.training_sessions.update({ where: { id }, data: { position: index + 1 } }))); return tx.training_sessions.findMany({ where: { plan_id: planId }, orderBy: { position: "asc" } }); }),
+  reorderSessionExercises: async (sessionId, ids) => prisma.$transaction(async (tx) => { await Promise.all(ids.map((id, index) => tx.training_session_exercises.update({ where: { id }, data: { position: -(index + 1) } }))); await Promise.all(ids.map((id, index) => tx.training_session_exercises.update({ where: { id }, data: { position: index + 1 } }))); return tx.training_session_exercises.findMany({ where: { session_id: sessionId }, orderBy: { position: "asc" } }); }),
   replaceExercises: async (planId, exercises) => prisma.$transaction(async (tx) => {
     await tx.training_plan_exercises.deleteMany({ where: { plan_id: planId } });
     if (exercises.length) await tx.training_plan_exercises.createMany({ data: exercises.map((item, index) => ({ plan_id: planId, position: index + 1, ...item })) });
