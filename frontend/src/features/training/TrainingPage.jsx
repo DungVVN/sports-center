@@ -46,6 +46,7 @@ export function TrainingPage({ session }) {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const isCoach = session?.user?.role === "coach";
   const canCreateTemplate =
     session?.permissions?.includes("training.template.manage") ?? false;
   const membersById = useMemo(
@@ -59,7 +60,7 @@ export function TrainingPage({ session }) {
         trainingApi.templates(),
         trainingApi.members(),
         trainingApi.plans(),
-        session?.user?.role === "coach" ? trainingApi.aiSuggestions() : Promise.resolve([]),
+        isCoach ? trainingApi.aiSuggestions() : Promise.resolve([]),
       ]);
       setTemplates(nextTemplates);
       setMembers(nextMembers);
@@ -68,7 +69,7 @@ export function TrainingPage({ session }) {
     } catch (caught) {
       setError(caught.message);
     }
-  }, []);
+  }, [isCoach]);
   useEffect(() => {
     void Promise.resolve().then(load);
   }, [load]);
@@ -107,7 +108,7 @@ export function TrainingPage({ session }) {
       </header>
       {error && <p className="auth-alert">{error}</p>}
       {notice && <p className="auth-success">{notice}</p>}
-      {session?.user?.role === "coach" && <section className="members-list"><div className="list-heading"><h2>Gợi ý AI cần Coach duyệt</h2><Button onClick={load} size="sm" variant="ghost">Tải lại</Button></div>{aiDrafts.flatMap((group) => group.suggestions).length === 0 ? <p>Chưa có gợi ý mới.</p> : aiDrafts.flatMap((group) => group.suggestions).map((draft) => <article key={`${draft.subject}-${draft.body}`}><strong>{draft.subject}</strong><p>{draft.body}</p><small>Chỉ dùng sau khi Coach tự rà soát và quyết định.</small></article>)}</section>}
+      {isCoach && <section className="members-list"><div className="list-heading"><h2>Gợi ý AI cần Coach duyệt</h2><Button onClick={load} size="sm" variant="ghost">Tải lại</Button></div>{aiDrafts.flatMap((group) => group.suggestions).length === 0 ? <p>Chưa có gợi ý mới.</p> : aiDrafts.flatMap((group) => group.suggestions).map((draft) => <article key={`${draft.subject}-${draft.body}`}><strong>{draft.subject}</strong><p>{draft.body}</p><small>Chỉ dùng sau khi Coach tự rà soát và quyết định.</small></article>)}</section>}
       {canCreateTemplate && (
         <form
           className="members-form training-template-form"
