@@ -503,6 +503,20 @@ model notifications {
   created_at        DateTime              @default(now()) @db.Timestamptz(6)
 }
 
+model training_sessions {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  plan_id        String   @db.Uuid
+  position       Int
+  title          String
+  scheduled_on   DateTime? @db.Date
+  status         String   @default("pending")
+  completed_at   DateTime? @db.Timestamptz(6)
+  coach_comment  String?
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime @updatedAt @db.Timestamptz(6)
+  @@unique([plan_id, position])
+}
+
 model notification_preferences {
   user_id      String   @id @db.Uuid
   email_enabled Boolean  @default(true)
