@@ -29,6 +29,9 @@ import { createAttendanceService } from "./modules/attendance/attendance.service
 import { paymentRepository } from "./modules/payments/payment.repository.js";
 import { createPaymentRouter } from "./modules/payments/payment.routes.js";
 import { createPaymentService } from "./modules/payments/payment.service.js";
+import { supportRepository } from "./modules/support/support.repository.js";
+import { createSupportRouter } from "./modules/support/support.routes.js";
+import { createSupportService } from "./modules/support/support.service.js";
 import { trainingRepository } from "./modules/training/training.repository.js";
 import { createTrainingRouter } from "./modules/training/training.routes.js";
 import { createTrainingService } from "./modules/training/training.service.js";
@@ -53,7 +56,7 @@ function isAllowedOrigin(origin) {
   return !origin || env.corsOrigins.includes(origin);
 }
 
-export function createApp({ authService = createAuthService({ repository: authRepository, verificationDelivery: verificationDeliveryService, auditService }), staffService = createStaffService({ repository: staffRepository, auditService }), memberService = createMemberService({ repository: memberRepository, auditService }), membershipService = createMembershipService({ repository: membershipRepository, auditService }), classService = createClassService({ repository: classRepository, auditService }), bookingService = createBookingService({ repository: bookingRepository, auditService }), attendanceService = createAttendanceService({ repository: attendanceRepository, auditService }), paymentService = createPaymentService({ repository: paymentRepository, auditService }), trainingService = createTrainingService({ repository: trainingRepository, auditService }), insightService = createInsightService({ repository: insightRepository }), assignmentService = createAssignmentService({ repository: assignmentRepository, auditService }), auditLogService = createAuditLogService({ repository: auditRepository }) } = {}) {
+export function createApp({ authService = createAuthService({ repository: authRepository, verificationDelivery: verificationDeliveryService, auditService }), staffService = createStaffService({ repository: staffRepository, auditService }), memberService = createMemberService({ repository: memberRepository, auditService }), membershipService = createMembershipService({ repository: membershipRepository, auditService }), classService = createClassService({ repository: classRepository, auditService }), bookingService = createBookingService({ repository: bookingRepository, auditService }), attendanceService = createAttendanceService({ repository: attendanceRepository, auditService }), paymentService = createPaymentService({ repository: paymentRepository, auditService }), supportService = createSupportService({ repository: supportRepository, auditService }), trainingService = createTrainingService({ repository: trainingRepository, auditService }), insightService = createInsightService({ repository: insightRepository }), assignmentService = createAssignmentService({ repository: assignmentRepository, auditService }), auditLogService = createAuditLogService({ repository: auditRepository }) } = {}) {
   const app = express();
 
   app.disable("x-powered-by");
@@ -82,6 +85,7 @@ export function createApp({ authService = createAuthService({ repository: authRe
   app.use(env.apiBasePath, createBookingRouter(bookingService, authService));
   app.use(env.apiBasePath, createAttendanceRouter(attendanceService, authService));
   app.use(env.apiBasePath, createPaymentRouter(paymentService, authService));
+  app.use(env.apiBasePath, createSupportRouter(supportService, authService));
   app.use(env.apiBasePath, createTrainingRouter(trainingService, authService));
   app.use(env.apiBasePath, createInsightRouter(insightService, authService));
   app.use(env.apiBasePath, createAuditRouter(auditLogService, authService));

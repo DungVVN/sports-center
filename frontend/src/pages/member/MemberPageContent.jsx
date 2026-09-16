@@ -5,6 +5,7 @@ import { ProfilePage } from "../../features/auth/ProfilePage.jsx";
 import { MembershipsPage } from "../../features/memberships/MembershipsPage.jsx";
 import { MemberPaymentsPage } from "../../features/payments/MemberPaymentsPage.jsx";
 import { MemberTrainingPage } from "../../features/training/MemberTrainingPage.jsx";
+import { SupportPage } from "../../features/support/SupportPage.jsx";
 
 export function MemberPageContent({ onNavigate, session, view }) {
   const pages = {
@@ -15,6 +16,7 @@ export function MemberPageContent({ onNavigate, session, view }) {
     "my-training": <MemberTrainingPage />,
     packages: <MembershipsPage session={session} />,
     profile: <ProfilePage />,
+    support: <SupportPage />,
   };
 
   return pages[view] ?? pages.dashboard;
