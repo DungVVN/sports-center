@@ -1,0 +1,3 @@
+import { describe, expect, it, vi } from "vitest";
+import { createAiAssistService } from "../src/modules/ai-assist/ai-assist.service.js";
+describe("AI assist", () => { it("only exposes labelled drafts to Coaches", async () => { const service = createAiAssistService({ repository: { coachClasses: vi.fn().mockResolvedValue([]), stalePlans: vi.fn().mockResolvedValue([]) } }); await expect(service.suggestions({ id: "coach-1", role: "coach" })).resolves.toEqual([expect.objectContaining({ label: expect.stringContaining("Coach duyệt") })]); await expect(service.suggestions({ id: "member-1", role: "member" })).rejects.toMatchObject({ code: "AI_ASSIST_COACH_ONLY" }); }); });
