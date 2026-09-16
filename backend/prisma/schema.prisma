@@ -127,6 +127,11 @@ enum notification_category {
   system
 }
 
+enum membership_reminder_type {
+  pre_expiry
+  grace
+}
+
 model roles {
   code  user_role @id
   label String
@@ -496,6 +501,17 @@ model notifications {
   link_path         String?
   read_at           DateTime?             @db.Timestamptz(6)
   created_at        DateTime              @default(now()) @db.Timestamptz(6)
+}
+
+model membership_renewal_reminders {
+  id              String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  membership_id   String                   @db.Uuid
+  reminder_type   membership_reminder_type
+  reminder_on     DateTime                 @db.Date
+  sent_at         DateTime                 @default(now()) @db.Timestamptz(6)
+
+  @@unique([membership_id, reminder_type, reminder_on])
+  @@index([membership_id, reminder_on])
 }
 
 model support_tickets {
