@@ -145,4 +145,19 @@ describe("attendance time rules", () => {
     ).rejects.toMatchObject({ code: "ATTENDANCE_CORRECTION_REASON_REQUIRED" });
     expect(repository.correct).not.toHaveBeenCalled();
   });
+
+  it("accepts the Coach default reason after the class ends", async () => {
+    const repository = {
+      record: vi.fn().mockResolvedValue({ id: "attendance-1", class_session_id: "class-1", member_id: "member-1", booking_id: "booking-1", status: "present", checked_in_at: new Date() }),
+      classSession: vi.fn().mockResolvedValue({ coach_user_id: coach.id, starts_at: new Date(Date.now() - 120_000), ends_at: new Date(Date.now() - 60_000) }),
+      correct: vi.fn().mockResolvedValue({ id: "correction-1" }),
+      upsert: vi.fn().mockResolvedValue({ id: "attendance-1", status: "late" }),
+    };
+    const auditService = { record: vi.fn() };
+    const service = createAttendanceService({ repository, auditService });
+
+    await expect(service.correct("attendance-1", "late", "Điều chỉnh điểm danh", coach)).resolves.toMatchObject({ status: "late" });
+    expect(repository.correct).toHaveBeenCalledWith(expect.objectContaining({ reason: "Điều chỉnh điểm danh" }));
+    expect(auditService.record).toHaveBeenCalledWith(expect.objectContaining({ reason: "Điều chỉnh điểm danh" }));
+  });
 });
