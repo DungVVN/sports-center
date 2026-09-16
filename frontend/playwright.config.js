@@ -1,6 +1,8 @@
 import { defineConfig } from "@playwright/test";
+import { loadEnv } from "vite";
 
-const baseURL = process.env.E2E_BASE_URL;
+const env = loadEnv(process.env.NODE_ENV ?? "test", process.cwd(), "");
+const baseURL = process.env.E2E_BASE_URL ?? env.E2E_BASE_URL;
 
 if (!baseURL) {
   throw new Error("E2E_BASE_URL là bắt buộc. Ví dụ: https://sports-center-xi.vercel.app");
