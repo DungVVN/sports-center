@@ -9,6 +9,8 @@ function range(query = {}) {
 function previousRange(from, to) { const duration = to.getTime() - from.getTime() + 1; const previousTo = new Date(from.getTime() - 1); return { from: new Date(previousTo.getTime() - duration + 1), to: previousTo }; }
 function change(current, previous) { return previous === 0 ? null : Math.round(((current - previous) / previous) * 1000) / 10; }
 function isoDay(value) { return value.toISOString().slice(0, 10); }
+function csvCell(value) { return `"${String(value ?? "").replaceAll('"', '""')}"`; }
+function asCsv(rows) { return `\uFEFF${rows.map((row) => row.map(csvCell).join(",")).join("\r\n")}\r\n`; }
 function revenueTrend(rows, from, to) { const totals = new Map(); for (let cursor = new Date(from); cursor <= to; cursor.setUTCDate(cursor.getUTCDate() + 1)) totals.set(isoDay(cursor), BigInt(0)); for (const row of rows) { const key = isoDay(row.paid_at); totals.set(key, (totals.get(key) ?? BigInt(0)) + row.amount_vnd); } return [...totals].map(([date, amountVnd]) => ({ date, amountVnd: amountVnd.toString() })); }
 function statusTotals(rows) {
   const byStatus = new Map(rows.map((row) => [row.status, { count: row._count.id, amount: row._sum.amount_vnd ?? BigInt(0) }]));
@@ -79,8 +81,30 @@ export function createInsightService({ repository }) {
     },
     async attendance(query) {
       const { from, to, period } = range(query);
-      const [byStatus, rows] = await Promise.all([repository.attendance(from, to), repository.attendanceRecords(from, to)]);
-      return { period, from, to, byStatus, summary: attendanceTotals(byStatus), trend: attendanceTrend(rows, from, to) };
+      const [byStatus, rows] = await Promise.all([repository.attendance(from, to, query.coachUserId), repository.attendanceRecords(from, to, query.coachUserId)]);
+      return { period, from, to, coachUserId: query.coachUserId ?? null, byStatus, summary: attendanceTotals(byStatus), trend: attendanceTrend(rows, from, to) };
+    },
+    async exportReport(type, query) {
+      if (type === "revenue") {
+        const report = await this.revenue(query);
+        return {
+          filename: `bao-cao-doanh-thu-${isoDay(report.from)}-${isoDay(report.to)}.csv`,
+          content: asCsv([
+            ["Báo cáo doanh thu"], ["Kỳ", report.period], ["Từ", isoDay(report.from)], ["Đến", isoDay(report.to)],
+            [], ["Chỉ số", "Giá trị"], ["Thực thu", report.paid], ["Số phiếu đã thanh toán", report.payments], ["Chờ xác nhận", report.createdSummary.pending], ["Số phiếu chờ xác nhận", report.createdSummary.pendingPayments], ["Giá trị giao dịch", report.createdSummary.transactionValue], ["Tỷ lệ hoàn tất (%)", report.createdSummary.completionRate ?? ""],
+            [], ["Trạng thái", "Số giao dịch", "Tổng giá trị"], ...report.paymentStatuses.map((item) => [item.status, item.count, item.amount]),
+          ]),
+        };
+      }
+      const report = await this.attendance(query);
+      return {
+        filename: `bao-cao-diem-danh-${isoDay(report.from)}-${isoDay(report.to)}.csv`,
+        content: asCsv([
+          ["Báo cáo điểm danh"], ["Kỳ", report.period], ["Từ", isoDay(report.from)], ["Đến", isoDay(report.to)], ["Coach", report.coachUserId ?? "Tất cả"],
+          [], ["Chỉ số", "Giá trị"], ["Tổng lượt", report.summary.total], ["Đã tham gia", report.summary.attended], ["Vắng mặt", report.summary.absent], ["Chưa ghi nhận", report.summary.notMarked], ["Tỷ lệ tham gia (%)", report.summary.attendanceRate ?? ""],
+          [], ["Trạng thái", "Số lượt"], ...report.byStatus.map((item) => [item.status, item._count.id]),
+        ]),
+      };
     },
     async dashboard(role, actor, query = {}) {
       if (role !== actor.role) throw new AppError({ statusCode: 403, code: "DASHBOARD_ROLE_FORBIDDEN", message: "Bạn chỉ có thể xem dashboard của vai trò hiện tại." });

@@ -21,7 +21,8 @@ const classStatusLabels = {
   cancelled: "Đã hủy",
   completed: "Đã kết thúc",
 };
-const emptyCorrection = { record: null, status: "present", reason: "" };
+const defaultCorrectionReason = "Điều chỉnh điểm danh";
+const emptyCorrection = { record: null, status: "present", reason: defaultCorrectionReason };
 
 export function AttendancePage({ session }) {
   const [classId, setClassId] = useState("");
@@ -176,7 +177,7 @@ export function AttendancePage({ session }) {
   }
 
   function openCorrection(record) {
-    setCorrection({ record, status: record.status, reason: "" });
+    setCorrection({ record, status: record.status, reason: defaultCorrectionReason });
   }
   function closeCorrection() {
     if (!submitting) setCorrection(emptyCorrection);
@@ -447,7 +448,7 @@ export function AttendancePage({ session }) {
             <label>
               {correctionRequiresReason
                 ? "Lý do sửa"
-                : "Lý do sửa (không bắt buộc trong giờ học)"}
+                : "Lý do sửa"}
               <textarea
                 disabled={submitting}
                 minLength={correctionRequiresReason ? 3 : undefined}

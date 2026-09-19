@@ -9,6 +9,7 @@ export const authApi = Object.freeze({
   me: () => apiClient.get("/auth/me"),
   profile: () => apiClient.get("/auth/profile"),
   updateProfile: (input) => apiClient.patch("/auth/profile", input),
+  changePassword: (input) => apiClient.post("/auth/password/change", input),
   pendingRegistrations: () => apiClient.get("/auth/registrations/pending"),
   approveRegistration: (userId) => apiClient.post(`/auth/registrations/${userId}/approve`),
 });

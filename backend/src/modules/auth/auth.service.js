@@ -157,6 +157,14 @@ export function createAuthService({
       await repository.revokeSession(sessionId);
     },
 
+    async changePassword({ currentPassword, newPassword, userId }) {
+      const user = await repository.userCredentials(userId);
+      if (!user || !await verifyPassword(currentPassword, user.password_hash)) throw new AppError({ statusCode: 422, code: "CURRENT_PASSWORD_INVALID", message: "Mật khẩu hiện tại không đúng." });
+      await repository.updatePassword(userId, await hashPassword(newPassword));
+      await repository.revokeUserSessions(userId);
+      await auditService.record({ actorUserId: userId, action: "auth.password_changed", entityType: "user", entityId: userId, summary: "Đã đổi mật khẩu và thu hồi các phiên đăng nhập." });
+    },
+
     async getAuthentication(token) {
       const claims = await readSessionToken(token);
       const authenticated = await repository.findSessionUser(claims.sessionId, claims.userId);

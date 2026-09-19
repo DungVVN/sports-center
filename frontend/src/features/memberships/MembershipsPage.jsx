@@ -33,6 +33,11 @@ const membershipStatus = {
   frozen: "Đang đóng băng",
   cancelled: "Đã hủy",
 };
+
+function membershipGraceLabel(membership) {
+  if (membership.status !== "expiring_soon" || !membership.grace_expires_at) return "";
+  return `Gia hạn không tính phí đến ${new Date(membership.grace_expires_at).toLocaleString("vi-VN")}`;
+}
 const entitlementLabels = {
   gym_access: "Tập gym",
   group_class_booking: "Đặt lớp nhóm",
@@ -911,7 +916,10 @@ function MembershipList({ embedded = false, items, loading, onCancel, submitting
                     {new Date(item.starts_on).toLocaleDateString("vi-VN")} –{" "}
                     {new Date(item.expires_on).toLocaleDateString("vi-VN")}
                   </td>
-                  <td>{membershipStatus[item.status] ?? item.status}</td>
+                  <td>
+                    <strong>{membershipStatus[item.status] ?? item.status}</strong>
+                    {membershipGraceLabel(item) && <small>{membershipGraceLabel(item)}</small>}
+                  </td>
                   <td>
                     {onCancel && item.status === "pending_payment" && (
                       <Button

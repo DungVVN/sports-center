@@ -12,6 +12,7 @@
     "test": "vitest run",
     "lint": "eslint .",
     "build": "node scripts/build-check.js",
+    "backup:restore-verify": "node scripts/backup-restore-verify.js",
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
     "db:migrate": "prisma migrate deploy",

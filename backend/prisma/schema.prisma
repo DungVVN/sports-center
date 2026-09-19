@@ -127,6 +127,11 @@ enum notification_category {
   system
 }
 
+enum membership_reminder_type {
+  pre_expiry
+  grace
+}
+
 model roles {
   code  user_role @id
   label String
@@ -496,6 +501,67 @@ model notifications {
   link_path         String?
   read_at           DateTime?             @db.Timestamptz(6)
   created_at        DateTime              @default(now()) @db.Timestamptz(6)
+}
+
+model ai_suggestion_deliveries {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  coach_user_id   String   @db.Uuid
+  member_id       String   @db.Uuid
+  subject         String
+  body            String
+  reviewed_at     DateTime @default(now()) @db.Timestamptz(6)
+  delivered_at    DateTime @default(now()) @db.Timestamptz(6)
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([coach_user_id, delivered_at])
+  @@index([member_id, delivered_at])
+}
+
+model training_sessions {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  plan_id        String   @db.Uuid
+  position       Int
+  title          String
+  scheduled_on   DateTime? @db.Date
+  status         String   @default("pending")
+  completed_at   DateTime? @db.Timestamptz(6)
+  coach_comment  String?
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime @updatedAt @db.Timestamptz(6)
+  @@unique([plan_id, position])
+}
+
+model training_session_exercises {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  session_id       String   @db.Uuid
+  position         Int
+  name             String
+  sets             Int
+  reps             Int?
+  duration_seconds Int?
+  rest_seconds     Int
+  instructions     String?
+  created_at       DateTime @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime @updatedAt @db.Timestamptz(6)
+  @@unique([session_id, position])
+}
+
+model notification_preferences {
+  user_id      String   @id @db.Uuid
+  email_enabled Boolean  @default(true)
+  push_enabled  Boolean  @default(true)
+  updated_at    DateTime @updatedAt @db.Timestamptz(6)
+}
+
+model membership_renewal_reminders {
+  id              String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  membership_id   String                   @db.Uuid
+  reminder_type   membership_reminder_type
+  reminder_on     DateTime                 @db.Date
+  sent_at         DateTime                 @default(now()) @db.Timestamptz(6)
+
+  @@unique([membership_id, reminder_type, reminder_on])
+  @@index([membership_id, reminder_on])
 }
 
 model support_tickets {

@@ -169,7 +169,7 @@ export function BookingsPage({ session }) {
       });
       setNotice(
         booking.status === "waitlisted"
-          ? "Lớp đã đủ chỗ. Hội viên đã vào danh sách chờ."
+          ? "Lớp đã đủ chỗ. Hội viên đã vào danh sách chờ và sẽ được thông báo khi đủ điều kiện nhận chỗ trống."
           : "Đặt chỗ thành công.",
       );
       setForm(emptyForm);
@@ -203,7 +203,7 @@ export function BookingsPage({ session }) {
         cancellation.reason.trim(),
       );
       setNotice(
-        "Đã hủy đặt chỗ. Danh sách chờ sẽ được cập nhật tự động nếu có.",
+        "Đã hủy đặt chỗ. Hội viên đủ điều kiện đầu tiên trong danh sách chờ sẽ được xác nhận tự động.",
       );
       setCancellation({ booking: null, reason: "" });
       await loadBookings(isMember ? undefined : form.memberId);

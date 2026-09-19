@@ -11,6 +11,7 @@ import { PaymentsPage } from "../../features/payments/PaymentsPage.jsx";
 import { StaffPage } from "../../features/staff/StaffPage.jsx";
 import { TrainingPage } from "../../features/training/TrainingPage.jsx";
 import { ProfilePage } from "../../features/auth/ProfilePage.jsx";
+import { SupportStaffPage } from "../../features/support/SupportStaffPage.jsx";
 
 export function ManagerPageContent({ onNavigate, session, view }) {
   const pages = {
@@ -28,6 +29,7 @@ export function ManagerPageContent({ onNavigate, session, view }) {
     registrations: <RegistrationApprovalPage />,
     reports: <ReportsPage />,
     staff: <StaffPage />,
+    support: <SupportStaffPage />,
     training: <TrainingPage session={session} />,
   };
 

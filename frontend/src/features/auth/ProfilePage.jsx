@@ -36,6 +36,8 @@ export function ProfilePage() {
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
+  const [passwordSubmitting, setPasswordSubmitting] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -112,6 +114,18 @@ export function ProfilePage() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  async function changePassword(event) {
+    event.preventDefault();
+    setError(""); setNotice("");
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) { setError("Xác nhận mật khẩu mới không khớp."); return; }
+    setPasswordSubmitting(true);
+    try {
+      await authApi.changePassword({ currentPassword: passwordForm.currentPassword, newPassword: passwordForm.newPassword });
+      setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setNotice("Đã đổi mật khẩu. Vui lòng đăng nhập lại để tiếp tục.");
+    } catch (caught) { setError(caught.message); } finally { setPasswordSubmitting(false); }
   }
 
   if (loading)
@@ -250,6 +264,15 @@ export function ProfilePage() {
             </Button>
             <span>Email, vai trò và trạng thái chỉ có thể xem.</span>
           </div>
+        </form>
+        <form className="members-form profile-page__form" onSubmit={changePassword}>
+          <div className="list-heading"><h2>Đổi mật khẩu</h2></div>
+          <div className="profile-page__fields">
+            <label>Mật khẩu hiện tại<input autoComplete="current-password" minLength="8" onChange={(event) => setPasswordForm((current) => ({ ...current, currentPassword: event.target.value }))} required type="password" value={passwordForm.currentPassword} /></label>
+            <label>Mật khẩu mới<input autoComplete="new-password" minLength="8" onChange={(event) => setPasswordForm((current) => ({ ...current, newPassword: event.target.value }))} required type="password" value={passwordForm.newPassword} /><small>Ít nhất 8 ký tự, gồm chữ hoa, chữ thường và số.</small></label>
+            <label>Xác nhận mật khẩu mới<input autoComplete="new-password" minLength="8" onChange={(event) => setPasswordForm((current) => ({ ...current, confirmPassword: event.target.value }))} required type="password" value={passwordForm.confirmPassword} /></label>
+          </div>
+          <div className="profile-page__actions"><Button loading={passwordSubmitting} type="submit">Đổi mật khẩu</Button><span>Mọi phiên đăng nhập hiện có sẽ được thu hồi.</span></div>
         </form>
         {isMember && (
           <section className="members-list profile-page__contacts">
