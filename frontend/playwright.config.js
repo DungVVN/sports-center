@@ -15,6 +15,9 @@ export default defineConfig({
   testDir: "./e2e",
   timeout: 45_000,
   fullyParallel: false,
+  // Production tests share the approved role accounts, so parallel workers can
+  // revoke or replace each other's session while asserting a login.
+  workers: process.env.E2E_FULL_PRODUCTION === "1" ? 1 : undefined,
   use: {
     baseURL,
     trace: "retain-on-failure",
