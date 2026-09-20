@@ -38,7 +38,7 @@ test.describe("production account setup", () => {
       account.password = await passwordBox.textContent();
       expect(account.password).toBeTruthy();
       await page.getByRole("button", { name: "Đã lưu an toàn" }).click();
-      await expect(page.getByText(account.email, { exact: true })).toBeVisible();
+      await expect(passwordBox).toBeHidden();
     }
 
     for (const account of accounts) {
