@@ -299,7 +299,7 @@ CREATE TABLE support_tickets (
   subject text NOT NULL,
   body text NOT NULL,
   status support_status NOT NULL DEFAULT 'open',
-  priority text NOT NULL CHECK (priority IN ('low', 'medium', 'high')),
+  priority text NOT NULL CHECK (priority IN ('low', 'normal', 'high')),
   assigned_to uuid REFERENCES users(id) ON DELETE SET NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
