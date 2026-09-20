@@ -27,6 +27,13 @@ describe("Payment routes", () => {
       .send({ memberId, amountVnd: 500000, method: "online" }).expect(422);
     expect(service.create).not.toHaveBeenCalled();
   });
+  it("serves the sandbox page for a signed payment link", async () => {
+    const service = paymentService();
+    await request(createApp({ authService: authService([]), paymentService: service }))
+      .get("/api/v1/payments/sandbox/vnpay/PAY-1234ABCD?amount=500000&signature=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+      .expect("content-type", /html/)
+      .expect(200);
+  });
   it("lets a Member view only a receipt addressed to their own account", async () => {
     const service = paymentService();
     await request(createApp({ authService: authService([], "member"), paymentService: service })).get(`/api/v1/members/me/payments/${paymentId}`).set("Authorization", "Bearer token").expect(200);
