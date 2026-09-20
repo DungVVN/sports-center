@@ -14,6 +14,10 @@ if (!baseURL) {
 export default defineConfig({
   testDir: "./e2e",
   timeout: 45_000,
+  // Render may need several seconds to wake before the authenticated workspace
+  // is rendered. Keep assertions production-safe without extending a test past
+  // its overall timeout.
+  expect: { timeout: 30_000 },
   fullyParallel: false,
   // Production tests share the approved role accounts, so parallel workers can
   // revoke or replace each other's session while asserting a login.
