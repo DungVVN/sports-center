@@ -400,7 +400,7 @@ INSERT INTO permissions(code, description) VALUES
   ('class.read', 'Xem lớp học'), ('class.manage', 'Tạo và quản lý lớp học'),
   ('booking.write', 'Tạo và hủy đặt chỗ'), ('attendance.write', 'Ghi nhận điểm danh'),
   ('payment.record', 'Ghi nhận thanh toán'), ('refund.approve', 'Duyệt hoàn tiền'),
-  ('training.write', 'Tạo kế hoạch và kết quả tập luyện'), ('report.read', 'Xem báo cáo'),
+  ('training.write', 'Tạo kế hoạch và kết quả tập luyện'), ('training.template.manage', 'Quản lý mẫu giáo án chung'), ('report.read', 'Xem báo cáo'),
   ('staff.manage', 'Quản lý nhân viên'), ('audit.read', 'Xem nhật ký kiểm toán');
 
 INSERT INTO role_permissions(role_code, permission_code)

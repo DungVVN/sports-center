@@ -8,7 +8,7 @@ const permissions = [
   ["booking.write", "Tạo và hủy đặt chỗ"], ["attendance.write", "Ghi nhận điểm danh"],
   ["payment.record", "Ghi nhận thanh toán"],
   ["registration.approve", "Duyệt tài khoản hội viên đăng ký công khai"],
-  ["training.write", "Tạo kế hoạch và kết quả tập luyện"], ["membership.freeze.review", "Duyệt yêu cầu đóng băng gói tập"], ["report.read", "Xem báo cáo"],
+  ["training.write", "Tạo kế hoạch và kết quả tập luyện"], ["training.template.manage", "Quản lý mẫu giáo án chung"], ["membership.freeze.review", "Duyệt yêu cầu đóng băng gói tập"], ["report.read", "Xem báo cáo"],
   ["staff.manage", "Quản lý nhân viên"], ["audit.read", "Xem nhật ký kiểm toán"],
 ];
 
