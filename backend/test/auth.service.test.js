@@ -34,4 +34,19 @@ describe("auth service login protection", () => {
     expect(repository.updatePassword).toHaveBeenCalled();
     expect(repository.revokeUserSessions).toHaveBeenCalledWith("user-1");
   });
+
+  it("returns current role permissions with a successful login", async () => {
+    const repository = {
+      findUserByEmail: vi.fn().mockResolvedValue({ id: "user-1", email: "manager@example.com", display_name: "Manager", role: "manager", status: "active", password_hash: await hashPassword("Strongpass1") }),
+      createSession: vi.fn().mockResolvedValue({ id: "session-1" }),
+      getPermissions: vi.fn().mockResolvedValue([{ permission_code: "training.template.manage" }]),
+    };
+    const service = createAuthService({ repository, verificationDelivery: { send: vi.fn() }, auditService: { record: vi.fn() } });
+
+    await expect(service.login({ email: "MANAGER@example.com", password: "Strongpass1" })).resolves.toMatchObject({
+      user: { id: "user-1", role: "manager" },
+      permissions: ["training.template.manage"],
+    });
+    expect(repository.getPermissions).toHaveBeenCalledWith("manager");
+  });
 });

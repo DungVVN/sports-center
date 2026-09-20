@@ -7,7 +7,7 @@ function makeService() {
     register: vi.fn().mockResolvedValue({ user: { id: "b7f2c76c-9c97-4d5a-91b8-936e2acff972" }, memberId: "17d813e0-a5e7-48e8-92bb-81fa123a8240", verifications: [] }),
     verifyRegistration: vi.fn().mockResolvedValue({ status: "pending_verification" }),
     resendVerification: vi.fn().mockResolvedValue({ channel: "email" }),
-    login: vi.fn().mockResolvedValue({ token: "signed-token", expiresAt: new Date("2026-10-01T00:00:00.000Z"), user: { id: "b7f2c76c-9c97-4d5a-91b8-936e2acff972", role: "member" } }),
+    login: vi.fn().mockResolvedValue({ token: "signed-token", expiresAt: new Date("2026-10-01T00:00:00.000Z"), user: { id: "b7f2c76c-9c97-4d5a-91b8-936e2acff972", role: "member" }, permissions: ["class.read"] }),
     logout: vi.fn().mockResolvedValue(undefined),
     getAuthentication: vi.fn().mockResolvedValue({ user: { id: "staff-1", role: "receptionist" }, permissions: ["registration.approve"] }),
     getOwnProfile: vi.fn().mockResolvedValue({ id: "staff-1", fullName: "Lễ tân Hương", role: "receptionist" }),
@@ -38,6 +38,7 @@ describe("Auth routes", () => {
     expect(response.headers["set-cookie"][0]).toContain("sports_center_session=signed-token");
     expect(response.headers["set-cookie"][0]).toContain("HttpOnly");
     expect(response.body.data).not.toHaveProperty("token");
+    expect(response.body.data.permissions).toEqual(["class.read"]);
   });
 
   it("uses the authenticated permission for receptionist approval", async () => {

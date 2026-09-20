@@ -149,7 +149,8 @@ export function createAuthService({
         summary: "Đăng nhập thành công.",
       });
       const token = await createSessionToken({ sessionId: session.id, userId: user.id, expiresAt });
-      return { token, expiresAt, user: publicUser(user) };
+      const permissions = await repository.getPermissions(user.role);
+      return { token, expiresAt, user: publicUser(user), permissions: permissions.map(({ permission_code: permissionCode }) => permissionCode) };
     },
 
     async logout(token) {

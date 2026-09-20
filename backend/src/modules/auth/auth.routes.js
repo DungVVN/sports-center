@@ -55,7 +55,7 @@ export function createAuthRouter(authService) {
     try {
       const session = await authService.login(request.validated.body);
       sessionCookie(response, session.token, session.expiresAt);
-      sendSuccess(response, { data: { user: session.user, expiresAt: session.expiresAt } });
+      sendSuccess(response, { data: { user: session.user, permissions: session.permissions, expiresAt: session.expiresAt } });
     } catch (error) { next(error); }
   });
   router.post("/logout", authRequired, async (request, response, next) => {
