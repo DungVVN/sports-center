@@ -33,6 +33,7 @@ const navigationByRole = {
     { id: "attendance", label: "Điểm danh" },
     { id: "payments", label: "Thanh toán" },
     { id: "staff", label: "Nhân viên" },
+    { id: "training", label: "Giáo án" },
     { id: "reports", label: "Báo cáo" },
     { id: "audit", label: "Kiểm toán" },
     { id: "support", label: "Hỗ trợ" },
