@@ -4,7 +4,7 @@ import { ApiError } from "../../api/api-error.js";
 import { authApi } from "./auth-api.js";
 import { LoginPage } from "./LoginPage.jsx";
 
-vi.mock("./auth-api.js", () => ({ authApi: { login: vi.fn() } }));
+vi.mock("./auth-api.js", () => ({ authApi: { login: vi.fn(), me: vi.fn() } }));
 
 afterEach(() => {
   cleanup();
@@ -15,6 +15,7 @@ describe("LoginPage", () => {
   it("submits credentials and returns the API session to the app", async () => {
     const onLoggedIn = vi.fn();
     authApi.login.mockResolvedValue({ user: { role: "manager" } });
+    authApi.me.mockResolvedValue({ user: { role: "manager" }, permissions: ["training.template.manage"] });
     render(<LoginPage onLoggedIn={onLoggedIn} onRegister={vi.fn()} />);
 
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "manager01@sportscenter.local" } });
@@ -22,7 +23,7 @@ describe("LoginPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Đăng nhập" }));
 
     await waitFor(() => expect(authApi.login).toHaveBeenCalledWith({ email: "manager01@sportscenter.local", password: "test-only-password" }));
-    expect(onLoggedIn).toHaveBeenCalledWith({ user: { role: "manager" } });
+    expect(onLoggedIn).toHaveBeenCalledWith({ user: { role: "manager" }, permissions: ["training.template.manage"] });
   });
 
   it("shows the normalized backend error and keeps the user on the form", async () => {
