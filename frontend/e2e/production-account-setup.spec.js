@@ -18,7 +18,11 @@ test.describe("production account setup", () => {
     await page.goto("/", { waitUntil: "networkidle" });
     await page.locator("#login-email").fill(process.env.E2E_MANAGER_EMAIL ?? "manager01@sportscenter.local");
     await page.locator("#login-password").fill(password);
+    const loginResponse = page.waitForResponse(
+      (response) => response.url().includes("/auth/login") && response.request().method() === "POST",
+    );
     await page.getByRole("button", { name: "Đăng nhập" }).click();
+    expect((await loginResponse).status()).toBe(200);
     await expect(page.getByText("Quản lý trung tâm", { exact: true })).toBeVisible();
     await page.getByText("Nhân viên", { exact: true }).click();
     await expect(page.getByRole("heading", { name: "Thêm nhân viên" })).toBeVisible();
