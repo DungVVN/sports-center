@@ -1,5 +1,15 @@
 import { prisma } from "../../database.js";
 
+async function serializable(operation) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await prisma.$transaction(operation, { isolationLevel: "Serializable" });
+    } catch (error) {
+      if (error?.code !== "P2034" || attempt === 2) throw error;
+    }
+  }
+}
+
 async function bookingEntitlement(database, packageId) {
   const membershipPackage = await database.membership_packages.findUnique({ where: { id: packageId }, select: { tier_rank: true } });
   if (!membershipPackage) return null;
@@ -59,7 +69,7 @@ export const bookingRepository = {
   memberByUser: (userId) => prisma.members.findUnique({ where: { user_id: userId } }),
   activeMembership: (memberId, accessAt) => prisma.member_memberships.findFirst({ where: { member_id: memberId, status: { in: ["active", "expiring_soon"] }, starts_on: { lte: accessAt }, OR: [{ expires_on: { gte: accessAt } }, { grace_expires_at: { gte: accessAt } }] }, orderBy: { expires_on: "desc" } }),
   entitlement: (packageId) => bookingEntitlement(prisma, packageId),
-  createWithCapacity: ({ bookingCode, memberId, classId, bookedBy }) => prisma.$transaction(async (tx) => {
+  createWithCapacity: ({ bookingCode, memberId, classId, bookedBy }) => serializable(async (tx) => {
     const existing = await tx.bookings.findFirst({ where: { member_id: memberId, class_session_id: classId, status: { in: ["confirmed", "waitlisted"] } } });
     if (existing) return { duplicate: true, booking: existing };
     const session = await tx.class_sessions.findUnique({ where: { id: classId } });
@@ -71,9 +81,9 @@ export const bookingRepository = {
       if (member?.user_id) await tx.notifications.create({ data: { recipient_user_id: member.user_id, category: "member", title: "Bạn đang trong danh sách chờ", body: "Lớp hiện đã đủ chỗ. Hệ thống sẽ tự động xác nhận khi có chỗ trống và bạn còn đủ điều kiện tham gia.", link_path: `/bookings/${booking.id}` } });
     }
     return { duplicate: false, booking };
-  }, { isolationLevel: "Serializable" }),
+  }),
   cancel: (id, reason) => prisma.bookings.update({ where: { id }, data: { status: "cancelled", cancelled_at: new Date(), cancel_reason: reason } }),
-  promoteWaitlisted: async (classId) => prisma.$transaction(async (tx) => {
+  promoteWaitlisted: async (classId) => serializable(async (tx) => {
     const session = await tx.class_sessions.findUnique({ where: { id: classId }, select: { starts_at: true } });
     if (!session) return null;
     const waitlisted = await tx.bookings.findMany({ where: { class_session_id: classId, status: "waitlisted" }, orderBy: { booked_at: "asc" } });
@@ -86,5 +96,5 @@ export const bookingRepository = {
       return booking;
     }
     return null;
-  }, { isolationLevel: "Serializable" }),
+  }),
 };

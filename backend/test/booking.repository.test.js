@@ -84,6 +84,20 @@ describe("booking repository entitlement inheritance", () => {
     }));
   });
 
+  it("retries a serializable conflict so a concurrent booking can become waitlisted", async () => {
+    prisma.$transaction
+      .mockRejectedValueOnce(Object.assign(new Error("serialization conflict"), { code: "P2034" }))
+      .mockImplementationOnce(async (callback) => callback(prisma));
+    prisma.bookings.findFirst.mockResolvedValue(null);
+    prisma.class_sessions.findUnique.mockResolvedValue({ capacity: 1 });
+    prisma.bookings.count.mockResolvedValue(1);
+    prisma.bookings.create.mockResolvedValue({ id: "booking-race", status: "waitlisted" });
+    prisma.members.findUnique.mockResolvedValue({ user_id: "user-race" });
+
+    await expect(bookingRepository.createWithCapacity({ bookingCode: "BKG-RACE", memberId: "member-race", classId: "class-race", bookedBy: "user-race" })).resolves.toMatchObject({ booking: { status: "waitlisted" } });
+    expect(prisma.$transaction).toHaveBeenCalledTimes(2);
+  });
+
   it("skips an ineligible waiter and confirms the earliest eligible waiter", async () => {
     prisma.class_sessions.findUnique.mockResolvedValue({ starts_at: new Date("2026-10-01T09:00:00.000Z") });
     prisma.bookings.findMany.mockResolvedValue([
