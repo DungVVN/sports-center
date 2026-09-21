@@ -2,8 +2,39 @@ import { describe, expect, it, vi } from "vitest";
 import { createAuthService } from "../src/modules/auth/auth.service.js";
 import { createLoginAttemptLimiter } from "../src/shared/security/login-attempt-limiter.js";
 import { hashPassword } from "../src/shared/auth/password.js";
+import { hashVerificationCode } from "../src/shared/auth/session-token.js";
 
 describe("auth service login protection", () => {
+  it("issues only an email code for a new member registration", async () => {
+    const verificationDelivery = { deliver: vi.fn().mockResolvedValue({ delivered: true }) };
+    const repository = {
+      findUserByEmail: vi.fn().mockResolvedValue(null),
+      findMemberByEmailOrPhone: vi.fn().mockResolvedValue(null),
+      createRegistration: vi.fn().mockResolvedValue({ user: { id: "user-1", email: "member@example.com", display_name: "Member", role: "member", status: "pending_verification" }, member: { id: "member-1" } }),
+      createVerification: vi.fn(),
+    };
+    const service = createAuthService({ repository, verificationDelivery, auditService: { record: vi.fn() } });
+
+    await service.register({ fullName: "Member One", email: "MEMBER@example.com", phone: "0901234567", password: "Strongpass1" });
+
+    expect(verificationDelivery.deliver).toHaveBeenCalledTimes(1);
+    expect(verificationDelivery.deliver).toHaveBeenCalledWith(expect.objectContaining({ channel: "email", recipient: "member@example.com" }));
+    expect(repository.createVerification).toHaveBeenCalledWith(expect.objectContaining({ channel: "email", userId: "user-1" }));
+  });
+
+  it("moves a member to approval after email verification", async () => {
+    const code = "123456";
+    const repository = {
+      findLatestVerification: vi.fn().mockResolvedValue({ id: "verification-1", code_hash: hashVerificationCode(code), expires_at: new Date(Date.now() + 60_000), attempts: 0, verified_at: null }),
+      incrementVerificationAttempts: vi.fn(),
+      markVerificationVerified: vi.fn(),
+      updateUserStatus: vi.fn(),
+    };
+    const service = createAuthService({ repository, verificationDelivery: { deliver: vi.fn() }, auditService: { record: vi.fn() } });
+
+    await expect(service.verifyRegistration({ channel: "email", code, userId: "user-1" })).resolves.toEqual({ status: "pending_approval" });
+    expect(repository.updateUserStatus).toHaveBeenCalledWith("user-1", "pending_approval");
+  });
   it("limits repeated failed attempts and audits without storing credentials", async () => {
     const auditService = { record: vi.fn().mockResolvedValue(undefined) };
     const service = createAuthService({

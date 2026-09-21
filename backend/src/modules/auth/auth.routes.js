@@ -12,8 +12,8 @@ const registrationSchema = z.object({ body: z.object({
   phone: z.string().trim().regex(/^(?:\+84|0)\d{9,10}$/, "Số điện thoại Việt Nam chưa hợp lệ."),
   password: z.string().min(8).max(72).regex(/[a-z]/, "Mật khẩu cần có chữ thường.").regex(/[A-Z]/, "Mật khẩu cần có chữ hoa.").regex(/\d/, "Mật khẩu cần có chữ số."),
 }) });
-const verificationSchema = z.object({ body: z.object({ userId: id, channel: z.enum(["email", "phone"]), code: z.string().regex(/^\d{6}$/) }) });
-const resendSchema = z.object({ body: z.object({ userId: id, channel: z.enum(["email", "phone"]) }) });
+const verificationSchema = z.object({ body: z.object({ userId: id, channel: z.literal("email"), code: z.string().regex(/^\d{6}$/) }) });
+const resendSchema = z.object({ body: z.object({ userId: id, channel: z.literal("email") }) });
 const loginSchema = z.object({ body: z.object({ email: z.string().trim().email(), password: z.string().min(1).max(72) }) });
 const passwordSchema = z.object({ body: z.object({ currentPassword: z.string().min(1).max(72), newPassword: z.string().min(8).max(72).regex(/[a-z]/).regex(/[A-Z]/).regex(/\d/) }) });
 const userIdParams = z.object({ params: z.object({ userId: id }) });

@@ -66,7 +66,7 @@ export const openApiSpec = {
       post: { tags: ["Auth"], summary: "Đăng ký hội viên công khai", requestBody: { required: true, content: { "application/json": { schema: { $ref: "#/components/schemas/RegisterRequest" } } } }, responses: { 201: { description: "Đã tạo tài khoản chờ xác thực" }, 409: { description: "Email hoặc số điện thoại đã tồn tại" }, 422: { description: "Dữ liệu không hợp lệ" } } },
     },
     "/auth/verification/confirm": {
-      post: { tags: ["Auth"], summary: "Xác thực email hoặc số điện thoại", requestBody: { required: true, content: { "application/json": { schema: { $ref: "#/components/schemas/VerificationRequest" } } } }, responses: { 200: { description: "Đã xác thực" }, 422: { description: "Mã không hợp lệ hoặc hết hạn" } } },
+      post: { tags: ["Auth"], summary: "Xác thực email", requestBody: { required: true, content: { "application/json": { schema: { $ref: "#/components/schemas/VerificationRequest" } } } }, responses: { 200: { description: "Đã xác thực" }, 422: { description: "Mã không hợp lệ hoặc hết hạn" } } },
     },
     "/auth/verification/resend": { post: { tags: ["Auth"], summary: "Gửi lại mã xác thực", requestBody: { required: true, content: { "application/json": { schema: { $ref: "#/components/schemas/VerificationRecipient" } } } }, responses: { 200: { description: "Đã gửi mã" } } } },
     "/auth/login": { post: { tags: ["Auth"], summary: "Đăng nhập", description: "Giới hạn số lần đăng nhập sai theo email trong khoảng thời gian cấu hình; mọi lần đăng nhập thành công/thất bại đều được audit. Request thay đổi dữ liệu từ trình duyệt phải có Origin thuộc CORS_ORIGIN.", requestBody: { required: true, content: { "application/json": { schema: { $ref: "#/components/schemas/LoginRequest" } } } }, responses: { 200: { description: "Đã tạo phiên; cookie HTTP-only được trả về" }, 401: { description: "Sai thông tin đăng nhập" }, 403: { description: "Tài khoản chưa hoạt động hoặc Origin không được phép" }, 429: { description: "Đăng nhập sai vượt giới hạn, thử lại sau cửa sổ thời gian cấu hình" } } } },
@@ -106,7 +106,7 @@ export const openApiSpec = {
     securitySchemes: { sessionCookie: { type: "apiKey", in: "cookie", name: "sports_center_session" } },
     schemas: {
       RegisterRequest: { type: "object", required: ["fullName", "email", "phone", "password"], properties: { fullName: { type: "string", example: "Nguyễn Minh Anh" }, email: { type: "string", format: "email" }, phone: { type: "string", example: "0901234567" }, password: { type: "string", format: "password", minLength: 8 } } },
-      VerificationRecipient: { type: "object", required: ["userId", "channel"], properties: { userId: { type: "string", format: "uuid" }, channel: { type: "string", enum: ["email", "phone"] } } },
+      VerificationRecipient: { type: "object", required: ["userId", "channel"], properties: { userId: { type: "string", format: "uuid" }, channel: { type: "string", enum: ["email"] } } },
       VerificationRequest: { allOf: [{ $ref: "#/components/schemas/VerificationRecipient" }, { type: "object", required: ["code"], properties: { code: { type: "string", example: "123456" } } }] },
       LoginRequest: { type: "object", required: ["email", "password"], properties: { email: { type: "string", format: "email" }, password: { type: "string", format: "password" } } },
     },

@@ -83,20 +83,17 @@ export function createAuthService({
         phone,
       });
       await auditService.record({ actorUserId: registration.user.id, action: "member.registration.created", entityType: "member", entityId: registration.member.id, summary: "Hội viên tự đăng ký tài khoản." });
-      const verifications = await Promise.all([
-        issueVerification({ channel: "email", recipient: email, userId: registration.user.id }),
-        issueVerification({ channel: "phone", recipient: phone, userId: registration.user.id }),
-      ]);
+      const verifications = [await issueVerification({ channel: "email", recipient: email, userId: registration.user.id })];
       return { user: publicUser(registration.user), memberId: registration.member.id, verifications };
     },
 
     async resendVerification({ channel, userId }) {
-      const [user, member] = await Promise.all([repository.findUserById(userId), repository.findMemberByUserId(userId)]);
+      const user = await repository.findUserById(userId);
       if (!user) throw new AppError({ statusCode: 404, code: "ACCOUNT_NOT_FOUND", message: "Không tìm thấy tài khoản." });
       if (user.status !== "pending_verification") {
         throw new AppError({ statusCode: 409, code: "VERIFICATION_NOT_REQUIRED", message: "Tài khoản này không còn cần xác thực." });
       }
-      const recipient = channel === "email" ? user.email : member?.phone;
+      const recipient = channel === "email" ? user.email : null;
       if (!recipient) throw new AppError({ statusCode: 422, code: "VERIFICATION_RECIPIENT_UNAVAILABLE", message: "Không tìm thấy thông tin nhận mã xác thực." });
       return issueVerification({ channel, recipient, userId });
     },
@@ -113,9 +110,9 @@ export function createAuthService({
         throw new AppError({ statusCode: 422, code: "VERIFICATION_CODE_INVALID", message: "Mã xác thực không chính xác." });
       }
       await repository.markVerificationVerified(verification.id);
-      if (await repository.areRegistrationChannelsVerified(userId)) {
+      if (channel === "email") {
         await repository.updateUserStatus(userId, "pending_approval");
-        await auditService.record({ actorUserId: userId, action: "member.registration.verified", entityType: "user", entityId: userId, summary: "Đã xác thực email và số điện thoại, chờ Lễ tân duyệt." });
+        await auditService.record({ actorUserId: userId, action: "member.registration.verified", entityType: "user", entityId: userId, summary: "Đã xác thực email, chờ Lễ tân duyệt." });
         return { status: "pending_approval" };
       }
       return { status: "pending_verification" };
@@ -132,7 +129,7 @@ export function createAuthService({
       }
       if (user.status !== "active") {
         const messageByStatus = {
-          pending_verification: "Vui lòng xác thực email và số điện thoại trước khi đăng nhập.",
+          pending_verification: "Vui lòng xác thực email trước khi đăng nhập.",
           pending_approval: "Tài khoản đang chờ Lễ tân duyệt.",
           suspended: "Tài khoản đã bị tạm ngưng.",
         };
