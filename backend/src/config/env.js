@@ -27,6 +27,12 @@ const environmentSchema = z.object({
   PAYOS_CLIENT_ID: z.string().min(1).optional(),
   PAYOS_API_KEY: z.string().min(1).optional(),
   PAYOS_CHECKSUM_KEY: z.string().min(1).optional(),
+  MOMO_PARTNER_CODE: z.string().min(1).optional(),
+  MOMO_ACCESS_KEY: z.string().min(1).optional(),
+  MOMO_SECRET_KEY: z.string().min(1).optional(),
+  ZALOPAY_APP_ID: z.string().min(1).optional(),
+  ZALOPAY_KEY1: z.string().min(1).optional(),
+  ZALOPAY_KEY2: z.string().min(1).optional(),
 });
 
 const parsedEnvironment = environmentSchema.safeParse(process.env);
@@ -69,4 +75,10 @@ export const env = Object.freeze({
   payosClientId: values.PAYOS_CLIENT_ID,
   payosApiKey: values.PAYOS_API_KEY,
   payosChecksumKey: values.PAYOS_CHECKSUM_KEY,
+  momoPartnerCode: values.MOMO_PARTNER_CODE,
+  momoAccessKey: values.MOMO_ACCESS_KEY,
+  momoSecretKey: values.MOMO_SECRET_KEY,
+  zaloPayAppId: values.ZALOPAY_APP_ID,
+  zaloPayKey1: values.ZALOPAY_KEY1,
+  zaloPayKey2: values.ZALOPAY_KEY2,
 });

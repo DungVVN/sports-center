@@ -57,4 +57,12 @@ describe("Payment service", () => {
     await expect(createPaymentService({ repository, auditService }).create({ ...input, method: "online", provider: "momo" }, "receptionist-1")).resolves.toMatchObject({ sandboxPaymentUrl: expect.stringContaining("/sandbox/momo/PAY-001") });
     expect(repository.createWithEvent).toHaveBeenCalledWith(expect.objectContaining({ method: "online", provider: "momo" }), expect.any(Object));
   });
+
+  it("closes a pending PayOS payment if link creation fails", async () => {
+    const { repository, auditService } = dependencies();
+    const payosGateway = { createPaymentLink: vi.fn().mockRejectedValue(new Error("PayOS unavailable")), verifyWebhook: vi.fn() };
+    await expect(createPaymentService({ repository, auditService, payosGateway }).create({ ...input, method: "online", provider: "payos" }, "receptionist-1")).rejects.toThrow("PayOS unavailable");
+    expect(repository.complete).toHaveBeenCalledWith(expect.objectContaining({ status: "failed", eventType: "payos_link_creation_failed" }));
+    expect(auditService.record).toHaveBeenCalledWith(expect.objectContaining({ action: "payment.payos_link_failed" }));
+  });
 });
