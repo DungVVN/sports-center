@@ -24,6 +24,9 @@ const environmentSchema = z.object({
   JOBS_ENABLED: z.coerce.boolean().default(true),
   JOB_INTERVAL_MINUTES: z.coerce.number().int().min(15).max(1440).default(60),
   PAYMENT_WEBHOOK_SECRET: z.string().min(32).default("development-only-payment-webhook-secret"),
+  PAYOS_CLIENT_ID: z.string().min(1).optional(),
+  PAYOS_API_KEY: z.string().min(1).optional(),
+  PAYOS_CHECKSUM_KEY: z.string().min(1).optional(),
 });
 
 const parsedEnvironment = environmentSchema.safeParse(process.env);
@@ -63,4 +66,7 @@ export const env = Object.freeze({
   jobsEnabled: values.JOBS_ENABLED,
   jobIntervalMinutes: values.JOB_INTERVAL_MINUTES,
   paymentWebhookSecret: values.PAYMENT_WEBHOOK_SECRET,
+  payosClientId: values.PAYOS_CLIENT_ID,
+  payosApiKey: values.PAYOS_API_KEY,
+  payosChecksumKey: values.PAYOS_CHECKSUM_KEY,
 });

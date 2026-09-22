@@ -99,6 +99,7 @@ enum payment_provider {
   momo
   zalopay
   bank
+  payos
 }
 
 enum payment_status {
@@ -420,6 +421,7 @@ model payments {
   amount_vnd       BigInt
   method           payment_method
   provider         payment_provider?
+  provider_order_code BigInt? @unique
   status           payment_status @default(pending)
   recorded_by      String         @db.Uuid
   notes            String?

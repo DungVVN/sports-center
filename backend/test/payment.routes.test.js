@@ -6,7 +6,7 @@ const memberId = "11111111-1111-4111-8111-111111111111";
 const membershipId = "22222222-2222-4222-8222-222222222222";
 const paymentId = "33333333-3333-4333-8333-333333333333";
 function authService(permissions, role = "receptionist") { return { getAuthentication: vi.fn().mockResolvedValue({ user: { id: "receptionist-1", role }, permissions }) }; }
-function paymentService() { return { ownPayments: vi.fn().mockResolvedValue([]), ownReceipt: vi.fn().mockResolvedValue({ id: paymentId, events: [] }), list: vi.fn().mockResolvedValue([]), create: vi.fn().mockResolvedValue({ id: paymentId, status: "pending" }), get: vi.fn(), confirm: vi.fn().mockResolvedValue({ id: paymentId, status: "paid" }), providerCallback: vi.fn() }; }
+function paymentService() { return { ownPayments: vi.fn().mockResolvedValue([]), ownReceipt: vi.fn().mockResolvedValue({ id: paymentId, events: [] }), list: vi.fn().mockResolvedValue([]), create: vi.fn().mockResolvedValue({ id: paymentId, status: "pending" }), get: vi.fn(), confirm: vi.fn().mockResolvedValue({ id: paymentId, status: "paid" }), providerCallback: vi.fn(), payosCallback: vi.fn().mockResolvedValue({ id: paymentId, status: "paid" }) }; }
 
 describe("Payment routes", () => {
   it("lets a Member view their own payment statuses without payment.record", async () => {
@@ -26,6 +26,18 @@ describe("Payment routes", () => {
     await request(createApp({ authService: authService(["payment.record"]), paymentService: service })).post("/api/v1/payments").set("Authorization", "Bearer token")
       .send({ memberId, amountVnd: 500000, method: "online" }).expect(422);
     expect(service.create).not.toHaveBeenCalled();
+  });
+  it("accepts PayOS as an online payment provider", async () => {
+    const service = paymentService();
+    await request(createApp({ authService: authService(["payment.record"]), paymentService: service })).post("/api/v1/payments").set("Authorization", "Bearer token")
+      .send({ memberId, amountVnd: 500000, method: "online", provider: "payos" }).expect(201);
+    expect(service.create).toHaveBeenCalledWith(expect.objectContaining({ provider: "payos" }), "receptionist-1");
+  });
+  it("routes raw PayOS webhooks to the dedicated verifier before generic provider callbacks", async () => {
+    const service = paymentService();
+    await request(createApp({ authService: authService([]), paymentService: service })).post("/api/v1/payments/callbacks/payos").send({ code: "00", data: {}, signature: "signature" }).expect(200);
+    expect(service.payosCallback).toHaveBeenCalledWith({ code: "00", data: {}, signature: "signature" });
+    expect(service.providerCallback).not.toHaveBeenCalled();
   });
   it("serves the sandbox page for a signed payment link", async () => {
     const service = paymentService();

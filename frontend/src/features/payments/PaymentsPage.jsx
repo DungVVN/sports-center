@@ -137,10 +137,10 @@ export function PaymentsPage({ session }) {
         membershipId: form.membershipId || undefined,
         amountVnd: Number(form.amountVnd),
       });
-      setSandboxPaymentUrl(payment.sandboxPaymentUrl ?? "");
+      setSandboxPaymentUrl(payment.checkoutUrl ?? payment.sandboxPaymentUrl ?? "");
       setForm(emptyForm);
       setMemberships([]);
-      setNotice(payment.sandboxPaymentUrl ? "Đã tạo giao dịch sandbox. Mở liên kết để mô phỏng thanh toán." : "Đã lập phiếu thu tiền mặt, chờ Lễ tân xác nhận đã thu.");
+      setNotice(payment.checkoutUrl ? "Đã tạo liên kết PayOS. Mở liên kết để khách thanh toán." : payment.sandboxPaymentUrl ? "Đã tạo giao dịch sandbox. Mở liên kết để mô phỏng thanh toán." : "Đã lập phiếu thu tiền mặt, chờ Lễ tân xác nhận đã thu.");
       await load();
     } catch (caught) {
       setError(caught.message);
@@ -191,15 +191,16 @@ export function PaymentsPage({ session }) {
             Phương thức
             <select name="method" onChange={updateForm} value={form.method}>
               <option value="cash">Tiền mặt tại quầy</option>
-              <option value="online">Thanh toán sandbox</option>
+              <option value="online">Thanh toán trực tuyến</option>
             </select>
           </label>
           {form.method === "online" && <label>
-            Cổng sandbox
+            Cổng thanh toán
             <select name="provider" onChange={updateForm} value={form.provider}>
               <option value="vnpay">VNPay</option>
               <option value="momo">MoMo</option>
               <option value="zalopay">ZaloPay</option>
+              <option value="payos">PayOS / chuyển khoản QR</option>
             </select>
           </label>}
           <label>
@@ -252,7 +253,7 @@ export function PaymentsPage({ session }) {
             Lập phiếu thu
           </Button>
         </form>}
-        {sandboxPaymentUrl && <p className="auth-success" role="status">Liên kết sandbox: <a href={sandboxPaymentUrl} rel="noreferrer" target="_blank">Mở thanh toán sandbox</a></p>}
+        {sandboxPaymentUrl && <p className="auth-success" role="status">Liên kết thanh toán: <a href={sandboxPaymentUrl} rel="noreferrer" target="_blank">Mở trang thanh toán</a></p>}
         <section className="members-list">
           <div className="list-heading">
             <h2>{isCashier ? "Phiếu thu tại quầy" : "Danh sách phiếu thu"}</h2>
