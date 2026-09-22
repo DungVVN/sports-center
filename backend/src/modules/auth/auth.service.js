@@ -16,7 +16,7 @@ function normalizePhone(phone) {
 }
 
 function publicUser(user) {
-  return { id: user.id, email: user.email, displayName: user.display_name, role: user.role, status: user.status };
+  return { id: user.id, email: user.email, displayName: user.display_name, role: user.role, status: user.status, mustChangePassword: Boolean(user.must_change_password) };
 }
 
 function ownProfileView({ user, member, staffProfile, contacts }) {
@@ -239,12 +239,14 @@ export function createAuthService({
       await repository.revokeSession(sessionId);
     },
 
-    async changePassword({ currentPassword, newPassword, userId }) {
+    async changePassword({ currentPassword, newPassword, userId, currentSessionId }) {
       const user = await repository.userCredentials(userId);
       if (!user || !await verifyPassword(currentPassword, user.password_hash)) throw new AppError({ statusCode: 422, code: "CURRENT_PASSWORD_INVALID", message: "Mật khẩu hiện tại không đúng." });
       await repository.updatePassword(userId, await hashPassword(newPassword));
-      await repository.revokeUserSessions(userId);
+      if (currentSessionId && repository.revokeOtherUserSessions) await repository.revokeOtherUserSessions(userId, currentSessionId);
+      else await repository.revokeUserSessions(userId);
       await auditService.record({ actorUserId: userId, action: "auth.password_changed", entityType: "user", entityId: userId, summary: "Đã đổi mật khẩu và thu hồi các phiên đăng nhập." });
+      return { mustChangePassword: false };
     },
 
     async getAuthentication(token) {

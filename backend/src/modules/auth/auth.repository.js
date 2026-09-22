@@ -185,9 +185,10 @@ export const authRepository = {
     return prisma.auth_sessions.updateMany({ where: { id: sessionId, revoked_at: null }, data: { revoked_at: new Date() } });
   },
 
-  userCredentials(userId) { return prisma.users.findUnique({ where: { id: userId }, select: { id: true, password_hash: true } }); },
-  updatePassword(userId, passwordHash) { return prisma.users.update({ where: { id: userId }, data: { password_hash: passwordHash } }); },
+  userCredentials(userId) { return prisma.users.findUnique({ where: { id: userId }, select: { id: true, password_hash: true, must_change_password: true } }); },
+  updatePassword(userId, passwordHash) { return prisma.users.update({ where: { id: userId }, data: { password_hash: passwordHash, must_change_password: false } }); },
   revokeUserSessions(userId) { return prisma.auth_sessions.updateMany({ where: { user_id: userId, revoked_at: null }, data: { revoked_at: new Date() } }); },
+  revokeOtherUserSessions(userId, sessionId) { return prisma.auth_sessions.updateMany({ where: { user_id: userId, id: { not: sessionId }, revoked_at: null }, data: { revoked_at: new Date() } }); },
 
   async findSessionUser(sessionId, userId) {
     const session = await prisma.auth_sessions.findUnique({ where: { id: sessionId } });

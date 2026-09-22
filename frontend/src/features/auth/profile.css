@@ -2,7 +2,13 @@
   align-items: start;
   display: grid;
   gap: var(--space-24);
-  grid-template-columns: minmax(0, 1.15fr) minmax(22rem, 0.85fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.profile-page__main-col,
+.profile-page__side-col {
+  display: grid;
+  gap: var(--space-24);
+  align-content: start;
 }
 .profile-page__form {
   gap: var(--space-20);

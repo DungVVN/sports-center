@@ -19,15 +19,33 @@ const labels = {
 };
 const navigationByRole = {
   admin: [
-    { id: "dashboard", label: "Toàn cảnh" }, { id: "profile", label: "Hồ sơ" }, { id: "members", label: "Hội viên" },
-    { id: "packages", label: "Gói tập", children: [{ id: "packageCreate", label: "Tạo gói tập" }, { id: "packageCatalog", label: "Danh mục gói" }] },
-    { id: "classes", label: "Lớp học" }, { id: "bookings", label: "Đặt chỗ" }, { id: "attendance", label: "Điểm danh" }, { id: "payments", label: "Thanh toán" },
-    { id: "staff", label: "Danh tính & nhân sự" }, { id: "training", label: "Giáo án" }, { id: "reports", label: "Báo cáo" }, { id: "audit", label: "Kiểm toán" }, { id: "support", label: "Hỗ trợ" },
+    { id: "dashboard", label: "Toàn cảnh" },
+    { id: "profile", label: "Hồ sơ" },
+    { id: "members", label: "Hội viên" },
+    { id: "registrations", label: "Duyệt đăng ký" },
+    {
+      id: "packages",
+      label: "Gói tập",
+      children: [
+        { id: "packageCreate", label: "Tạo gói tập" },
+        { id: "packageCatalog", label: "Danh mục gói" },
+      ],
+    },
+    { id: "classes", label: "Lớp học" },
+    { id: "bookings", label: "Đặt chỗ" },
+    { id: "attendance", label: "Điểm danh" },
+    { id: "payments", label: "Thanh toán" },
+    { id: "staff", label: "Danh tính & nhân sự" },
+    { id: "training", label: "Giáo án" },
+    { id: "reports", label: "Báo cáo" },
+    { id: "audit", label: "Kiểm toán" },
+    { id: "support", label: "Hỗ trợ" },
   ],
   manager: [
     { id: "dashboard", label: "Tổng quan" },
     { id: "profile", label: "Hồ sơ" },
     { id: "members", label: "Hội viên" },
+    { id: "registrations", label: "Duyệt đăng ký" },
     {
       id: "packages",
       label: "Gói tập",
@@ -77,8 +95,8 @@ const navigationByRole = {
   ],
 };
 
-export function DashboardPlaceholder({ session, onLogout }) {
-  const [view, setView] = useState("dashboard");
+export function DashboardPlaceholder({ initialView = "dashboard", session, onLogout }) {
+  const [view, setView] = useState(initialView);
   const [notifications, setNotifications] = useState([]);
   const navigation = useMemo(
     () => navigationByRole[session.user.role] ?? navigationByRole.member,

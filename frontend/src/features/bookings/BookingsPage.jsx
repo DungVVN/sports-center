@@ -231,8 +231,12 @@ export function BookingsPage({ session }) {
         </p>
       )}
       <section className="members-workspace-stacked">
-        {canCreateBooking && <form className="members-form members-form--booking-create" onSubmit={create}>
-          <h2>Đặt lớp</h2>
+        {canCreateBooking && (
+          <form
+            className={`members-form members-form--booking-create${isMember ? " members-form--booking-create-member" : ""}`}
+            onSubmit={create}
+          >
+            <h2>{isMember ? "Đặt chỗ lớp học" : "Đặt lớp"}</h2>
           {!isMember && (
             <label>
               Hội viên
@@ -299,7 +303,8 @@ export function BookingsPage({ session }) {
           <Button loading={submitting} type="submit">
             Đặt chỗ
           </Button>
-        </form>}
+        </form>
+      )}
         <section className="members-list">
           <div className="list-heading">
             <h2>{isMember ? "Lịch đặt của tôi" : role === "coach" ? "Danh sách đặt chỗ" : "Lịch sử đặt chỗ"}</h2>

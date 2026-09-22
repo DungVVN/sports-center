@@ -63,9 +63,17 @@ describe("auth service login protection", () => {
     const repository = { userCredentials: vi.fn().mockResolvedValue({ id: "user-1", password_hash: await hashPassword("Current1") }), updatePassword: vi.fn(), revokeUserSessions: vi.fn() };
     const auditService = { record: vi.fn() };
     const service = createAuthService({ repository, verificationDelivery: { send: vi.fn() }, auditService, captchaVerifier: acceptingCaptcha });
-    await expect(service.changePassword({ userId: "user-1", currentPassword: "Current1", newPassword: "Updated2" })).resolves.toBeUndefined();
+    await expect(service.changePassword({ userId: "user-1", currentPassword: "Current1", newPassword: "Updated2" })).resolves.toEqual({ mustChangePassword: false });
     expect(repository.updatePassword).toHaveBeenCalled();
     expect(repository.revokeUserSessions).toHaveBeenCalledWith("user-1");
+  });
+
+  it("keeps the current session after an initial password change", async () => {
+    const repository = { userCredentials: vi.fn().mockResolvedValue({ id: "user-1", password_hash: await hashPassword("Current1"), must_change_password: true }), updatePassword: vi.fn(), revokeOtherUserSessions: vi.fn() };
+    const service = createAuthService({ repository, verificationDelivery: { send: vi.fn() }, auditService: { record: vi.fn() }, captchaVerifier: acceptingCaptcha });
+
+    await expect(service.changePassword({ userId: "user-1", currentSessionId: "session-1", currentPassword: "Current1", newPassword: "Updated2" })).resolves.toEqual({ mustChangePassword: false });
+    expect(repository.revokeOtherUserSessions).toHaveBeenCalledWith("user-1", "session-1");
   });
 
   it("returns current role permissions with a successful login", async () => {

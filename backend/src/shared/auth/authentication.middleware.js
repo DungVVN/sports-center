@@ -13,6 +13,10 @@ export function authenticate(authService) {
       if (!token) throw new AppError({ statusCode: 401, code: "UNAUTHENTICATED", message: "Bạn cần đăng nhập để tiếp tục." });
       request.auth = await authService.getAuthentication(token);
       request.auth.token = token;
+      const allowedDuringInitialPasswordChange = new Set(["/api/v1/auth/me", "/api/v1/auth/password/change", "/api/v1/auth/logout"]);
+      if (request.auth.user.mustChangePassword && !allowedDuringInitialPasswordChange.has(request.originalUrl.split("?")[0])) {
+        throw new AppError({ statusCode: 403, code: "PASSWORD_CHANGE_REQUIRED", message: "Bạn cần đổi mật khẩu tạm thời trước khi tiếp tục." });
+      }
       next();
     } catch (error) {
       next(error);

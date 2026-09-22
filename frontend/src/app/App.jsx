@@ -7,6 +7,7 @@ import { TotpVerificationPage } from "../features/auth/TotpVerificationPage.jsx"
 import { PendingApprovalPage } from "../features/auth/PendingApprovalPage.jsx";
 import { RegisterPage } from "../features/auth/RegisterPage.jsx";
 import { VerificationPage } from "../features/auth/VerificationPage.jsx";
+import { InitialPasswordChangePage } from "../features/auth/InitialPasswordChangePage.jsx";
 import { authenticationExpiredEvent } from "../api/client.js";
 import { authApi } from "../features/auth/auth-api.js";
 
@@ -21,10 +22,12 @@ export function App() {
   const [view, setView] = useState("login");
   const [registration, setRegistration] = useState(null);
   const [session, setSession] = useState(null);
+  const [firstLoginProfile, setFirstLoginProfile] = useState(false);
   const [mfaChallenge, setMfaChallenge] = useState(null);
   useEffect(() => {
     const resetToLogin = () => {
       setSession(null);
+      setFirstLoginProfile(false);
       setView("login");
     };
     window.addEventListener(authenticationExpiredEvent, resetToLogin);
@@ -35,7 +38,9 @@ export function App() {
   const loginPage = isAdminPortal
     ? <AdminLoginPage onLoggedIn={setSession} onMfaRequired={onMfaRequired} />
     : <LoginPage onLoggedIn={setSession} onMfaRequired={onMfaRequired} onRegister={() => setView("register")} />;
-  const content = session ? <DashboardPlaceholder session={session} onLogout={() => { setSession(null); setView("login"); }} /> : {
+  const content = session?.user.mustChangePassword
+    ? <InitialPasswordChangePage onCompleted={() => { setSession((current) => ({ ...current, user: { ...current.user, mustChangePassword: false } })); setFirstLoginProfile(true); }} />
+    : session ? <DashboardPlaceholder initialView={firstLoginProfile ? "profile" : "dashboard"} session={session} onLogout={() => { setSession(null); setFirstLoginProfile(false); setView("login"); }} /> : {
     login: loginPage,
     register: isAdminPortal ? loginPage : <RegisterPage onLogin={() => setView("login")} onRegistered={(value) => { setRegistration(value); setView("verify"); }} />,
     verify: registration ? <VerificationPage registration={registration} onCompleted={() => setView("pending")} /> : loginPage,

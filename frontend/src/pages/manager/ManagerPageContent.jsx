@@ -22,7 +22,7 @@ export function ManagerPageContent({ onNavigate, onSessionRevoked, session, view
     dashboard: <DashboardHome onNavigate={onNavigate} role={dashboardRole} />,
     packageCatalog: <MembershipsPage mode="catalog" session={session} />,
     packageCreate: <MembershipsPage mode="create" session={session} />,
-    members: <MembersPage readOnly />,
+    members: <MembersPage readOnly={dashboardRole === "manager"} />,
     packages: <MembershipsPage session={session} />,
     payments: <PaymentsPage session={session} />,
     profile: <ProfilePage onSessionRevoked={onSessionRevoked} />,

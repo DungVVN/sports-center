@@ -109,7 +109,7 @@ export function createAuthRouter(authService) {
       sendSuccess(response, { data: { loggedOut: true } });
     } catch (error) { next(error); }
   });
-  router.post("/password/change", authRequired, validateRequest(passwordSchema), async (request, response, next) => { try { await authService.changePassword({ ...request.validated.body, userId: request.auth.user.id }); response.clearCookie("sports_center_session", { httpOnly: true, sameSite: env.nodeEnv === "production" ? "none" : "lax", secure: env.nodeEnv === "production", path: env.apiBasePath }); sendSuccess(response, { data: { changed: true } }); } catch (error) { next(error); } });
+  router.post("/password/change", authRequired, validateRequest(passwordSchema), async (request, response, next) => { try { const result = await authService.changePassword({ ...request.validated.body, userId: request.auth.user.id, currentSessionId: request.auth.sessionId }); sendSuccess(response, { data: { changed: true, ...result } }); } catch (error) { next(error); } });
   router.get("/me", authRequired, (request, response) => sendSuccess(response, { data: { user: request.auth.user, permissions: request.auth.permissions } }));
   router.get("/profile", authRequired, async (request, response, next) => {
     try { sendSuccess(response, { data: await authService.getOwnProfile(request.auth.user.id) }); } catch (error) { next(error); }

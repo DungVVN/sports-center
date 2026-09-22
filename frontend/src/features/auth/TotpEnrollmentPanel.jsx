@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ShieldCheck } from "lucide-react";
+import { Check, Copy, ShieldCheck } from "lucide-react";
 import { ApiError } from "../../api/api-error.js";
 import { Button } from "../../components/ui/Button.jsx";
 import { authApi } from "./auth-api.js";
@@ -7,6 +7,7 @@ import { authApi } from "./auth-api.js";
 export function TotpEnrollmentPanel({ onEnrollmentCompleted }) {
   const [enrollment, setEnrollment] = useState(null);
   const [code, setCode] = useState("");
+  const [copiedSecret, setCopiedSecret] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(false);
@@ -41,15 +42,62 @@ export function TotpEnrollmentPanel({ onEnrollmentCompleted }) {
     }
   }
 
-  return <section className="members-list profile-page__mfa">
-    <div className="list-heading"><div><h2>Authenticator</h2><p>Manager dùng mã 6 số từ ứng dụng Authenticator khi đăng nhập.</p></div></div>
-    {notice && <p className="profile-notice" role="status">{notice}</p>}
-    {error && <p className="auth-alert" role="alert">{error}</p>}
-    {!enrollment ? <Button loading={loading} onClick={begin} type="button"><ShieldCheck aria-hidden="true" size={16} />Thiết lập Authenticator</Button> : <form className="members-form profile-page__mfa-form" onSubmit={confirm}>
-      <p>Trong ứng dụng Authenticator, chọn nhập khóa thiết lập thủ công và dùng khóa bên dưới. Không chia sẻ khóa này.</p>
-      <label>Khóa thiết lập<input aria-label="Khóa thiết lập Authenticator" readOnly value={enrollment.secret} /></label>
-      <label>Mã 6 số<input autoComplete="one-time-code" inputMode="numeric" maxLength="6" onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))} pattern="\d{6}" required value={code} /></label>
-      <div className="profile-page__actions"><Button disabled={code.length !== 6} loading={loading} type="submit">Xác nhận Authenticator</Button><Button onClick={() => { setEnrollment(null); setCode(""); }} type="button" variant="ghost">Hủy</Button></div>
-    </form>}
-  </section>;
+  function copySecret() {
+    if (!enrollment?.secret) return;
+    navigator.clipboard.writeText(enrollment.secret);
+    setCopiedSecret(true);
+    setTimeout(() => setCopiedSecret(false), 2000);
+  }
+
+  return (
+    <section className="members-list profile-page__mfa">
+      <div className="list-heading">
+        <div>
+          <h2>Authenticator</h2>
+          <p>Manager dùng mã 6 số từ ứng dụng Authenticator khi đăng nhập.</p>
+        </div>
+      </div>
+      {notice && <p className="profile-notice" role="status">{notice}</p>}
+      {error && <p className="auth-alert" role="alert">{error}</p>}
+      {!enrollment ? (
+        <Button loading={loading} onClick={begin} type="button">
+          <ShieldCheck aria-hidden="true" size={16} />Thiết lập Authenticator
+        </Button>
+      ) : (
+        <form className="members-form profile-page__mfa-form" onSubmit={confirm}>
+          <p>Trong ứng dụng Authenticator, chọn nhập khóa thiết lập thủ công và dùng khóa bên dưới. Không chia sẻ khóa này.</p>
+          <label>
+            Khóa thiết lập
+            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+              <input aria-label="Khóa thiết lập Authenticator" readOnly value={enrollment.secret} style={{ flex: 1 }} />
+              <Button onClick={copySecret} size="sm" type="button" variant="outline">
+                {copiedSecret ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}
+                {copiedSecret ? "Đã sao chép!" : "Sao chép"}
+              </Button>
+            </div>
+          </label>
+          <label>
+            Mã 6 số
+            <input
+              autoComplete="one-time-code"
+              inputMode="numeric"
+              maxLength="6"
+              onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))}
+              pattern="\d{6}"
+              required
+              value={code}
+            />
+          </label>
+          <div className="profile-page__actions">
+            <Button disabled={code.length !== 6} loading={loading} type="submit">
+              Xác nhận Authenticator
+            </Button>
+            <Button onClick={() => { setEnrollment(null); setCode(""); }} type="button" variant="ghost">
+              Hủy
+            </Button>
+          </div>
+        </form>
+      )}
+    </section>
+  );
 }

@@ -36,7 +36,11 @@ const statusLabels = {
   completed: "Hoàn thành",
 };
 function toDateTimeInput(value) {
-  return value ? new Date(value).toISOString().slice(0, 16) : "";
+  if (!value) return "";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (num) => String(num).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 export function ClassesPage({ session }) {
@@ -61,8 +65,8 @@ export function ClassesPage({ session }) {
     direction: "asc",
   });
   const role = session?.user?.role;
-  const canManage = role === "manager";
-  const canReview = role === "receptionist";
+  const canManage = ["admin", "manager"].includes(role);
+  const canReview = ["admin", "manager", "receptionist"].includes(role);
   const ownClasses = useMemo(
     () =>
       role === "coach"

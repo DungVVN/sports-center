@@ -8,7 +8,7 @@ import { MemberTrainingPage } from "../../features/training/MemberTrainingPage.j
 import { SupportPage } from "../../features/support/SupportPage.jsx";
 import { NotificationPreferencesPage } from "../../features/notifications/NotificationPreferencesPage.jsx";
 
-export function MemberPageContent({ onNavigate, session, view }) {
+export function MemberPageContent({ onNavigate, onSessionRevoked, session, view }) {
   const pages = {
     bookings: <BookingsPage session={session} />,
     dashboard: <DashboardHome onNavigate={onNavigate} role="member" />,
@@ -16,7 +16,7 @@ export function MemberPageContent({ onNavigate, session, view }) {
     "my-payments": <MemberPaymentsPage />,
     "my-training": <MemberTrainingPage />,
     packages: <MembershipsPage session={session} />,
-    profile: <ProfilePage />,
+    profile: <ProfilePage onSessionRevoked={onSessionRevoked} />,
     support: <SupportPage />,
     "notification-preferences": <NotificationPreferencesPage />,
   };

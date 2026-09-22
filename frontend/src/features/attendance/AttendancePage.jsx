@@ -35,6 +35,7 @@ export function AttendancePage({ session }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [confirmSubmitOpen, setConfirmSubmitOpen] = useState(false);
   const [now, setNow] = useState(() => new Date());
   const role = session?.user?.role;
   const coachId = role === "coach" ? session.user.id : null;
@@ -333,7 +334,7 @@ export function AttendancePage({ session }) {
           <div className="list-heading">
             <h2>Danh sách điểm danh lớp</h2>
             <div className="list-heading__actions">
-              {classId && <Button disabled={submitting} onClick={submitAttendance} size="sm">Lưu điểm danh</Button>}
+              {classId && <Button disabled={submitting} onClick={() => setConfirmSubmitOpen(true)} size="sm">Lưu điểm danh</Button>}
               {classId && <Button onClick={() => refresh()} size="sm" variant="ghost">Tải lại</Button>}
             </div>
           </div>
@@ -477,6 +478,44 @@ export function AttendancePage({ session }) {
             </Button>
           </div>
         </form>
+      </Dialog>
+      <Dialog
+        isOpen={confirmSubmitOpen}
+        onClose={() => { if (!submitting) setConfirmSubmitOpen(false); }}
+        title="Xác nhận lưu điểm danh"
+      >
+        <div className="dialog__body">
+          <p>
+            {attendanceSummary.not_marked > 0 ? (
+              <>
+                Hiện còn <strong>{attendanceSummary.not_marked}</strong> hội viên chưa được đánh dấu.
+                Hệ thống sẽ tự động ghi nhận trạng thái <strong>Vắng mặt</strong> cho những hội viên này. Bạn có chắc chắn muốn tiếp tục?
+              </>
+            ) : (
+              "Tất cả hội viên đã được ghi nhận trạng thái. Bạn có chắc chắn muốn lưu điểm danh và gửi thông báo cho hội viên không?"
+            )}
+          </p>
+        </div>
+        <div className="dialog__actions">
+          <Button
+            disabled={submitting}
+            onClick={() => setConfirmSubmitOpen(false)}
+            type="button"
+            variant="secondary"
+          >
+            Quay lại kiểm tra
+          </Button>
+          <Button
+            loading={submitting}
+            onClick={async () => {
+              await submitAttendance();
+              setConfirmSubmitOpen(false);
+            }}
+            type="button"
+          >
+            Xác nhận lưu
+          </Button>
+        </div>
       </Dialog>
     </main>
   );

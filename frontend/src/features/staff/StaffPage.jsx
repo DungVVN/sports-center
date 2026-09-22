@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Check, Copy } from "lucide-react";
 import { ApiError } from "../../api/api-error.js";
 import { Button } from "../../components/ui/Button.jsx";
 import { DataTableToolbar, FilterMenu, SortableHeader } from "../../components/ui/DataTable.jsx";
@@ -36,6 +37,8 @@ export function StaffPage() {
   const [editing, setEditing] = useState(null);
   const [editForm, setEditForm] = useState(empty);
   const [password, setPassword] = useState(null);
+  const [credentialEmailDelivered, setCredentialEmailDelivered] = useState(null);
+  const [copiedPassword, setCopiedPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -87,10 +90,12 @@ export function StaffPage() {
   async function create(event) {
     event.preventDefault();
     setError("");
+    setCredentialEmailDelivered(null);
     setSubmitting(true);
     try {
       const result = await staffApi.create(form);
-      setPassword(result.temporaryPassword);
+      setPassword(result.temporaryPassword ?? null);
+      setCredentialEmailDelivered(result.credentialEmailDelivered === true);
       setStaff((items) => [result.staff, ...items]);
       setForm(empty);
     } catch (caught) {
@@ -102,6 +107,12 @@ export function StaffPage() {
     } finally {
       setSubmitting(false);
     }
+  }
+  function copyPassword() {
+    if (!password) return;
+    navigator.clipboard.writeText(password);
+    setCopiedPassword(true);
+    setTimeout(() => setCopiedPassword(false), 2000);
   }
   async function status(id, value) {
     setError("");
@@ -174,15 +185,27 @@ export function StaffPage() {
       {password && (
         <section className="staff-password">
           <strong>Mật khẩu tạm thời — chỉ hiển thị lần này</strong>
-          <code>{password}</code>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", margin: "8px 0" }}>
+            <code>{password}</code>
+            <Button onClick={copyPassword} size="sm" type="button" variant="outline">
+              {copiedPassword ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}
+              {copiedPassword ? "Đã sao chép!" : "Sao chép"}
+            </Button>
+          </div>
           <p>
-            Manager hãy gửi riêng cho nhân viên. Mật khẩu này không được lưu
-            hoặc hiển thị lại.
+            {credentialEmailDelivered
+              ? "Mật khẩu này không được lưu hoặc hiển thị lại. Hệ thống cũng đã gửi email thông tin đăng nhập cho nhân viên."
+              : "Email chưa gửi được hoặc chưa cấu hình SMTP, Quản lý vui lòng gửi riêng thông tin cho nhân viên. Mật khẩu này không được lưu hoặc hiển thị lại."}
           </p>
           <Button onClick={() => setPassword(null)} variant="secondary">
             Đã lưu an toàn
           </Button>
         </section>
+      )}
+      {credentialEmailDelivered && (
+        <p className="auth-alert auth-alert--success" role="status">
+          Đã gửi email chứa tài khoản và mật khẩu tạm thời cho nhân viên.
+        </p>
       )}
       <section className="staff-workspace-stacked">
         <form className="staff-form staff-form--create" onSubmit={create}>

@@ -67,10 +67,10 @@ function estimatedExpiry(startsOn, durationDays) {
 export function MembershipsPage({ mode = "workspace", session }) {
   const role = session?.user?.role;
   const isMember = role === "member";
-  const isManager = role === "manager";
+  const isManager = ["admin", "manager"].includes(role);
   const isReceptionist = role === "receptionist";
   const canCreatePackages = isManager;
-  const canReviewFreeze = isReceptionist;
+  const canReviewFreeze = ["admin", "manager", "receptionist"].includes(role);
   const showManagerCreate = isManager && mode !== "catalog";
   const showManagerCatalog = isManager && mode !== "create";
   const packagePageLayout = isManager && mode === "create" ? " package-page-layout package-page-layout--create" : isManager && mode === "catalog" ? " package-page-layout package-page-layout--catalog" : "";

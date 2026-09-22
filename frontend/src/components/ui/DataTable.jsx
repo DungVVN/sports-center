@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { ArrowDownAZ, ArrowUpAZ, ChevronDown, Search, SlidersHorizontal, X } from "lucide-react";
 
 export function DataTableToolbar({ children, onClear, resultCount, search, setSearch, searchPlaceholder = "Tìm kiếm..." }) {
@@ -45,9 +46,33 @@ export function SortableHeader({ activeSort, children, className, column, direct
   );
 }
 
-export function FilterMenu({ activeCount = 0, children, className = "", isOpen, onToggle }) {
+export function FilterMenu({ activeCount = 0, children, className = "", isOpen, onClose, onToggle }) {
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    function handleClickOutside(event) {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        if (onClose) onClose();
+        else if (onToggle) onToggle();
+      }
+    }
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        if (onClose) onClose();
+        else if (onToggle) onToggle();
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen, onClose, onToggle]);
+
   return (
-    <div className={`filter-menu ${className}`.trim()}>
+    <div ref={menuRef} className={`filter-menu ${className}`.trim()}>
       <button
         aria-expanded={isOpen}
         className="filter-menu__trigger"

@@ -9,7 +9,7 @@ import { PaymentsPage } from "../../features/payments/PaymentsPage.jsx";
 import { ProfilePage } from "../../features/auth/ProfilePage.jsx";
 import { SupportStaffPage } from "../../features/support/SupportStaffPage.jsx";
 
-export function ReceptionistPageContent({ onNavigate, session, view }) {
+export function ReceptionistPageContent({ onNavigate, onSessionRevoked, session, view }) {
   const pages = {
     attendance: <AttendancePage session={session} />,
     bookings: <BookingsPage session={session} />,
@@ -18,7 +18,7 @@ export function ReceptionistPageContent({ onNavigate, session, view }) {
     members: <MembersPage />,
     packages: <MembershipsPage session={session} />,
     payments: <PaymentsPage session={session} />,
-    profile: <ProfilePage />,
+    profile: <ProfilePage onSessionRevoked={onSessionRevoked} />,
     registrations: <RegistrationApprovalPage />,
     support: <SupportStaffPage />,
   };

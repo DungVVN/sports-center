@@ -103,6 +103,16 @@
   grid-column: 1 / -1;
 }
 
+.training-session-form {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 1024px) {
+  .training-session-form {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
 .training-form-heading,
 .training-field-group {
   grid-column: 1 / -1;
@@ -171,6 +181,16 @@
 .members-form--booking-create h2,
 .members-form--booking-create > button {
   grid-column: 1 / -1;
+}
+
+.members-form--booking-create-member {
+  align-items: end;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.members-form--booking-create-member > button {
+  grid-column: auto;
+  min-width: 10rem;
 }
 
 .members-form--payment-create {

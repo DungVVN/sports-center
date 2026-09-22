@@ -23,5 +23,41 @@ export function TotpVerificationPage({ challenge, onCompleted, onCancel, verifyL
       setLoading(false);
     }
   }
-  return <AuthLayout><div className="auth-card"><ShieldCheck aria-hidden="true" size={28} /><h2>Xác thực Authenticator</h2><p className="auth-card__subtitle">Nhập mã 6 số từ ứng dụng Authenticator để hoàn tất đăng nhập {portalName}.</p><form className="auth-form" onSubmit={submit}><div className="field"><label htmlFor="totp-code">Mã xác thực</label><input autoComplete="one-time-code" id="totp-code" inputMode="numeric" maxLength="6" onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))} pattern="\d{6}" required value={code} /></div>{error && <p className="auth-alert" role="alert">{error}</p>}<Button disabled={code.length !== 6} loading={loading} size="lg" type="submit">Xác thực</Button></form><button className="auth-link" onClick={onCancel} type="button">Quay lại đăng nhập</button></div></AuthLayout>;
+  return (
+    <AuthLayout>
+      <div className="auth-card">
+        <div className="auth-status-icon">
+          <ShieldCheck aria-hidden="true" size={24} />
+        </div>
+        <h2>Xác thực Authenticator</h2>
+        <p className="auth-card__subtitle">
+          Nhập mã 6 số từ ứng dụng Authenticator để hoàn tất đăng nhập {portalName}.
+        </p>
+        <form className="auth-form" onSubmit={submit}>
+          <div className="field">
+            <label htmlFor="totp-code">Mã xác thực</label>
+            <input
+              autoComplete="one-time-code"
+              className="verification-code"
+              id="totp-code"
+              inputMode="numeric"
+              maxLength={6}
+              onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))}
+              pattern="\d{6}"
+              placeholder="000000"
+              required
+              value={code}
+            />
+          </div>
+          {error && <p className="auth-alert" role="alert">{error}</p>}
+          <Button disabled={code.length !== 6} loading={loading} size="lg" type="submit">
+            Xác thực
+          </Button>
+        </form>
+        <button className="auth-link" onClick={onCancel} type="button">
+          Quay lại đăng nhập
+        </button>
+      </div>
+    </AuthLayout>
+  );
 }

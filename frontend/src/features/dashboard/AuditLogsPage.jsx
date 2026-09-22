@@ -92,7 +92,7 @@ export function AuditLogsPage() {
           <p>Chưa có nhật ký phù hợp.</p>
         ) : (
           <>
-            <DataTableToolbar resultCount={auditSearch ? visibleItems.length : pagination.total} search={auditSearch} searchPlaceholder="Tìm hoạt động, đối tượng hoặc người thao tác..." setSearch={(value) => { setAuditSearch(value); setPage(1); }} />
+            <DataTableToolbar onClear={() => { setAuditSearch(""); setPage(1); }} resultCount={auditSearch ? visibleItems.length : pagination.total} search={auditSearch} searchPlaceholder="Tìm hoạt động, đối tượng hoặc người thao tác..." setSearch={(value) => { setAuditSearch(value); }} />
             {visibleItems.length === 0 ? <p>Không có nhật ký phù hợp với tìm kiếm.</p> : <div className="table-scroll">
             <table className="audit-log-table">
               <thead>
@@ -142,7 +142,7 @@ export function AuditLogsPage() {
               </tbody>
             </table>
             </div>}
-            {!auditSearch && <Pagination {...pagination} setPage={setPage} />}
+            <Pagination {...pagination} setPage={setPage} />
           </>
         )}
       </section>

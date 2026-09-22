@@ -5,13 +5,13 @@ import { DashboardHome } from "../../features/dashboard/DashboardHome.jsx";
 import { TrainingPage } from "../../features/training/TrainingPage.jsx";
 import { ProfilePage } from "../../features/auth/ProfilePage.jsx";
 
-export function CoachPageContent({ onNavigate, session, view }) {
+export function CoachPageContent({ onNavigate, onSessionRevoked, session, view }) {
   const pages = {
     attendance: <AttendancePage session={session} />,
     bookings: <BookingsPage session={session} />,
     classes: <ClassesPage session={session} />,
     dashboard: <DashboardHome onNavigate={onNavigate} role="coach" />,
-    profile: <ProfilePage />,
+    profile: <ProfilePage onSessionRevoked={onSessionRevoked} />,
     training: <TrainingPage session={session} />,
   };
 

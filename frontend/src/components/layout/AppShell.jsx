@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Bell,
   CalendarDays,
@@ -123,6 +123,15 @@ export function AppShell({ children, currentView, navigation, notifications, onL
     setMobileNavOpen(false);
   }
 
+  useEffect(() => {
+    if (!notificationsOpen) return undefined;
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") setNotificationsOpen(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [notificationsOpen]);
+
   return (
     <div className="app-shell">
       <aside className="app-sidebar">
@@ -144,10 +153,13 @@ export function AppShell({ children, currentView, navigation, notifications, onL
         </header>
         <main className="app-main">{children}</main>
         {notificationsOpen && (
-          <aside aria-label="Thông báo" className="app-notification-panel">
-            <div className="app-notification-panel__heading"><h2>Thông báo</h2><button onClick={() => setNotificationsOpen(false)} type="button">Đóng</button></div>
-            {notifications.length === 0 ? <p>Chưa có thông báo.</p> : notifications.map((item) => <article className={item.read_at ? "" : "app-notification-panel__unread"} key={item.id}><strong>{item.title}</strong><p>{item.body}</p>{!item.read_at && <button onClick={() => onReadNotification(item.id)} type="button">Đánh dấu đã đọc</button>}</article>)}
-          </aside>
+          <>
+            <button aria-label="Đóng thông báo" className="app-notification-backdrop" onClick={() => setNotificationsOpen(false)} type="button" />
+            <aside aria-label="Thông báo" className="app-notification-panel">
+              <div className="app-notification-panel__heading"><h2>Thông báo</h2><button onClick={() => setNotificationsOpen(false)} type="button">Đóng</button></div>
+              {notifications.length === 0 ? <p>Chưa có thông báo.</p> : notifications.map((item) => <article className={item.read_at ? "" : "app-notification-panel__unread"} key={item.id}><strong>{item.title}</strong><p>{item.body}</p>{!item.read_at && <button onClick={() => onReadNotification(item.id)} type="button">Đánh dấu đã đọc</button>}</article>)}
+            </aside>
+          </>
         )}
       </div>
       <div className="app-mobile-nav">
