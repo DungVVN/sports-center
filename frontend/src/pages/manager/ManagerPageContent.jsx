@@ -13,13 +13,13 @@ import { TrainingPage } from "../../features/training/TrainingPage.jsx";
 import { ProfilePage } from "../../features/auth/ProfilePage.jsx";
 import { SupportStaffPage } from "../../features/support/SupportStaffPage.jsx";
 
-export function ManagerPageContent({ onNavigate, onSessionRevoked, session, view }) {
+export function ManagerPageContent({ onNavigate, onSessionRevoked, session, view, dashboardRole = "manager" }) {
   const pages = {
     attendance: <AttendancePage session={session} />,
     audit: <AuditLogsPage />,
     bookings: <BookingsPage session={session} />,
     classes: <ClassesPage session={session} />,
-    dashboard: <DashboardHome onNavigate={onNavigate} role="manager" />,
+    dashboard: <DashboardHome onNavigate={onNavigate} role={dashboardRole} />,
     packageCatalog: <MembershipsPage mode="catalog" session={session} />,
     packageCreate: <MembershipsPage mode="create" session={session} />,
     members: <MembersPage readOnly />,

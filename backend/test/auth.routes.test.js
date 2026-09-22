@@ -64,16 +64,6 @@ describe("Auth routes", () => {
     expect(response.headers["set-cookie"][0]).toContain("sports_center_session=mfa-signed-token");
   });
 
-  it("does not create a cookie until a staff email OTP is verified", async () => {
-    const service = makeService();
-    service.login.mockResolvedValueOnce({ emailOtpRequired: true, emailOtpChallengeId: "b7f2c76c-9c97-4d5a-91b8-936e2acff972", expiresAt: new Date("2026-10-01T00:05:00.000Z") });
-    const pending = await request(createApp({ authService: service })).post("/api/v1/auth/login").send({ email: "coach@example.com", password: "Strongpass1" }).expect(200);
-    expect(pending.headers["set-cookie"]).toBeUndefined();
-    const verified = await request(createApp({ authService: service })).post("/api/v1/auth/mfa/email/verify").send({ challengeId: "b7f2c76c-9c97-4d5a-91b8-936e2acff972", code: "123456" }).expect(200);
-    expect(service.verifyStaffEmailOtp).toHaveBeenCalledWith({ challengeId: "b7f2c76c-9c97-4d5a-91b8-936e2acff972", code: "123456" });
-    expect(verified.headers["set-cookie"][0]).toContain("sports_center_session=email-otp-signed-token");
-  });
-
   it("uses the authenticated permission for receptionist approval", async () => {
     const service = makeService();
     await request(createApp({ authService: service })).post("/api/v1/auth/registrations/b7f2c76c-9c97-4d5a-91b8-936e2acff972/approve").set("Authorization", "Bearer session-token").expect(200);

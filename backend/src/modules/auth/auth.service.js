@@ -5,6 +5,7 @@ import { createSessionToken, generateVerificationCode, hashVerificationCode, rea
 import { hashPassword, verifyPassword } from "../../shared/auth/password.js";
 import { createLoginAttemptLimiter } from "../../shared/security/login-attempt-limiter.js";
 import { buildTotpUri, createTotpSecret, decryptTotpSecret, encryptTotpSecret, verifyTotp } from "../../shared/auth/totp.js";
+import { createRecaptchaVerifier } from "../../shared/security/recaptcha-verifier.js";
 
 function normalizeEmail(email) {
   return email.trim().toLowerCase();
@@ -50,15 +51,12 @@ function ownProfileView({ user, member, staffProfile, contacts }) {
   };
 }
 
-function ensureManager(user) {
-  if (user.role !== "manager") throw new AppError({ statusCode: 403, code: "MFA_NOT_REQUIRED", message: "MFA TOTP chỉ áp dụng cho Manager trong giai đoạn pilot." });
-}
-
 export function createAuthService({
   repository,
   verificationDelivery,
   auditService = { record: async () => {} },
   loginLimiter = createLoginAttemptLimiter({ maxAttempts: env.authLoginMaxAttempts, windowMinutes: env.authLoginWindowMinutes }),
+  captchaVerifier = createRecaptchaVerifier({ enabled: env.captchaEnabled, secretKey: env.recaptchaSecretKey }),
 }) {
   async function issueVerification({ channel, recipient, userId, purpose = "registration" }) {
     const code = generateVerificationCode();
@@ -73,6 +71,7 @@ export function createAuthService({
 
   return {
     async register(input) {
+      await captchaVerifier.assertValid(input.captchaToken);
       const email = normalizeEmail(input.email);
       const phone = normalizePhone(input.phone);
       const [existingUser, existingMember] = await Promise.all([
@@ -126,9 +125,10 @@ export function createAuthService({
       return { status: "pending_verification" };
     },
 
-    async login({ email: rawEmail, password }) {
+    async login({ email: rawEmail, password, captchaToken }) {
       const email = normalizeEmail(rawEmail);
       loginLimiter.assertAllowed(email);
+      await captchaVerifier.assertValid(captchaToken);
       const user = await repository.findUserByEmail(email);
       if (!user || !await verifyPassword(password, user.password_hash)) {
         loginLimiter.recordFailure(email);
@@ -143,19 +143,13 @@ export function createAuthService({
         };
         throw new AppError({ statusCode: 403, code: "ACCOUNT_NOT_ACTIVE", message: messageByStatus[user.status] ?? "Tài khoản chưa thể đăng nhập." });
       }
-      const factor = user.role === "manager" && repository.findTotpFactor ? await repository.findTotpFactor(user.id) : null;
+      const factor = repository.findTotpFactor ? await repository.findTotpFactor(user.id) : null;
       if (factor) {
         const expiresAt = new Date(Date.now() + env.authMfaChallengeTtlMinutes * 60_000);
         const challenge = await repository.createMfaLoginChallenge({ userId: user.id, expiresAt });
         loginLimiter.clear(email);
         await auditService.record({ actorUserId: user.id, action: "auth.mfa_challenge_created", entityType: "auth_mfa_login_challenge", entityId: challenge.id, summary: "Đã yêu cầu mã Authenticator để hoàn tất đăng nhập." });
         return { mfaRequired: true, mfaChallengeId: challenge.id, expiresAt };
-      }
-      if (["receptionist", "coach"].includes(user.role)) {
-        const verification = await issueVerification({ channel: "email", recipient: user.email, userId: user.id, purpose: "staff_login" });
-        await auditService.record({ actorUserId: user.id, action: "auth.staff_email_otp_sent", entityType: "account_verification", entityId: verification.challengeId, summary: "Đã gửi mã email để hoàn tất đăng nhập nhân viên." });
-        loginLimiter.clear(email);
-        return { emailOtpRequired: true, emailOtpChallengeId: verification.challengeId, expiresAt: verification.expiresAt };
       }
       const expiresAt = new Date(Date.now() + env.authSessionTtlHours * 60 * 60_000);
       const session = await repository.createSession({ expiresAt, userId: user.id });
@@ -175,7 +169,6 @@ export function createAuthService({
     async beginTotpEnrollment({ userId }) {
       const user = await repository.findUserById(userId);
       if (!user) throw new AppError({ statusCode: 404, code: "ACCOUNT_NOT_FOUND", message: "Không tìm thấy tài khoản." });
-      ensureManager(user);
       const secret = createTotpSecret();
       const expiresAt = new Date(Date.now() + env.authMfaEnrollmentTtlMinutes * 60_000);
       const enrollment = await repository.createMfaEnrollment({ userId, secretCiphertext: encryptTotpSecret(secret), expiresAt });
@@ -191,7 +184,7 @@ export function createAuthService({
       const factor = await repository.activateTotpFactor({ enrollmentId, userId, secretCiphertext: enrollment.secret_ciphertext });
       if (!factor) throw new AppError({ statusCode: 409, code: "MFA_ENROLLMENT_CONSUMED", message: "Phiên đăng ký MFA đã được sử dụng." });
       await repository.revokeUserSessions(userId);
-      await auditService.record({ actorUserId: userId, action: "auth.mfa_enrolled", entityType: "auth_totp_factor", entityId: userId, summary: "Đã kích hoạt Authenticator cho Manager." });
+      await auditService.record({ actorUserId: userId, action: "auth.mfa_enrolled", entityType: "auth_totp_factor", entityId: userId, summary: "Đã kích hoạt Authenticator cho tài khoản." });
       return { enrolled: true };
     },
 
@@ -209,7 +202,7 @@ export function createAuthService({
       const session = await repository.createSession({ expiresAt, userId: user.id });
       const token = await createSessionToken({ sessionId: session.id, userId: user.id, expiresAt });
       const permissions = await repository.getPermissions(user.role);
-      await auditService.record({ actorUserId: user.id, action: "auth.mfa_login_succeeded", entityType: "auth_session", entityId: session.id, summary: "Đăng nhập Manager hoàn tất bằng Authenticator." });
+      await auditService.record({ actorUserId: user.id, action: "auth.mfa_login_succeeded", entityType: "auth_session", entityId: session.id, summary: "Đăng nhập hoàn tất bằng Authenticator." });
       return { token, expiresAt, user: publicUser(user), permissions: permissions.map(({ permission_code: permissionCode }) => permissionCode) };
     },
 

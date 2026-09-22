@@ -81,20 +81,25 @@ describe("auth service login protection", () => {
     expect(repository.getPermissions).toHaveBeenCalledWith("manager");
   });
 
-  it("creates a staff email challenge instead of a session after password verification", async () => {
+  it("creates a staff session directly when optional TOTP has not been enrolled", async () => {
     const repository = {
       findUserByEmail: vi.fn().mockResolvedValue({ id: "staff-1", email: "coach@example.com", display_name: "Coach", role: "coach", status: "active", password_hash: await hashPassword("Strongpass1") }),
-      expireActiveVerifications: vi.fn(),
-      createVerification: vi.fn().mockResolvedValue({ id: "challenge-1" }),
+      findTotpFactor: vi.fn().mockResolvedValue(null),
+      createSession: vi.fn().mockResolvedValue({ id: "session-1" }),
+      getPermissions: vi.fn().mockResolvedValue([{ permission_code: "class.read" }]),
     };
-    const verificationDelivery = { deliver: vi.fn().mockResolvedValue({ delivered: true }) };
-    const service = createAuthService({ repository, verificationDelivery, auditService: { record: vi.fn() } });
+    const service = createAuthService({ repository, verificationDelivery: { deliver: vi.fn() }, auditService: { record: vi.fn() } });
 
-    await expect(service.login({ email: "COACH@example.com", password: "Strongpass1" })).resolves.toMatchObject({ emailOtpRequired: true, emailOtpChallengeId: "challenge-1" });
-    expect(repository.createSession).toBeUndefined();
-    expect(repository.expireActiveVerifications).toHaveBeenCalledWith({ userId: "staff-1", purpose: "staff_login" });
-    expect(repository.createVerification).toHaveBeenCalledWith(expect.objectContaining({ userId: "staff-1", purpose: "staff_login" }));
-    expect(verificationDelivery.deliver).toHaveBeenCalledWith(expect.objectContaining({ recipient: "coach@example.com", purpose: "staff_login" }));
+    await expect(service.login({ email: "COACH@example.com", password: "Strongpass1" })).resolves.toMatchObject({ user: { id: "staff-1", role: "coach" }, permissions: ["class.read"] });
+    expect(repository.createSession).toHaveBeenCalledWith(expect.objectContaining({ userId: "staff-1" }));
+    expect(repository.findTotpFactor).toHaveBeenCalledWith("staff-1");
+  });
+
+  it("requires a valid CAPTCHA token when CAPTCHA is enabled", async () => {
+    const captchaVerifier = { assertValid: vi.fn().mockRejectedValue({ code: "CAPTCHA_REQUIRED" }) };
+    const service = createAuthService({ repository: {}, verificationDelivery: { deliver: vi.fn() }, captchaVerifier });
+    await expect(service.register({ fullName: "Member One", email: "member@example.com", phone: "0901234567", password: "Strongpass1" })).rejects.toMatchObject({ code: "CAPTCHA_REQUIRED" });
+    expect(captchaVerifier.assertValid).toHaveBeenCalledWith(undefined);
   });
 
   it("creates a staff session only after a valid one-time email code", async () => {

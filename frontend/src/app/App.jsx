@@ -1,7 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { DashboardPlaceholder } from "../features/auth/DashboardPlaceholder.jsx";
-import { EmailOtpVerificationPage } from "../features/auth/EmailOtpVerificationPage.jsx";
 import { LoginPage } from "../features/auth/LoginPage.jsx";
 import { TotpVerificationPage } from "../features/auth/TotpVerificationPage.jsx";
 import { PendingApprovalPage } from "../features/auth/PendingApprovalPage.jsx";
@@ -20,7 +19,6 @@ export function App() {
   const [registration, setRegistration] = useState(null);
   const [session, setSession] = useState(null);
   const [mfaChallenge, setMfaChallenge] = useState(null);
-  const [emailOtpChallenge, setEmailOtpChallenge] = useState(null);
   useEffect(() => {
     const resetToLogin = () => {
       setSession(null);
@@ -29,13 +27,13 @@ export function App() {
     window.addEventListener(authenticationExpiredEvent, resetToLogin);
     return () => window.removeEventListener(authenticationExpiredEvent, resetToLogin);
   }, []);
+  const loginPage = <LoginPage onLoggedIn={setSession} onMfaRequired={(challenge) => { setMfaChallenge(challenge); setView("mfa"); }} onRegister={() => setView("register")} />;
   const content = session ? <DashboardPlaceholder session={session} onLogout={() => { setSession(null); setView("login"); }} /> : {
-    login: <LoginPage onLoggedIn={setSession} onEmailOtpRequired={(challenge) => { setEmailOtpChallenge(challenge); setView("emailOtp"); }} onMfaRequired={(challenge) => { setMfaChallenge(challenge); setView("mfa"); }} onRegister={() => setView("register")} />,
+    login: loginPage,
     register: <RegisterPage onLogin={() => setView("login")} onRegistered={(value) => { setRegistration(value); setView("verify"); }} />,
-    verify: registration ? <VerificationPage registration={registration} onCompleted={() => setView("pending")} /> : <LoginPage onLoggedIn={setSession} onEmailOtpRequired={(challenge) => { setEmailOtpChallenge(challenge); setView("emailOtp"); }} onMfaRequired={(challenge) => { setMfaChallenge(challenge); setView("mfa"); }} onRegister={() => setView("register")} />,
+    verify: registration ? <VerificationPage registration={registration} onCompleted={() => setView("pending")} /> : loginPage,
     pending: <PendingApprovalPage onLogin={() => setView("login")} />,
-    mfa: mfaChallenge ? <TotpVerificationPage challenge={mfaChallenge} onCancel={() => { setMfaChallenge(null); setView("login"); }} onCompleted={setSession} /> : <LoginPage onLoggedIn={setSession} onEmailOtpRequired={(challenge) => { setEmailOtpChallenge(challenge); setView("emailOtp"); }} onMfaRequired={(challenge) => { setMfaChallenge(challenge); setView("mfa"); }} onRegister={() => setView("register")} />,
-    emailOtp: emailOtpChallenge ? <EmailOtpVerificationPage challenge={emailOtpChallenge} onCancel={() => { setEmailOtpChallenge(null); setView("login"); }} onCompleted={setSession} /> : <LoginPage onLoggedIn={setSession} onEmailOtpRequired={(challenge) => { setEmailOtpChallenge(challenge); setView("emailOtp"); }} onMfaRequired={(challenge) => { setMfaChallenge(challenge); setView("mfa"); }} onRegister={() => setView("register")} />,
+    mfa: mfaChallenge ? <TotpVerificationPage challenge={mfaChallenge} onCancel={() => { setMfaChallenge(null); setView("login"); }} onCompleted={setSession} /> : loginPage,
   }[view];
   return (
     <QueryClientProvider client={queryClient}>

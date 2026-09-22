@@ -8,14 +8,22 @@ const CoachPageContent = lazy(() => import("../../pages/coach/CoachPageContent.j
 const ManagerPageContent = lazy(() => import("../../pages/manager/ManagerPageContent.jsx").then(({ ManagerPageContent: Component }) => ({ default: Component })));
 const MemberPageContent = lazy(() => import("../../pages/member/MemberPageContent.jsx").then(({ MemberPageContent: Component }) => ({ default: Component })));
 const ReceptionistPageContent = lazy(() => import("../../pages/receptionist/ReceptionistPageContent.jsx").then(({ ReceptionistPageContent: Component }) => ({ default: Component })));
+const AdminPageContent = lazy(() => import("../../pages/admin/AdminPageContent.jsx").then(({ AdminPageContent: Component }) => ({ default: Component })));
 
 const labels = {
+  admin: "Quản trị hệ thống",
   manager: "Quản lý trung tâm",
   receptionist: "Lễ tân",
   coach: "Huấn luyện viên",
   member: "Hội viên",
 };
 const navigationByRole = {
+  admin: [
+    { id: "dashboard", label: "Toàn cảnh" }, { id: "profile", label: "Hồ sơ" }, { id: "members", label: "Hội viên" },
+    { id: "packages", label: "Gói tập", children: [{ id: "packageCreate", label: "Tạo gói tập" }, { id: "packageCatalog", label: "Danh mục gói" }] },
+    { id: "classes", label: "Lớp học" }, { id: "bookings", label: "Đặt chỗ" }, { id: "attendance", label: "Điểm danh" }, { id: "payments", label: "Thanh toán" },
+    { id: "staff", label: "Danh tính & nhân sự" }, { id: "training", label: "Giáo án" }, { id: "reports", label: "Báo cáo" }, { id: "audit", label: "Kiểm toán" }, { id: "support", label: "Hỗ trợ" },
+  ],
   manager: [
     { id: "dashboard", label: "Tổng quan" },
     { id: "profile", label: "Hồ sơ" },
@@ -32,10 +40,8 @@ const navigationByRole = {
     { id: "bookings", label: "Đặt chỗ" },
     { id: "attendance", label: "Điểm danh" },
     { id: "payments", label: "Thanh toán" },
-    { id: "staff", label: "Nhân viên" },
     { id: "training", label: "Giáo án" },
     { id: "reports", label: "Báo cáo" },
-    { id: "audit", label: "Kiểm toán" },
     { id: "support", label: "Hỗ trợ" },
   ],
   receptionist: [
@@ -106,6 +112,7 @@ export function DashboardPlaceholder({ session, onLogout }) {
     }
   }
   const rolePages = {
+    admin: AdminPageContent,
     coach: CoachPageContent,
     manager: ManagerPageContent,
     member: MemberPageContent,

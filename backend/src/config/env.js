@@ -15,6 +15,8 @@ const environmentSchema = z.object({
   AUTH_MFA_ENCRYPTION_KEY: z.string().min(32).default("development-only-mfa-encryption-key-change-before-production"),
   AUTH_MFA_ENROLLMENT_TTL_MINUTES: z.coerce.number().int().min(1).max(60).default(10),
   AUTH_MFA_CHALLENGE_TTL_MINUTES: z.coerce.number().int().min(1).max(30).default(5),
+  CAPTCHA_ENABLED: z.coerce.boolean().default(false),
+  RECAPTCHA_SECRET_KEY: z.string().min(1).optional(),
   VERIFICATION_CODE_SECRET: z.string().min(32).default("development-only-verification-secret-change-before-production"),
   VERIFICATION_CODE_TTL_MINUTES: z.coerce.number().int().min(1).max(60).default(10),
   VERIFICATION_DELIVERY_MODE: z.enum(["development", "provider"]).default("development"),
@@ -48,6 +50,10 @@ if (values.NODE_ENV === "production" && values.VERIFICATION_DELIVERY_MODE === "p
   throw new Error("Resend must be configured when production email delivery is enabled.");
 }
 
+if (values.NODE_ENV === "production" && values.CAPTCHA_ENABLED && !values.RECAPTCHA_SECRET_KEY) {
+  throw new Error("RECAPTCHA_SECRET_KEY must be configured when CAPTCHA is enabled in production.");
+}
+
 export const env = Object.freeze({
   nodeEnv: values.NODE_ENV,
   port: values.PORT,
@@ -61,6 +67,8 @@ export const env = Object.freeze({
   authMfaEncryptionKey: values.AUTH_MFA_ENCRYPTION_KEY,
   authMfaEnrollmentTtlMinutes: values.AUTH_MFA_ENROLLMENT_TTL_MINUTES,
   authMfaChallengeTtlMinutes: values.AUTH_MFA_CHALLENGE_TTL_MINUTES,
+  captchaEnabled: values.CAPTCHA_ENABLED,
+  recaptchaSecretKey: values.RECAPTCHA_SECRET_KEY,
   verificationCodeSecret: values.VERIFICATION_CODE_SECRET,
   verificationCodeTtlMinutes: values.VERIFICATION_CODE_TTL_MINUTES,
   verificationDeliveryMode: values.VERIFICATION_DELIVERY_MODE,

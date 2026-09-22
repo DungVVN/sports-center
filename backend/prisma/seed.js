@@ -9,11 +9,12 @@ const permissions = [
   ["payment.record", "Ghi nhận thanh toán"],
   ["registration.approve", "Duyệt tài khoản hội viên đăng ký công khai"],
   ["training.write", "Tạo kế hoạch và kết quả tập luyện"], ["training.template.manage", "Quản lý mẫu giáo án chung"], ["membership.freeze.review", "Duyệt yêu cầu đóng băng gói tập"], ["report.read", "Xem báo cáo"],
-  ["staff.manage", "Quản lý nhân viên"], ["audit.read", "Xem nhật ký kiểm toán"],
+  ["staff.manage", "Quản lý danh tính và quyền nhân viên"], ["audit.read", "Xem nhật ký kiểm toán"],
+  ["staff.operational.read", "Xem hồ sơ vận hành nhân sự"], ["staff.operational.assign", "Phân công vận hành nhân sự"],
 ];
 
 async function main() {
-  for (const [code, label] of [["manager", "Quản lý"], ["receptionist", "Lễ tân"], ["coach", "Huấn luyện viên"], ["member", "Hội viên"]]) {
+  for (const [code, label] of [["admin", "Quản trị hệ thống"], ["manager", "Quản lý"], ["receptionist", "Lễ tân"], ["coach", "Huấn luyện viên"], ["member", "Hội viên"]]) {
     await prisma.roles.upsert({ where: { code }, update: { label }, create: { code, label } });
   }
 
@@ -22,7 +23,15 @@ async function main() {
   }
 
   await prisma.role_permissions.createMany({
-    data: permissions.map(([permission_code]) => ({ role_code: "manager", permission_code })),
+    data: permissions.map(([permission_code]) => ({ role_code: "admin", permission_code })),
+    skipDuplicates: true,
+  });
+  await prisma.role_permissions.deleteMany({ where: { role_code: "manager" } });
+  await prisma.role_permissions.createMany({
+    data: [
+      "member.read", "member.write", "class.read", "class.manage", "booking.write", "attendance.write", "payment.record",
+      "training.write", "training.template.manage", "membership.freeze.review", "report.read", "staff.operational.read", "staff.operational.assign",
+    ].map((permission_code) => ({ role_code: "manager", permission_code })),
     skipDuplicates: true,
   });
   await prisma.role_permissions.createMany({

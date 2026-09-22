@@ -9,6 +9,7 @@ if (!password || password.length < 12) {
 }
 
 const accounts = [
+  { email: "admin01@sportscenter.local", name: "Quản trị viên", role: "admin", code: "STF-ADM-001", phone: "0901000000" },
   { email: "manager01@sportscenter.local", name: "Quản lý Minh", role: "manager", code: "STF-MGR-001", phone: "0901000001" },
   { email: "manager02@sportscenter.local", name: "Quản lý Lan", role: "manager", code: "STF-MGR-002", phone: "0901000002" },
   { email: "reception01@sportscenter.local", name: "Lễ tân Hương", role: "receptionist", code: "STF-REC-001", phone: "0901000011" },
@@ -19,7 +20,7 @@ const accounts = [
   { email: "member02@sportscenter.local", name: "Hội viên Duy", role: "member", code: "MBR-002", phone: "0901000032" },
 ];
 
-const staffRoles = new Set(["manager", "receptionist", "coach"]);
+const staffRoles = new Set(["admin", "manager", "receptionist", "coach"]);
 const passwordHash = await hashPassword(password);
 
 await prisma.$transaction(async (transaction) => {
