@@ -35,6 +35,7 @@ Do not store these values in `.env.example`, source, browser variables, logs or 
 - Failed/invalid webhooks do not change payment or membership state.
 - Payment reports derive revenue from `paid_at` and successful payment events, not from client values.
 - The pilot supports only PayOS and controlled bank-transfer reconciliation; no MoMo or ZaloPay merchant credential, callback or UAT evidence is required.
+- A paid bank transfer requires a Receptionist-entered reconciliation note of at least 10 characters; the note is recorded in the immutable payment event and audit log. Online payments cannot be confirmed manually.
 
 ## Sources
 

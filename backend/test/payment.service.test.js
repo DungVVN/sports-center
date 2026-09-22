@@ -58,6 +58,29 @@ describe("Payment service", () => {
     expect(repository.createWithEvent).toHaveBeenCalledWith(expect.objectContaining({ method: "online", provider: "vnpay" }), expect.any(Object));
   });
 
+  it("requires a bank-statement reconciliation note before a bank transfer can be paid", async () => {
+    const { repository, auditService } = dependencies();
+    repository.payment.mockResolvedValue({ id: "payment-1", status: "pending", method: "bank_transfer", membership_id: membershipId, amount_vnd: 500000n });
+    await expect(createPaymentService({ repository, auditService }).confirm("payment-1", "paid", "receptionist-1", "ngắn")).rejects.toMatchObject({ code: "BANK_TRANSFER_RECONCILIATION_NOTE_REQUIRED" });
+    expect(repository.complete).not.toHaveBeenCalled();
+  });
+
+  it("records the bank-statement reconciliation note in the payment event and audit log", async () => {
+    const { repository, auditService } = dependencies();
+    repository.payment.mockResolvedValue({ id: "payment-1", status: "pending", method: "bank_transfer", membership_id: membershipId, amount_vnd: 500000n });
+    repository.complete.mockResolvedValue({ id: "payment-1", amount_vnd: 500000n });
+    await createPaymentService({ repository, auditService }).confirm("payment-1", "paid", "receptionist-1", "Đã khớp sao kê ngân hàng lúc 10:15");
+    expect(repository.complete).toHaveBeenCalledWith(expect.objectContaining({ eventType: "bank_transfer_reconciled", note: "Đã khớp sao kê ngân hàng lúc 10:15" }));
+    expect(auditService.record).toHaveBeenCalledWith(expect.objectContaining({ reason: "Đã khớp sao kê ngân hàng lúc 10:15" }));
+  });
+
+  it("does not allow a receptionist to manually confirm an online payment", async () => {
+    const { repository, auditService } = dependencies();
+    repository.payment.mockResolvedValue({ id: "payment-1", status: "pending", method: "online", membership_id: membershipId, amount_vnd: 500000n });
+    await expect(createPaymentService({ repository, auditService }).confirm("payment-1", "paid", "receptionist-1")).rejects.toMatchObject({ code: "PAYMENT_PROVIDER_CALLBACK_REQUIRED" });
+    expect(repository.complete).not.toHaveBeenCalled();
+  });
+
   it("closes a pending PayOS payment if link creation fails", async () => {
     const { repository, auditService } = dependencies();
     const payosGateway = { createPaymentLink: vi.fn().mockRejectedValue(new Error("PayOS unavailable")), verifyWebhook: vi.fn() };

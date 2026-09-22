@@ -27,6 +27,13 @@ describe("Payment routes", () => {
       .send({ memberId, amountVnd: 500000, method: "online" }).expect(422);
     expect(service.create).not.toHaveBeenCalled();
   });
+
+  it("accepts bank transfer creation without a payment provider", async () => {
+    const service = paymentService();
+    await request(createApp({ authService: authService(["payment.record"]), paymentService: service })).post("/api/v1/payments").set("Authorization", "Bearer token")
+      .send({ memberId, amountVnd: 500000, method: "bank_transfer" }).expect(201);
+    expect(service.create).toHaveBeenCalledWith(expect.objectContaining({ method: "bank_transfer" }), "receptionist-1");
+  });
   it("accepts PayOS as an online payment provider", async () => {
     const service = paymentService();
     await request(createApp({ authService: authService(["payment.record"]), paymentService: service })).post("/api/v1/payments").set("Authorization", "Bearer token")
@@ -62,6 +69,12 @@ describe("Payment routes", () => {
     const service = paymentService();
     await request(createApp({ authService: authService(["payment.record"]), paymentService: service })).post(`/api/v1/payments/${paymentId}/confirm`).set("Authorization", "Bearer token").send({ status: "paid" }).expect(200);
     expect(service.confirm).toHaveBeenCalledWith(paymentId, "paid", "receptionist-1");
+  });
+
+  it("passes an optional reconciliation note to payment confirmation", async () => {
+    const service = paymentService();
+    await request(createApp({ authService: authService(["payment.record"]), paymentService: service })).post(`/api/v1/payments/${paymentId}/confirm`).set("Authorization", "Bearer token").send({ status: "paid", reconciliationNote: "Đã khớp sao kê ngân hàng" }).expect(200);
+    expect(service.confirm).toHaveBeenCalledWith(paymentId, "paid", "receptionist-1", "Đã khớp sao kê ngân hàng");
   });
 
   it("blocks users without payment.read", async () => {

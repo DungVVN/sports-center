@@ -16,7 +16,7 @@ const paymentStatus = {
   failed: "Thất bại",
   refunded: "Đã hoàn tiền",
 };
-const methodLabel = { cash: "Tiền mặt", bank_transfer: "Chuyển khoản" };
+const methodLabel = { cash: "Tiền mặt", bank_transfer: "Chuyển khoản", online: "Trực tuyến" };
 
 export function PaymentsPage({ session }) {
   const [items, setItems] = useState([]);
@@ -28,6 +28,7 @@ export function PaymentsPage({ session }) {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [sandboxPaymentUrl, setSandboxPaymentUrl] = useState("");
+  const [reconciliationNotes, setReconciliationNotes] = useState({});
   const [paymentSearch, setPaymentSearch] = useState("");
   const [paymentStatusFilters, setPaymentStatusFilters] = useState([]);
   const [paymentMethodFilters, setPaymentMethodFilters] = useState([]);
@@ -140,7 +141,7 @@ export function PaymentsPage({ session }) {
       setSandboxPaymentUrl(payment.checkoutUrl ?? payment.sandboxPaymentUrl ?? "");
       setForm(emptyForm);
       setMemberships([]);
-      setNotice(payment.checkoutUrl ? "Đã tạo liên kết PayOS. Mở liên kết để khách thanh toán." : payment.sandboxPaymentUrl ? "Đã tạo giao dịch sandbox. Mở liên kết để mô phỏng thanh toán." : "Đã lập phiếu thu tiền mặt, chờ Lễ tân xác nhận đã thu.");
+      setNotice(payment.checkoutUrl ? "Đã tạo liên kết PayOS. Mở liên kết để khách thanh toán." : payment.sandboxPaymentUrl ? "Đã tạo giao dịch sandbox. Mở liên kết để mô phỏng thanh toán." : form.method === "bank_transfer" ? "Đã lập phiếu chuyển khoản chờ đối soát sao kê." : "Đã lập phiếu thu tiền mặt, chờ Lễ tân xác nhận đã thu.");
       await load();
     } catch (caught) {
       setError(caught.message);
@@ -149,15 +150,15 @@ export function PaymentsPage({ session }) {
     }
   }
 
-  async function confirm(id, status) {
+  async function confirm(id, status, method) {
     setError("");
     setNotice("");
     setSubmitting(true);
     try {
-      await paymentApi.confirm(id, status);
+      await paymentApi.confirm(id, status, method === "bank_transfer" ? reconciliationNotes[id]?.trim() : undefined);
       setNotice(
         status === "paid"
-          ? "Đã xác nhận thanh toán và kích hoạt gói tập."
+          ? method === "bank_transfer" ? "Đã đối soát sao kê, xác nhận thanh toán và kích hoạt gói tập." : "Đã xác nhận thanh toán và kích hoạt gói tập."
           : "Đã ghi nhận giao dịch không thành công.",
       );
       await load(form.memberId || undefined);
@@ -191,6 +192,7 @@ export function PaymentsPage({ session }) {
             Phương thức
             <select name="method" onChange={updateForm} value={form.method}>
               <option value="cash">Tiền mặt tại quầy</option>
+              <option value="bank_transfer">Chuyển khoản ngân hàng (đối soát)</option>
               <option value="online">Thanh toán trực tuyến</option>
             </select>
           </label>
@@ -349,18 +351,22 @@ export function PaymentsPage({ session }) {
                       <td>{methodLabel[item.method] ?? item.method}</td>
                       <td>{paymentStatus[item.status] ?? item.status}</td>
                       {isCashier && <td>
-                        {item.status === "pending" && (
+                        {item.status === "pending" && item.method !== "online" && (
                           <div className="payment-table__actions">
+                            {item.method === "bank_transfer" && <label>
+                              Ghi chú đối soát sao kê
+                              <textarea minLength="10" onChange={(event) => setReconciliationNotes((value) => ({ ...value, [item.id]: event.target.value }))} value={reconciliationNotes[item.id] ?? ""} />
+                            </label>}
                             <Button
-                              disabled={submitting}
-                              onClick={() => confirm(item.id, "paid")}
+                              disabled={submitting || (item.method === "bank_transfer" && (reconciliationNotes[item.id]?.trim().length ?? 0) < 10)}
+                              onClick={() => confirm(item.id, "paid", item.method)}
                               size="sm"
                             >
-                              Xác nhận đã thu
+                              {item.method === "bank_transfer" ? "Xác nhận đã đối soát" : "Xác nhận đã thu"}
                             </Button>
                             <Button
                               disabled={submitting}
-                              onClick={() => confirm(item.id, "failed")}
+                              onClick={() => confirm(item.id, "failed", item.method)}
                               size="sm"
                               variant="danger"
                             >
@@ -368,6 +374,7 @@ export function PaymentsPage({ session }) {
                             </Button>
                           </div>
                         )}
+                        {item.status === "pending" && item.method === "online" && <small>Chờ webhook PayOS</small>}
                       </td>}
                     </tr>
                   ))}

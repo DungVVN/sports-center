@@ -36,5 +36,16 @@ export function createPaymentService({ repository, auditService, payosGateway = 
     const result = await repository.complete({ id: payment.id, status: succeeded ? "paid" : "failed", paidAt: succeeded ? new Date(data.transactionDateTime) : null, eventType: "payos_webhook", actorUserId: null, membershipId: payment.membership_id });
     return result ? output(result) : output(payment);
   },
-  async confirm(id, status, actorUserId) { const payment = await repository.payment(id); if (!payment || payment.status !== "pending") throw new AppError({ statusCode: 422, code: "PAYMENT_NOT_CONFIRMABLE", message: "Giao dịch không còn chờ xác nhận." }); const result = await repository.complete({ id, status, paidAt: status === "paid" ? new Date() : null, eventType: "receptionist_cash_confirmation", actorUserId, membershipId: payment.membership_id }); if (!result) throw new AppError({ statusCode: 409, code: "PAYMENT_ALREADY_CONFIRMED", message: "Giao dịch đã được xử lý bởi một xác nhận khác." }); await auditService.record({ actorUserId, action: `payment.${status}`, entityType: "payment", entityId: id, summary: status === "paid" ? "Lễ tân đã xác nhận đã thu tiền mặt và kích hoạt gói tập." : "Lễ tân xác nhận phiếu thu tiền mặt không thành công." }); return output(result); },
+  async confirm(id, status, actorUserId, reconciliationNote) {
+    const payment = await repository.payment(id);
+    if (!payment || payment.status !== "pending") throw new AppError({ statusCode: 422, code: "PAYMENT_NOT_CONFIRMABLE", message: "Giao dịch không còn chờ xác nhận." });
+    if (payment.method === "online") throw new AppError({ statusCode: 422, code: "PAYMENT_PROVIDER_CALLBACK_REQUIRED", message: "Thanh toán trực tuyến chỉ được xác nhận qua webhook đã xác thực của nhà cung cấp." });
+    const isBankTransfer = payment.method === "bank_transfer";
+    if (isBankTransfer && status === "paid" && (!reconciliationNote || reconciliationNote.trim().length < 10)) throw new AppError({ statusCode: 422, code: "BANK_TRANSFER_RECONCILIATION_NOTE_REQUIRED", message: "Cần ghi chú đối soát sao kê ít nhất 10 ký tự trước khi xác nhận chuyển khoản." });
+    const result = await repository.complete({ id, status, paidAt: status === "paid" ? new Date() : null, eventType: isBankTransfer ? `bank_transfer_${status === "paid" ? "reconciled" : "rejected"}` : "receptionist_cash_confirmation", actorUserId, membershipId: payment.membership_id, note: isBankTransfer ? reconciliationNote?.trim() : undefined });
+    if (!result) throw new AppError({ statusCode: 409, code: "PAYMENT_ALREADY_CONFIRMED", message: "Giao dịch đã được xử lý bởi một xác nhận khác." });
+    const paymentLabel = isBankTransfer ? "chuyển khoản" : "tiền mặt";
+    await auditService.record({ actorUserId, action: `payment.${status}`, entityType: "payment", entityId: id, summary: status === "paid" ? `Lễ tân đã đối soát ${paymentLabel} và kích hoạt gói tập.` : `Lễ tân xác nhận phiếu thu ${paymentLabel} không thành công.`, reason: isBankTransfer ? reconciliationNote?.trim() : undefined });
+    return output(result);
+  },
 }; }
