@@ -1,6 +1,5 @@
 import { randomBytes, randomInt } from "node:crypto";
 import { AppError } from "../../shared/errors/app-error.js";
-import { sandboxPaymentUrl, verifySandboxCallback } from "./payment-gateway.js";
 import { createPayosPaymentLink, verifyPayosWebhook } from "./payos-gateway.js";
 const output = (payment) => ({ ...payment, amountVnd: payment.amount_vnd.toString(), ...(payment.provider_order_code ? { providerOrderCode: payment.provider_order_code.toString() } : {}), member: payment.member ? { id: payment.member.id, fullName: payment.member.full_name, memberCode: payment.member.member_code, phone: payment.member.phone, email: payment.member.email } : null, membership: payment.membership ? { id: payment.membership.id, packageName: payment.membership.package_name_snapshot, status: payment.membership.status, expiresOn: payment.membership.expires_on } : null });
 export function createPaymentService({ repository, auditService, payosGateway = { createPaymentLink: createPayosPaymentLink, verifyWebhook: verifyPayosWebhook } }) { return {
@@ -25,9 +24,8 @@ export function createPaymentService({ repository, auditService, payosGateway = 
       }
       return { ...output(payment), checkoutUrl: link.checkoutUrl, qrCode: link.qrCode };
     }
-    return { ...output(payment), ...(provider && { sandboxPaymentUrl: sandboxPaymentUrl(provider, payment.transaction_code, amountVnd) }) };
+    return output(payment);
   },
-  async providerCallback(provider, input) { if (!verifySandboxCallback({ provider, ...input })) throw new AppError({ statusCode: 401, code: "PAYMENT_CALLBACK_SIGNATURE_INVALID", message: "Chữ ký callback không hợp lệ." }); const payment = await repository.paymentByCode(input.transactionCode); if (!payment || payment.provider !== provider || payment.amount_vnd !== BigInt(input.amount)) throw new AppError({ statusCode: 422, code: "PAYMENT_CALLBACK_INVALID", message: "Callback không khớp giao dịch." }); const result = await repository.complete({ id: payment.id, status: input.status, paidAt: input.status === "paid" ? new Date() : null, eventType: `${provider}_sandbox_callback`, actorUserId: null, membershipId: payment.membership_id }); return result ? output(result) : output(payment); },
   async payosCallback(payload) {
     const data = await payosGateway.verifyWebhook(payload);
     const payment = await repository.paymentByProviderOrderCode(data.orderCode);

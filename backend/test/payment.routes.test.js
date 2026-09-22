@@ -40,7 +40,7 @@ describe("Payment routes", () => {
       .send({ memberId, amountVnd: 500000, method: "online", provider: "payos" }).expect(201);
     expect(service.create).toHaveBeenCalledWith(expect.objectContaining({ provider: "payos" }), "receptionist-1");
   });
-  it.each(["momo", "zalopay"])("rejects removed provider %s", async (provider) => {
+  it.each(["vnpay", "momo", "zalopay"])("rejects unsupported provider %s", async (provider) => {
     const service = paymentService();
     await request(createApp({ authService: authService(["payment.record"]), paymentService: service })).post("/api/v1/payments").set("Authorization", "Bearer token")
       .send({ memberId, amountVnd: 500000, method: "online", provider }).expect(422);
@@ -52,12 +52,12 @@ describe("Payment routes", () => {
     expect(service.payosCallback).toHaveBeenCalledWith({ code: "00", data: {}, signature: "signature" });
     expect(service.providerCallback).not.toHaveBeenCalled();
   });
-  it("serves the sandbox page for a signed payment link", async () => {
+  it("does not mount VNPAY sandbox or generic callback routes", async () => {
     const service = paymentService();
-    await request(createApp({ authService: authService([]), paymentService: service }))
-      .get("/api/v1/payments/sandbox/vnpay/PAY-1234ABCD?amount=500000&signature=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-      .expect("content-type", /html/)
-      .expect(200);
+    const app = createApp({ authService: authService([]), paymentService: service });
+    await request(app).get("/api/v1/payments/sandbox/vnpay/PAY-1234ABCD").expect(404);
+    await request(app).post("/api/v1/payments/callbacks/vnpay").send({}).expect(404);
+    expect(service.providerCallback).not.toHaveBeenCalled();
   });
   it("lets a Member view only a receipt addressed to their own account", async () => {
     const service = paymentService();

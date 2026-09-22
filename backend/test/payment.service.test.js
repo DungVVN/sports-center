@@ -52,12 +52,6 @@ describe("Payment service", () => {
     expect(receipt.events).toEqual([{ event_type: "payment_created" }]);
   });
 
-  it("creates an online legacy sandbox payment only with the remaining selected provider", async () => {
-    const { repository, auditService } = dependencies();
-    await expect(createPaymentService({ repository, auditService }).create({ ...input, method: "online", provider: "vnpay" }, "receptionist-1")).resolves.toMatchObject({ sandboxPaymentUrl: expect.stringContaining("/sandbox/vnpay/PAY-001") });
-    expect(repository.createWithEvent).toHaveBeenCalledWith(expect.objectContaining({ method: "online", provider: "vnpay" }), expect.any(Object));
-  });
-
   it("requires a bank-statement reconciliation note before a bank transfer can be paid", async () => {
     const { repository, auditService } = dependencies();
     repository.payment.mockResolvedValue({ id: "payment-1", status: "pending", method: "bank_transfer", membership_id: membershipId, amount_vnd: 500000n });

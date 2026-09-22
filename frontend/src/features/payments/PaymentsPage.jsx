@@ -27,7 +27,7 @@ export function PaymentsPage({ session }) {
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [sandboxPaymentUrl, setSandboxPaymentUrl] = useState("");
+  const [checkoutUrl, setCheckoutUrl] = useState("");
   const [reconciliationNotes, setReconciliationNotes] = useState({});
   const [paymentSearch, setPaymentSearch] = useState("");
   const [paymentStatusFilters, setPaymentStatusFilters] = useState([]);
@@ -130,7 +130,7 @@ export function PaymentsPage({ session }) {
     event.preventDefault();
     setError("");
     setNotice("");
-    setSandboxPaymentUrl("");
+    setCheckoutUrl("");
     setSubmitting(true);
     try {
       const payment = await paymentApi.create({
@@ -138,10 +138,10 @@ export function PaymentsPage({ session }) {
         membershipId: form.membershipId || undefined,
         amountVnd: Number(form.amountVnd),
       });
-      setSandboxPaymentUrl(payment.checkoutUrl ?? payment.sandboxPaymentUrl ?? "");
+      setCheckoutUrl(payment.checkoutUrl ?? "");
       setForm(emptyForm);
       setMemberships([]);
-      setNotice(payment.checkoutUrl ? "Đã tạo liên kết PayOS. Mở liên kết để khách thanh toán." : payment.sandboxPaymentUrl ? "Đã tạo giao dịch sandbox. Mở liên kết để mô phỏng thanh toán." : form.method === "bank_transfer" ? "Đã lập phiếu chuyển khoản chờ đối soát sao kê." : "Đã lập phiếu thu tiền mặt, chờ Lễ tân xác nhận đã thu.");
+      setNotice(payment.checkoutUrl ? "Đã tạo liên kết PayOS. Mở liên kết để khách thanh toán." : form.method === "bank_transfer" ? "Đã lập phiếu chuyển khoản chờ đối soát sao kê." : "Đã lập phiếu thu tiền mặt, chờ Lễ tân xác nhận đã thu.");
       await load();
     } catch (caught) {
       setError(caught.message);
@@ -199,7 +199,6 @@ export function PaymentsPage({ session }) {
           {form.method === "online" && <label>
             Cổng thanh toán
             <select name="provider" onChange={updateForm} value={form.provider}>
-              <option value="vnpay">VNPay</option>
               <option value="payos">PayOS / chuyển khoản QR</option>
             </select>
           </label>}
@@ -253,7 +252,7 @@ export function PaymentsPage({ session }) {
             Lập phiếu thu
           </Button>
         </form>}
-        {sandboxPaymentUrl && <p className="auth-success" role="status">Liên kết thanh toán: <a href={sandboxPaymentUrl} rel="noreferrer" target="_blank">Mở trang thanh toán</a></p>}
+        {checkoutUrl && <p className="auth-success" role="status">Liên kết thanh toán: <a href={checkoutUrl} rel="noreferrer" target="_blank">Mở trang thanh toán</a></p>}
         <section className="members-list">
           <div className="list-heading">
             <h2>{isCashier ? "Phiếu thu tại quầy" : "Danh sách phiếu thu"}</h2>

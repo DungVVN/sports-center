@@ -96,7 +96,6 @@ enum payment_method {
 }
 
 enum payment_provider {
-  vnpay
   momo
   zalopay
   bank
