@@ -7,7 +7,7 @@ function escapeHtml(value) {
 
 export function createVerificationDeliveryService({ config = env, fetchImpl = fetch } = {}) {
   return {
-    async deliver({ channel, code, recipient }) {
+    async deliver({ channel, code, recipient, purpose = "registration" }) {
       if (config.verificationDeliveryMode === "development") {
       console.info(`Development ${channel} verification code for ${recipient}: ${code}`);
       return { delivered: true, developmentCode: code };
@@ -26,9 +26,9 @@ export function createVerificationDeliveryService({ config = env, fetchImpl = fe
         body: JSON.stringify({
           from: `${config.resendFromName} <${config.resendFromEmail}>`,
           to: [recipient],
-          subject: "Mã xác thực tài khoản Kinetic Sports",
-          text: `Mã xác thực của bạn là ${code}. Mã có hiệu lực trong ${config.verificationCodeTtlMinutes} phút. Không chia sẻ mã này với bất kỳ ai.`,
-          html: `<p>Mã xác thực của bạn là <strong>${escapeHtml(code)}</strong>.</p><p>Mã có hiệu lực trong ${config.verificationCodeTtlMinutes} phút. Không chia sẻ mã này với bất kỳ ai.</p>`,
+          subject: purpose === "staff_login" ? "Mã đăng nhập Kinetic Sports" : "Mã xác thực tài khoản Kinetic Sports",
+          text: `${purpose === "staff_login" ? "Mã đăng nhập" : "Mã xác thực"} của bạn là ${code}. Mã có hiệu lực trong ${config.verificationCodeTtlMinutes} phút. Không chia sẻ mã này với bất kỳ ai.`,
+          html: `<p>${purpose === "staff_login" ? "Mã đăng nhập" : "Mã xác thực"} của bạn là <strong>${escapeHtml(code)}</strong>.</p><p>Mã có hiệu lực trong ${config.verificationCodeTtlMinutes} phút. Không chia sẻ mã này với bất kỳ ai.</p>`,
         }),
       });
       if (!response.ok) {

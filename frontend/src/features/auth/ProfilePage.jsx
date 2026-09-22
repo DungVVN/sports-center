@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "../../components/ui/Button.jsx";
 import { authApi } from "./auth-api.js";
+import { TotpEnrollmentPanel } from "./TotpEnrollmentPanel.jsx";
 import "../members/members.css";
 import "./profile.css";
 
@@ -274,6 +275,7 @@ export function ProfilePage() {
           </div>
           <div className="profile-page__actions"><Button loading={passwordSubmitting} type="submit">Đổi mật khẩu</Button><span>Mọi phiên đăng nhập hiện có sẽ được thu hồi.</span></div>
         </form>
+        {profile.role === "manager" && <TotpEnrollmentPanel />}
         {isMember && (
           <section className="members-list profile-page__contacts">
             <div className="list-heading">

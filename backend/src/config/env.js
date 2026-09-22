@@ -12,6 +12,9 @@ const environmentSchema = z.object({
   AUTH_SESSION_TTL_HOURS: z.coerce.number().int().min(1).max(720).default(8),
   AUTH_LOGIN_MAX_ATTEMPTS: z.coerce.number().int().min(3).max(20).default(5),
   AUTH_LOGIN_WINDOW_MINUTES: z.coerce.number().int().min(1).max(1440).default(15),
+  AUTH_MFA_ENCRYPTION_KEY: z.string().min(32).default("development-only-mfa-encryption-key-change-before-production"),
+  AUTH_MFA_ENROLLMENT_TTL_MINUTES: z.coerce.number().int().min(1).max(60).default(10),
+  AUTH_MFA_CHALLENGE_TTL_MINUTES: z.coerce.number().int().min(1).max(30).default(5),
   VERIFICATION_CODE_SECRET: z.string().min(32).default("development-only-verification-secret-change-before-production"),
   VERIFICATION_CODE_TTL_MINUTES: z.coerce.number().int().min(1).max(60).default(10),
   VERIFICATION_DELIVERY_MODE: z.enum(["development", "provider"]).default("development"),
@@ -33,6 +36,7 @@ const values = parsedEnvironment.data;
 if (values.NODE_ENV === "production" && (
   values.AUTH_JWT_SECRET === "development-only-auth-secret-change-before-production"
   || values.VERIFICATION_CODE_SECRET === "development-only-verification-secret-change-before-production"
+  || values.AUTH_MFA_ENCRYPTION_KEY === "development-only-mfa-encryption-key-change-before-production"
 )) {
   throw new Error("Authentication secrets must be configured in production.");
 }
@@ -47,6 +51,9 @@ export const env = Object.freeze({
   authSessionTtlHours: values.AUTH_SESSION_TTL_HOURS,
   authLoginMaxAttempts: values.AUTH_LOGIN_MAX_ATTEMPTS,
   authLoginWindowMinutes: values.AUTH_LOGIN_WINDOW_MINUTES,
+  authMfaEncryptionKey: values.AUTH_MFA_ENCRYPTION_KEY,
+  authMfaEnrollmentTtlMinutes: values.AUTH_MFA_ENROLLMENT_TTL_MINUTES,
+  authMfaChallengeTtlMinutes: values.AUTH_MFA_CHALLENGE_TTL_MINUTES,
   verificationCodeSecret: values.VERIFICATION_CODE_SECRET,
   verificationCodeTtlMinutes: values.VERIFICATION_CODE_TTL_MINUTES,
   verificationDeliveryMode: values.VERIFICATION_DELIVERY_MODE,

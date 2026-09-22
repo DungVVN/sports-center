@@ -94,9 +94,9 @@ export const authRepository = {
     });
   },
 
-  createVerification({ channel, codeHash, expiresAt, userId }) {
+  createVerification({ channel, codeHash, expiresAt, userId, purpose = "registration" }) {
     return prisma.account_verifications.create({
-      data: { channel, code_hash: codeHash, expires_at: expiresAt, user_id: userId },
+      data: { channel, code_hash: codeHash, expires_at: expiresAt, user_id: userId, purpose },
     });
   },
 
@@ -115,6 +115,10 @@ export const authRepository = {
     return prisma.account_verifications.update({ where: { id }, data: { verified_at: new Date() } });
   },
 
+  markVerificationVerifiedOnce(id) {
+    return prisma.account_verifications.updateMany({ where: { id, verified_at: null }, data: { verified_at: new Date() } });
+  },
+
   async areRegistrationChannelsVerified(userId) {
     const channels = await Promise.all(["email", "phone"].map((channel) => prisma.account_verifications.findFirst({
       where: { channel, purpose: "registration", user_id: userId },
@@ -129,6 +133,45 @@ export const authRepository = {
 
   createSession({ expiresAt, userId }) {
     return prisma.auth_sessions.create({ data: { expires_at: expiresAt, user_id: userId } });
+  },
+
+  findVerification({ verificationId, purpose }) {
+    return prisma.account_verifications.findFirst({ where: { id: verificationId, purpose } });
+  },
+
+  findTotpFactor(userId) {
+    return prisma.auth_totp_factors.findUnique({ where: { user_id: userId } });
+  },
+
+  createMfaEnrollment({ userId, secretCiphertext, expiresAt }) {
+    return prisma.auth_mfa_enrollments.create({ data: { user_id: userId, secret_ciphertext: secretCiphertext, expires_at: expiresAt } });
+  },
+
+  findMfaEnrollment({ enrollmentId, userId }) {
+    return prisma.auth_mfa_enrollments.findFirst({ where: { id: enrollmentId, user_id: userId, consumed_at: null } });
+  },
+
+  async activateTotpFactor({ enrollmentId, userId, secretCiphertext }) {
+    return prisma.$transaction(async (transaction) => {
+      const consumed = await transaction.auth_mfa_enrollments.updateMany({ where: { id: enrollmentId, user_id: userId, consumed_at: null }, data: { consumed_at: new Date() } });
+      if (consumed.count !== 1) return null;
+      return transaction.auth_totp_factors.upsert({ where: { user_id: userId }, create: { user_id: userId, secret_ciphertext: secretCiphertext }, update: { secret_ciphertext: secretCiphertext } });
+    });
+  },
+
+  createMfaLoginChallenge({ userId, expiresAt }) {
+    return prisma.auth_mfa_login_challenges.create({ data: { user_id: userId, expires_at: expiresAt } });
+  },
+
+  async findMfaLoginChallenge(challengeId) {
+    return prisma.auth_mfa_login_challenges.findFirst({ where: { id: challengeId, used_at: null } });
+  },
+
+  async consumeMfaLoginChallenge(challengeId) {
+    const challenge = await this.findMfaLoginChallenge(challengeId);
+    if (!challenge || challenge.expires_at <= new Date()) return null;
+    const consumed = await prisma.auth_mfa_login_challenges.updateMany({ where: { id: challengeId, user_id: challenge.user_id, used_at: null }, data: { used_at: new Date() } });
+    return consumed.count === 1 ? challenge : null;
   },
 
   revokeSession(sessionId) {

@@ -16,7 +16,7 @@ describe("LoginPage", () => {
     const onLoggedIn = vi.fn();
     authApi.login.mockResolvedValue({ user: { role: "manager" } });
     authApi.me.mockResolvedValue({ user: { role: "manager" }, permissions: ["training.template.manage"] });
-    render(<LoginPage onLoggedIn={onLoggedIn} onRegister={vi.fn()} />);
+    render(<LoginPage onLoggedIn={onLoggedIn} onMfaRequired={vi.fn()} onRegister={vi.fn()} />);
 
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "manager01@sportscenter.local" } });
     fireEvent.change(screen.getByLabelText("Mật khẩu"), { target: { value: "test-only-password" } });
@@ -28,7 +28,7 @@ describe("LoginPage", () => {
 
   it("shows the normalized backend error and keeps the user on the form", async () => {
     authApi.login.mockRejectedValue(new ApiError({ code: "INVALID_CREDENTIALS", message: "Email hoặc mật khẩu không đúng." }));
-    render(<LoginPage onLoggedIn={vi.fn()} onRegister={vi.fn()} />);
+    render(<LoginPage onLoggedIn={vi.fn()} onMfaRequired={vi.fn()} onRegister={vi.fn()} />);
 
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "manager01@sportscenter.local" } });
     fireEvent.change(screen.getByLabelText("Mật khẩu"), { target: { value: "sai-mat-khau" } });

@@ -86,6 +86,13 @@
   display: grid;
   gap: var(--space-16);
 }
+.profile-page__mfa { display: grid; gap: var(--space-16); }
+.profile-page__mfa .list-heading p { color: var(--color-text-secondary); font-size: 12px; font-weight: 400; margin: var(--space-4) 0 0; }
+.profile-page__mfa-form { display: grid; gap: var(--space-12); }
+.profile-page__mfa-form > p { color: var(--color-text-secondary); font-size: 13px; line-height: 1.5; margin: 0; }
+.profile-page__mfa-form label { display: grid; font-size: 12px; font-weight: 600; gap: var(--space-6); }
+.profile-page__mfa-form input { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-control); color: var(--color-text); min-height: var(--control-height); padding: 0 var(--space-12); width: 100%; }
+.profile-page__mfa-form input[readonly] { background: var(--color-surface-muted); font-family: var(--font-mono); }
 .profile-page__summary {
   align-content: start;
   display: grid;
