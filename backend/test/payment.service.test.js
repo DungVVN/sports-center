@@ -52,10 +52,10 @@ describe("Payment service", () => {
     expect(receipt.events).toEqual([{ event_type: "payment_created" }]);
   });
 
-  it("creates an online sandbox payment only with a selected provider", async () => {
+  it("creates an online legacy sandbox payment only with the remaining selected provider", async () => {
     const { repository, auditService } = dependencies();
-    await expect(createPaymentService({ repository, auditService }).create({ ...input, method: "online", provider: "momo" }, "receptionist-1")).resolves.toMatchObject({ sandboxPaymentUrl: expect.stringContaining("/sandbox/momo/PAY-001") });
-    expect(repository.createWithEvent).toHaveBeenCalledWith(expect.objectContaining({ method: "online", provider: "momo" }), expect.any(Object));
+    await expect(createPaymentService({ repository, auditService }).create({ ...input, method: "online", provider: "vnpay" }, "receptionist-1")).resolves.toMatchObject({ sandboxPaymentUrl: expect.stringContaining("/sandbox/vnpay/PAY-001") });
+    expect(repository.createWithEvent).toHaveBeenCalledWith(expect.objectContaining({ method: "online", provider: "vnpay" }), expect.any(Object));
   });
 
   it("closes a pending PayOS payment if link creation fails", async () => {

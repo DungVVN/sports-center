@@ -186,7 +186,7 @@ Do not create a generic repository or generic service merely to wrap Prisma CRUD
 | Badge | `12px / 1` | 500 | Compact state labels |
 
 - Use tabular numbers for amounts, metrics, dates and values that users compare vertically.
-- Keep all product copy in Vietnamese. English is allowed only for established provider/product names such as VNPay, MoMo, ZaloPay and technical identifiers.
+- Keep all product copy in Vietnamese. English is allowed only for established provider/product names such as PayOS, VNPay and technical identifiers.
 
 ### Spacing, radius and elevation
 

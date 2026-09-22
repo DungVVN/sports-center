@@ -33,6 +33,12 @@ describe("Payment routes", () => {
       .send({ memberId, amountVnd: 500000, method: "online", provider: "payos" }).expect(201);
     expect(service.create).toHaveBeenCalledWith(expect.objectContaining({ provider: "payos" }), "receptionist-1");
   });
+  it.each(["momo", "zalopay"])("rejects removed provider %s", async (provider) => {
+    const service = paymentService();
+    await request(createApp({ authService: authService(["payment.record"]), paymentService: service })).post("/api/v1/payments").set("Authorization", "Bearer token")
+      .send({ memberId, amountVnd: 500000, method: "online", provider }).expect(422);
+    expect(service.create).not.toHaveBeenCalled();
+  });
   it("routes raw PayOS webhooks to the dedicated verifier before generic provider callbacks", async () => {
     const service = paymentService();
     await request(createApp({ authService: authService([]), paymentService: service })).post("/api/v1/payments/callbacks/payos").send({ code: "00", data: {}, signature: "signature" }).expect(200);

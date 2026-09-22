@@ -3,8 +3,8 @@
 ## Scope and provider boundary
 
 - `payos`: payment link/QR and bank-transfer collection. The backend creates a numeric provider order code and accepts payment state only from a verified PayOS webhook.
-- `momo` and `zalopay`: retained as sandbox adapters until their merchant contract, credentials, IPN/callback endpoints and test evidence are approved.
 - `bank_transfer`: do not mark paid from a client request. Use a verified PayOS webhook or a Receptionist confirmation with reason/audit after a documented bank-statement match.
+- MoMo and ZaloPay are explicitly out of scope for the pilot and are not exposed by the payment API, frontend or deployment configuration.
 
 ## PayOS configuration
 
@@ -34,9 +34,8 @@ Do not store these values in `.env.example`, source, browser variables, logs or 
 - Replayed webhook does not create a second payment event or activate membership twice.
 - Failed/invalid webhooks do not change payment or membership state.
 - Payment reports derive revenue from `paid_at` and successful payment events, not from client values.
-- MoMo/ZaloPay are not called Production-ready until their provider-specific test callbacks and reconciliation evidence are collected.
+- The pilot supports only PayOS and controlled bank-transfer reconciliation; no MoMo or ZaloPay merchant credential, callback or UAT evidence is required.
 
 ## Sources
 
 - PayOS Node SDK: create a payment link with `paymentRequests.create()` and verify webhooks with `webhooks.verify()`.
-- MoMo IPN and ZaloPay callback validation are provider-specific; do not reuse PayOS signature logic for them.

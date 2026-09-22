@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { env } from "../../config/env.js";
 
-const supportedProviders = new Set(["vnpay", "momo", "zalopay"]);
+const supportedProviders = new Set(["vnpay"]);
 const signatureFor = (provider, transactionCode, status, amount) => createHmac("sha256", env.paymentWebhookSecret).update(`${provider}|${transactionCode}|${status}|${amount}`).digest("hex");
 
 export function sandboxPaymentUrl(provider, transactionCode, amount) {

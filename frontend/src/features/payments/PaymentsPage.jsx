@@ -9,7 +9,7 @@ import { membershipApi } from "../memberships/membership-api.js";
 import { paymentApi } from "./payment-api.js";
 import "../members/members.css";
 
-const emptyForm = { memberId: "", membershipId: "", amountVnd: "", method: "cash", provider: "vnpay", notes: "" };
+const emptyForm = { memberId: "", membershipId: "", amountVnd: "", method: "cash", provider: "payos", notes: "" };
 const paymentStatus = {
   pending: "Chờ xác nhận",
   paid: "Đã thanh toán",
@@ -198,8 +198,6 @@ export function PaymentsPage({ session }) {
             Cổng thanh toán
             <select name="provider" onChange={updateForm} value={form.provider}>
               <option value="vnpay">VNPay</option>
-              <option value="momo">MoMo</option>
-              <option value="zalopay">ZaloPay</option>
               <option value="payos">PayOS / chuyển khoản QR</option>
             </select>
           </label>}
