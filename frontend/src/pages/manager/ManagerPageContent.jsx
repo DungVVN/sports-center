@@ -13,7 +13,7 @@ import { TrainingPage } from "../../features/training/TrainingPage.jsx";
 import { ProfilePage } from "../../features/auth/ProfilePage.jsx";
 import { SupportStaffPage } from "../../features/support/SupportStaffPage.jsx";
 
-export function ManagerPageContent({ onNavigate, session, view }) {
+export function ManagerPageContent({ onNavigate, onSessionRevoked, session, view }) {
   const pages = {
     attendance: <AttendancePage session={session} />,
     audit: <AuditLogsPage />,
@@ -25,7 +25,7 @@ export function ManagerPageContent({ onNavigate, session, view }) {
     members: <MembersPage readOnly />,
     packages: <MembershipsPage session={session} />,
     payments: <PaymentsPage session={session} />,
-    profile: <ProfilePage />,
+    profile: <ProfilePage onSessionRevoked={onSessionRevoked} />,
     registrations: <RegistrationApprovalPage />,
     reports: <ReportsPage />,
     staff: <StaffPage />,

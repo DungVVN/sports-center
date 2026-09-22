@@ -84,6 +84,7 @@ describe("auth service login protection", () => {
   it("creates a staff email challenge instead of a session after password verification", async () => {
     const repository = {
       findUserByEmail: vi.fn().mockResolvedValue({ id: "staff-1", email: "coach@example.com", display_name: "Coach", role: "coach", status: "active", password_hash: await hashPassword("Strongpass1") }),
+      expireActiveVerifications: vi.fn(),
       createVerification: vi.fn().mockResolvedValue({ id: "challenge-1" }),
     };
     const verificationDelivery = { deliver: vi.fn().mockResolvedValue({ delivered: true }) };
@@ -91,6 +92,7 @@ describe("auth service login protection", () => {
 
     await expect(service.login({ email: "COACH@example.com", password: "Strongpass1" })).resolves.toMatchObject({ emailOtpRequired: true, emailOtpChallengeId: "challenge-1" });
     expect(repository.createSession).toBeUndefined();
+    expect(repository.expireActiveVerifications).toHaveBeenCalledWith({ userId: "staff-1", purpose: "staff_login" });
     expect(repository.createVerification).toHaveBeenCalledWith(expect.objectContaining({ userId: "staff-1", purpose: "staff_login" }));
     expect(verificationDelivery.deliver).toHaveBeenCalledWith(expect.objectContaining({ recipient: "coach@example.com", purpose: "staff_login" }));
   });

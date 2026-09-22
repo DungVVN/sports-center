@@ -63,6 +63,9 @@ export function createAuthService({
   async function issueVerification({ channel, recipient, userId, purpose = "registration" }) {
     const code = generateVerificationCode();
     const expiresAt = new Date(Date.now() + env.verificationCodeTtlMinutes * 60_000);
+    if (purpose === "staff_login" && repository.expireActiveVerifications) {
+      await repository.expireActiveVerifications({ userId, purpose });
+    }
     const verification = await repository.createVerification({ channel, codeHash: hashVerificationCode(code), expiresAt, userId, purpose });
     const delivery = await verificationDelivery.deliver({ channel, code, recipient, purpose });
     return { challengeId: verification?.id, channel, expiresAt, ...(env.nodeEnv === "development" ? { developmentCode: delivery.developmentCode } : {}) };
@@ -187,6 +190,7 @@ export function createAuthService({
       if (!verifyTotp({ secret, code })) throw new AppError({ statusCode: 422, code: "MFA_CODE_INVALID", message: "Mã Authenticator không chính xác." });
       const factor = await repository.activateTotpFactor({ enrollmentId, userId, secretCiphertext: enrollment.secret_ciphertext });
       if (!factor) throw new AppError({ statusCode: 409, code: "MFA_ENROLLMENT_CONSUMED", message: "Phiên đăng ký MFA đã được sử dụng." });
+      await repository.revokeUserSessions(userId);
       await auditService.record({ actorUserId: userId, action: "auth.mfa_enrolled", entityType: "auth_totp_factor", entityId: userId, summary: "Đã kích hoạt Authenticator cho Manager." });
       return { enrolled: true };
     },

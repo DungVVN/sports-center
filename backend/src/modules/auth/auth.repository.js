@@ -115,6 +115,13 @@ export const authRepository = {
     return prisma.account_verifications.update({ where: { id }, data: { verified_at: new Date() } });
   },
 
+  expireActiveVerifications({ userId, purpose }) {
+    return prisma.account_verifications.updateMany({
+      where: { user_id: userId, purpose, verified_at: null, expires_at: { gt: new Date() } },
+      data: { expires_at: new Date() },
+    });
+  },
+
   markVerificationVerifiedOnce(id) {
     return prisma.account_verifications.updateMany({ where: { id, verified_at: null }, data: { verified_at: new Date() } });
   },

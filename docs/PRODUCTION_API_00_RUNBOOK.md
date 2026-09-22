@@ -24,9 +24,9 @@ Set these values in the backend host only. Do not commit them or expose them to 
 2. Compare the hosts/database/schema in `MIGRATE_DATABASE_URL` and `DATABASE_URL`. They must target the approved production database before migration.
 3. Deploy the application and apply `20260922010000_auth_totp_mfa` then `20260922011000_staff_email_login_otp` with `prisma migrate deploy`. Never use `migrate dev` or reset in production.
 4. Configure the production secrets and verified Resend sender, then restart the backend.
-5. Have the pilot Manager sign in, open **Hồ sơ**, choose **Thiết lập Authenticator**, register the shown manual key in an Authenticator application, and confirm a six-digit code.
+5. Have the pilot Manager sign in, open **Hồ sơ**, choose **Thiết lập Authenticator**, register the shown manual key in an Authenticator application, and confirm a six-digit code. Confirmation revokes existing Manager sessions, including the setup session, and returns the browser to the login screen.
 6. Sign out the Manager and confirm that password alone returns a TOTP challenge without a session cookie; then confirm that the correct TOTP creates a session.
-7. Sign in one dedicated Receptionist and one dedicated Coach account. Confirm that a six-digit email OTP arrives, cannot be reused, and does not create a session before verification.
+7. Sign in one dedicated Receptionist and one dedicated Coach account. Confirm that a six-digit email OTP arrives, invalidates any earlier unused staff-login OTP, cannot be reused, and does not create a session before verification.
 8. Record browser/API evidence, timestamp, test account IDs and result in the release record. Do not record OTPs, keys, cookies or provider secrets.
 
 ## Manager recovery

@@ -114,7 +114,7 @@ export function DashboardPlaceholder({ session, onLogout }) {
   const RolePageContent = rolePages[session.user.role] ?? MemberPageContent;
   const content = (
     <Suspense fallback={<p className="app-shell__loading" role="status">Đang tải không gian làm việc...</p>}>
-      <RolePageContent onNavigate={setView} session={session} view={view} />
+      <RolePageContent onNavigate={setView} onSessionRevoked={onLogout} session={session} view={view} />
     </Suspense>
   );
   return (

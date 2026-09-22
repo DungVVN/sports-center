@@ -4,7 +4,7 @@ import { ApiError } from "../../api/api-error.js";
 import { Button } from "../../components/ui/Button.jsx";
 import { authApi } from "./auth-api.js";
 
-export function TotpEnrollmentPanel() {
+export function TotpEnrollmentPanel({ onEnrollmentCompleted }) {
   const [enrollment, setEnrollment] = useState(null);
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
@@ -33,6 +33,7 @@ export function TotpEnrollmentPanel() {
       setEnrollment(null);
       setCode("");
       setNotice("Authenticator đã được kích hoạt. Lần đăng nhập Manager tiếp theo sẽ yêu cầu mã 6 số.");
+      onEnrollmentCompleted?.();
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : "Không thể xác nhận Authenticator.");
     } finally {

@@ -30,7 +30,7 @@ function toForm(profile) {
   };
 }
 
-export function ProfilePage() {
+export function ProfilePage({ onSessionRevoked }) {
   const [profile, setProfile] = useState(null);
   const [form, setForm] = useState(null);
   const [error, setError] = useState("");
@@ -275,7 +275,7 @@ export function ProfilePage() {
           </div>
           <div className="profile-page__actions"><Button loading={passwordSubmitting} type="submit">Đổi mật khẩu</Button><span>Mọi phiên đăng nhập hiện có sẽ được thu hồi.</span></div>
         </form>
-        {profile.role === "manager" && <TotpEnrollmentPanel />}
+        {profile.role === "manager" && <TotpEnrollmentPanel onEnrollmentCompleted={onSessionRevoked} />}
         {isMember && (
           <section className="members-list profile-page__contacts">
             <div className="list-heading">
