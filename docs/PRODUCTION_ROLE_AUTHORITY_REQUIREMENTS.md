@@ -81,21 +81,23 @@ The same route/page label must never imply the same authority. Each shared page 
 - Admin has every granted permission, but each API still enforces server-side scope and audit logging.
 - Admin is not creatable, editable, suspendable, or role-changeable through the normal staff API. Bootstrap and recovery use a restricted audited operational procedure with business and technical approval.
 - Manager cannot create, edit, suspend, reactivate, or promote Admin or another Manager. A Manager may manage only Receptionist and Coach accounts in its facility scope.
-- Admin and Manager require enrolled TOTP before a production session is issued. Receptionist and Coach require email OTP. Member MFA is deferred for this pilot.
+- CAPTCHA is verified server-side for public registration and login attempts. It is also required after rate-limit/risk signals and before sensitive account-recovery flows; a browser-only CAPTCHA check is not accepted.
+- TOTP 2FA is an opt-in user security setting for every role. After a user enrolls, a valid TOTP is required before that user's subsequent sessions are issued. Receptionist and Coach do not receive forced email OTP under this policy.
 - High-risk Admin actions (role changes, security recovery, export, payment configuration, backup restore) require step-up verification and immutable audit events.
 - Frontend visibility is convenience only; authorization and hierarchy are enforced by API and database rules.
 
 ## Delivery impact
 
-API-00 must add `admin` to the role enum, role-permission seed, authentication/TOTP policy, dashboard/UI routing and OpenAPI. Staff APIs must enforce hierarchy rather than relying only on `staff.manage`.
+API-00 must add `admin` to the role enum, role-permission seed, CAPTCHA verification, optional-TOTP policy, dashboard/UI routing and OpenAPI. Staff APIs must enforce hierarchy rather than relying only on `staff.manage`.
 
 ## Acceptance criteria
 
-- An Admin can authenticate with TOTP and access the complete system workspace.
+- An Admin can authenticate with server-verified CAPTCHA and access the complete system workspace; TOTP is required only after that user opts in.
 - A Manager cannot create, modify, suspend, reactivate, or assign the `admin` or `manager` role, even when crafting a direct API request.
 - A Manager can manage Receptionist and Coach accounts only within its facility scope.
 - A Manager can complete authorised facility operations without access to identity/security administration, global configuration or payment-provider override.
 - Each shared page returns only the role's permitted data and exposes only the actions listed in the shared-page contract, even when called directly through the API.
-- Receptionist and Coach do not obtain a session until their email OTP is verified.
+- CAPTCHA failures and missing/invalid CAPTCHA tokens are rejected server-side without issuing a session.
+- Any user who has enrolled TOTP cannot get a session after password alone.
 - Admin bootstrap, role changes, MFA reset and security recovery have immutable audit evidence.
 - Production UAT uses the nine-account fixture and records outcome by role without recording passwords, OTPs or TOTP secrets.

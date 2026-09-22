@@ -4,7 +4,7 @@
 
 Deploy a separate Admin frontend at `https://admin.kineticsports.io.vn`.
 
-It is intentionally not linked from the public/member/operations frontend. The subdomain is an operational separation, **not** a security control: access is protected by the Admin role, TOTP, strict origin policy and server-side authorization.
+It is intentionally not linked from the public/member/operations frontend. The subdomain is an operational separation, **not** a security control: access is protected by Cloudflare Access, the Admin role, CAPTCHA, strict origin policy and server-side authorization. TOTP is an opt-in user security setting.
 
 ## Architecture
 
@@ -30,7 +30,7 @@ api.kineticsports.io.vn       → shared API, Admin-only routes and role/scope c
 
 ## Non-negotiable safety controls
 
-- Admin login always requires enrolled TOTP; no email-OTP fallback for privileged access.
+- Admin login requires server-verified CAPTCHA. TOTP is offered as an opt-in user security setting and, once enrolled, is required for that user's subsequent sessions.
 - Bootstrap Admin creation, Admin recovery, TOTP reset, backup restore and payment/provider configuration require dual approval and immutable audit events.
 - Every destructive/high-risk action has a server-generated confirmation record and step-up verification; browser hiding or UI checks are insufficient.
 - Admin is the only role with `staff.identity.manage`; Manager does not receive an Admin API token or Admin page access.
@@ -42,13 +42,13 @@ api.kineticsports.io.vn       → shared API, Admin-only routes and role/scope c
 2. Build the isolated Admin frontend against Admin-specific API contracts and OpenAPI.
 3. Configure DNS and the Admin deployment host for `admin.kineticsports.io.vn`.
 4. Add the exact Admin origin to API CORS and deploy; do not expose it to the normal frontend configuration.
-5. Provision the single bootstrap Admin through the restricted audited procedure and enroll TOTP.
-6. Run Admin UAT: access denial from other roles, TOTP, role hierarchy, audit events, redaction and recovery/backup drill evidence.
+5. Provision the single bootstrap Admin through the restricted audited procedure. The user may opt in to TOTP from their security profile.
+6. Run Admin UAT: Cloudflare Access denial, CAPTCHA verification, access denial from other roles, optional-TOTP enrollment/login, role hierarchy, audit events, redaction and recovery/backup drill evidence.
 
 ## Acceptance criteria
 
 - Visiting `admin.kineticsports.io.vn` presents only the Admin authentication experience; no normal app navigation is shown.
 - A non-Admin authenticated session receives 403 from every Admin API route and is redirected to an access-denied screen, without data leakage.
-- Admin login cannot create a session without a valid TOTP.
+- Admin login cannot create a session without server-verified CAPTCHA; if the Admin has enrolled TOTP, it also cannot create a session without a valid TOTP.
 - Manager cannot discover or invoke Admin actions by constructing URLs or API requests.
 - High-risk Admin actions have audit evidence and required approvals before execution.
