@@ -16,10 +16,7 @@
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
     "db:migrate": "prisma migrate deploy",
-    "db:seed": "prisma db seed",
-    "db:seed-demo-accounts": "node prisma/seed-demo-accounts.js",
     "admin:provision": "node scripts/provision-admin.mjs",
-    "test:runtime-auth": "node scripts/auth-runtime-smoke.js",
     "test:runtime-rate-limit": "node scripts/auth-rate-limit-runtime.js",
     "backup:verify": "node scripts/backup-restore-verify.js"
   },

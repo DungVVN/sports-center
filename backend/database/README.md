@@ -34,7 +34,6 @@ For every later database change, create a new migration through Prisma with a hi
 - `npm run db:validate` validates `prisma/schema.prisma`.
 - `npm run db:migrate` applies versioned SQL through Prisma using `MIGRATE_DATABASE_URL` when present.
 - `npm run db:generate` creates the typed client at `src/generated/prisma`.
-- `npm run db:seed` upserts DEV reference roles, permissions, packages, and rooms; it never runs automatically in production.
 
 ## Important server rules
 

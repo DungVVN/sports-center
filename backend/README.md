@@ -14,10 +14,6 @@ Run `npm run db:migrate` only when Prisma CLI is available in the deployment env
 
 Do not commit a real Neon connection string. Copy `.env.example` to `.env` only on a trusted local machine or configure the variables in Render.
 
-## Demo accounts
-
-Use `DEMO_ACCOUNT_PASSWORD` at runtime, never in source control, then run `npm run db:seed-demo-accounts`. The script upserts two active accounts for each role and creates the matching `staff_profiles` or `members` record. It is intended only for an approved non-production demo environment. With the API running, `npm run test:runtime-auth` checks login, authenticated identity and logout for all eight accounts.
-
 ## Confirmed business decisions
 
 - A paid membership is required for class booking and facility check-in. A Member may still sign in while payment is pending.
