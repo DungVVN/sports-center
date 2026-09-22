@@ -44,6 +44,10 @@ if (values.NODE_ENV === "production" && (
   throw new Error("Authentication secrets must be configured in production.");
 }
 
+if (values.NODE_ENV === "production" && values.VERIFICATION_DELIVERY_MODE === "provider" && (!values.RESEND_API_KEY || !values.RESEND_FROM_EMAIL)) {
+  throw new Error("Resend must be configured when production email delivery is enabled.");
+}
+
 export const env = Object.freeze({
   nodeEnv: values.NODE_ENV,
   port: values.PORT,

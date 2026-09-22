@@ -531,7 +531,14 @@ model notifications {
   body              String
   link_path         String?
   read_at           DateTime?             @db.Timestamptz(6)
+  email_delivered_at DateTime?            @db.Timestamptz(6)
+  email_skipped_at   DateTime?            @db.Timestamptz(6)
+  email_delivery_attempts Int             @default(0)
+  email_delivery_error String?
+  email_delivery_locked_at DateTime?      @db.Timestamptz(6)
   created_at        DateTime              @default(now()) @db.Timestamptz(6)
+
+  @@index([email_delivered_at, email_skipped_at, email_delivery_locked_at])
 }
 
 model ai_suggestion_deliveries {
@@ -580,7 +587,7 @@ model training_session_exercises {
 model notification_preferences {
   user_id      String   @id @db.Uuid
   email_enabled Boolean  @default(true)
-  push_enabled  Boolean  @default(true)
+  push_enabled  Boolean  @default(false)
   updated_at    DateTime @updatedAt @db.Timestamptz(6)
 }
 

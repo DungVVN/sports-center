@@ -36,6 +36,8 @@ export function createSupportService({ repository, auditService }) {
       staff(actor); const ticket = await accessible(id, actor);
       const response = await repository.respond({ ticket_id: id, author_user_id: actor.id, body: input.body });
       await repository.update(id, { assigned_to: ticket.assigned_to ?? actor.id, ...(input.status && { status: input.status }) });
+      const memberUserId = await repository.memberUserId(ticket.member_id);
+      if (memberUserId) await repository.notifyUser(memberUserId, { title: `Phản hồi yêu cầu ${ticket.ticket_code}`, body: input.body, link_path: `/support/${id}` });
       await auditService.record({ actorUserId: actor.id, action: "support.responded", entityType: "support_ticket", entityId: id, summary: "Đã phản hồi yêu cầu hỗ trợ." });
       return { ticket, response };
     },
