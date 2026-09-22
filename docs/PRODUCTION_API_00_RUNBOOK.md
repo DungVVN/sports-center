@@ -2,7 +2,8 @@
 
 ## Scope of this slice
 
-- Manager uses TOTP from an Authenticator application after enrollment.
+- Admin is the highest authority and is provisioned only through the restricted bootstrap/recovery procedure; it is never created through the normal staff API.
+- Admin and Manager use TOTP from an Authenticator application after enrollment.
 - Receptionist and Coach enter an email OTP after every new login session.
 - Members keep the current password/session flow during the pilot.
 - This covers authentication email only. Business notification emails are API-03 work and are not implied by this runbook.
@@ -24,8 +25,8 @@ Set these values in the backend host only. Do not commit them or expose them to 
 2. Compare the hosts/database/schema in `MIGRATE_DATABASE_URL` and `DATABASE_URL`. They must target the approved production database before migration.
 3. Deploy the application and apply `20260922010000_auth_totp_mfa` then `20260922011000_staff_email_login_otp` with `prisma migrate deploy`. Never use `migrate dev` or reset in production.
 4. Configure the production secrets and verified Resend sender, then restart the backend.
-5. Have the pilot Manager sign in, open **Hồ sơ**, choose **Thiết lập Authenticator**, register the shown manual key in an Authenticator application, and confirm a six-digit code. Confirmation revokes existing Manager sessions, including the setup session, and returns the browser to the login screen.
-6. Sign out the Manager and confirm that password alone returns a TOTP challenge without a session cookie; then confirm that the correct TOTP creates a session.
+5. Have the bootstrap Admin and each pilot Manager sign in, open **Hồ sơ**, choose **Thiết lập Authenticator**, register the shown manual key in an Authenticator application, and confirm a six-digit code. Confirmation revokes existing sessions, including the setup session, and returns the browser to the login screen.
+6. Sign out the Admin/Manager and confirm that password alone returns a TOTP challenge without a session cookie; then confirm that the correct TOTP creates a session.
 7. Sign in one dedicated Receptionist and one dedicated Coach account. Confirm that a six-digit email OTP arrives, invalidates any earlier unused staff-login OTP, cannot be reused, and does not create a session before verification.
 8. Record browser/API evidence, timestamp, test account IDs and result in the release record. Do not record OTPs, keys, cookies or provider secrets.
 
@@ -41,7 +42,8 @@ There is intentionally no unauthenticated “lost Authenticator” endpoint. Dur
 
 ## Pilot acceptance criteria
 
-- Manager cannot get a session after password alone once TOTP is enrolled.
+- Admin and Manager cannot get a session after password alone once TOTP is enrolled.
+- Manager cannot create, modify, suspend, reactivate or promote Admin/Manager accounts through UI or direct API requests.
 - Receptionist and Coach cannot get a session after password alone.
 - OTP/TOTP invalid, expired, reused and sixth-attempt cases are rejected without a session.
 - Authentication email failures do not create a session and are visible to the operator through the API error/audit trail.
