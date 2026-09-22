@@ -16,6 +16,15 @@ export default defineConfig({
     host: "0.0.0.0",
     port: 5173,
     strictPort: true,
+    proxy: {
+      "/api/v1": {
+        target: "https://api.kineticsports.io.vn",
+        changeOrigin: true,
+        headers: {
+          origin: "https://www.kineticsports.io.vn",
+        },
+      },
+    },
   },
   test: {
     environment: "jsdom",
