@@ -5,7 +5,10 @@ function escapeHtml(value) {
 }
 
 function message(notification, config) {
-  const link = notification.link_path ? `${config.publicApiOrigin.replace(/\/api\/v1$/, "")}${notification.link_path}` : null;
+  // Notification links are opened by people, so they must point to the web app,
+  // never to the API origin. CORS_ORIGIN is the explicit allow-list of web UIs.
+  const frontendOrigin = config.corsOrigins?.find((origin) => origin.startsWith("https://")) ?? config.corsOrigins?.[0];
+  const link = notification.link_path && frontendOrigin ? `${frontendOrigin.replace(/\/$/, "")}${notification.link_path}` : null;
   return {
     from: `${env.resendFromName} <${env.resendFromEmail}>`,
     to: [notification.recipient.email],
