@@ -50,6 +50,32 @@ Manager owns day-to-day operations for an assigned facility, but is not a system
 - Reject `admin` and `manager` staff targets for a Manager actor before any database write.
 - Restrict Manager audit access to facility operational events; exclude identity/security recovery and platform configuration.
 
+## Shared page contracts: same name, different data and actions
+
+The same route/page label must never imply the same authority. Each shared page receives an explicit server-side data scope and action capability set.
+
+| Shared page | Admin | Manager | Receptionist | Coach | Member |
+| --- | --- | --- | --- | --- | --- |
+| Dashboard | System-wide, security/operations overview | Facility KPI and exception queues | Today’s counter operations | Assigned classes and learners | Own activity only |
+| Profile | Own profile plus restricted Admin security setup | Own profile and TOTP | Own profile and email-OTP status | Own profile and email-OTP status | Own profile and contacts |
+| Members | All facilities; account governance entry point | Facility member lifecycle | Create/update/registration workflow | Read assigned learners only | No list; own profile only |
+| Packages | Global catalogue and policy | Facility catalogue and operational assignment view | Assign/manage member memberships | No access | Own memberships only |
+| Classes | All facilities; policy oversight | Create/edit/publish within facility | Read and submit operational change request | Assigned classes only | Published classes only |
+| Bookings | System audit view | Facility read/exception view | Create/cancel for a member | Read assigned-class roster | Create/cancel own booking |
+| Attendance | Audit read-only | Facility oversight read-only | Read/check-in support if explicitly granted | Record/correct/submit assigned class only | Own history only |
+| Payments | Audit and exception oversight | Facility read/approval queue only | Create/reconcile approved cash or transfer | No access | Own payment history only |
+| Training | Governance and template oversight | Facility templates/operational visibility | No access | Plans/results/AI delivery for assigned learners | Own approved plan/results only |
+| Support | All tickets and escalation policy | Facility escalation/response | Facility response | No access unless specifically assigned | Own tickets and own replies only |
+| Audit logs | Complete, redacted as required | Facility operational events only | No access | No access | No access |
+
+### Frontend and API rules for shared pages
+
+- The frontend selects a role-specific page mode, not a generic page with hidden buttons. For example `BookingsPage` must receive an explicit `scopeMode` and capabilities, not infer authority only from a label.
+- API responses must omit out-of-scope records, columns and action metadata. A disabled frontend action is never sufficient authorization.
+- Every page declares `read scope`, `write scope`, `approved actions`, and `forbidden actions` in OpenAPI and role UAT.
+- Admin must receive an explicit Admin shell/dashboard mapping; falling back to the Member page is forbidden.
+- Manager and Admin must not reuse one unrestricted operational mode. The API must distinguish facility scope from system scope.
+
 ## Mandatory controls
 
 - Admin has every granted permission, but each API still enforces server-side scope and audit logging.
@@ -69,6 +95,7 @@ API-00 must add `admin` to the role enum, role-permission seed, authentication/T
 - A Manager cannot create, modify, suspend, reactivate, or assign the `admin` or `manager` role, even when crafting a direct API request.
 - A Manager can manage Receptionist and Coach accounts only within its facility scope.
 - A Manager can complete authorised facility operations without access to identity/security administration, global configuration or payment-provider override.
+- Each shared page returns only the role's permitted data and exposes only the actions listed in the shared-page contract, even when called directly through the API.
 - Receptionist and Coach do not obtain a session until their email OTP is verified.
 - Admin bootstrap, role changes, MFA reset and security recovery have immutable audit evidence.
 - Production UAT uses the nine-account fixture and records outcome by role without recording passwords, OTPs or TOTP secrets.
