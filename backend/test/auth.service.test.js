@@ -4,6 +4,8 @@ import { createLoginAttemptLimiter } from "../src/shared/security/login-attempt-
 import { hashPassword } from "../src/shared/auth/password.js";
 import { hashVerificationCode } from "../src/shared/auth/session-token.js";
 
+const acceptingCaptcha = { assertValid: vi.fn().mockResolvedValue(undefined) };
+
 describe("auth service login protection", () => {
   it("issues only an email code for a new member registration", async () => {
     const verificationDelivery = { deliver: vi.fn().mockResolvedValue({ delivered: true }) };
@@ -13,7 +15,7 @@ describe("auth service login protection", () => {
       createRegistration: vi.fn().mockResolvedValue({ user: { id: "user-1", email: "member@example.com", display_name: "Member", role: "member", status: "pending_verification" }, member: { id: "member-1" } }),
       createVerification: vi.fn(),
     };
-    const service = createAuthService({ repository, verificationDelivery, auditService: { record: vi.fn() } });
+    const service = createAuthService({ repository, verificationDelivery, auditService: { record: vi.fn() }, captchaVerifier: acceptingCaptcha });
 
     await service.register({ fullName: "Member One", email: "MEMBER@example.com", phone: "0901234567", password: "Strongpass1" });
 
@@ -41,7 +43,7 @@ describe("auth service login protection", () => {
       repository: { findUserByEmail: vi.fn().mockResolvedValue(null) },
       verificationDelivery: { send: vi.fn() },
       auditService,
-      loginLimiter: createLoginAttemptLimiter({ maxAttempts: 3, windowMinutes: 15 }),
+      loginLimiter: createLoginAttemptLimiter({ maxAttempts: 3, windowMinutes: 15 }), captchaVerifier: acceptingCaptcha,
     });
 
     for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -60,7 +62,7 @@ describe("auth service login protection", () => {
   it("changes password only after verifying the current password and revokes sessions", async () => {
     const repository = { userCredentials: vi.fn().mockResolvedValue({ id: "user-1", password_hash: await hashPassword("Current1") }), updatePassword: vi.fn(), revokeUserSessions: vi.fn() };
     const auditService = { record: vi.fn() };
-    const service = createAuthService({ repository, verificationDelivery: { send: vi.fn() }, auditService });
+    const service = createAuthService({ repository, verificationDelivery: { send: vi.fn() }, auditService, captchaVerifier: acceptingCaptcha });
     await expect(service.changePassword({ userId: "user-1", currentPassword: "Current1", newPassword: "Updated2" })).resolves.toBeUndefined();
     expect(repository.updatePassword).toHaveBeenCalled();
     expect(repository.revokeUserSessions).toHaveBeenCalledWith("user-1");
@@ -72,13 +74,24 @@ describe("auth service login protection", () => {
       createSession: vi.fn().mockResolvedValue({ id: "session-1" }),
       getPermissions: vi.fn().mockResolvedValue([{ permission_code: "training.template.manage" }]),
     };
-    const service = createAuthService({ repository, verificationDelivery: { send: vi.fn() }, auditService: { record: vi.fn() } });
+    const service = createAuthService({ repository, verificationDelivery: { send: vi.fn() }, auditService: { record: vi.fn() }, captchaVerifier: acceptingCaptcha });
 
     await expect(service.login({ email: "MANAGER@example.com", password: "Strongpass1" })).resolves.toMatchObject({
       user: { id: "user-1", role: "manager" },
       permissions: ["training.template.manage"],
     });
     expect(repository.getPermissions).toHaveBeenCalledWith("manager");
+  });
+
+  it("separates the Admin login surface from the shared operational login", async () => {
+    const repository = {
+      findUserByEmail: vi.fn().mockResolvedValue({ id: "admin-1", email: "admin@example.com", display_name: "Admin", role: "admin", status: "active", password_hash: await hashPassword("Strongpass1") }),
+      createSession: vi.fn().mockResolvedValue({ id: "admin-session-1" }),
+      getPermissions: vi.fn().mockResolvedValue([{ permission_code: "audit.read" }]),
+    };
+    const service = createAuthService({ repository, verificationDelivery: { send: vi.fn() }, auditService: { record: vi.fn() }, captchaVerifier: acceptingCaptcha });
+    await expect(service.login({ email: "admin@example.com", password: "Strongpass1", loginSurface: "main" })).rejects.toMatchObject({ code: "ADMIN_LOGIN_REQUIRED", statusCode: 403 });
+    await expect(service.login({ email: "admin@example.com", password: "Strongpass1", loginSurface: "admin" })).resolves.toMatchObject({ user: { role: "admin" } });
   });
 
   it("creates a staff session directly when optional TOTP has not been enrolled", async () => {
@@ -88,7 +101,7 @@ describe("auth service login protection", () => {
       createSession: vi.fn().mockResolvedValue({ id: "session-1" }),
       getPermissions: vi.fn().mockResolvedValue([{ permission_code: "class.read" }]),
     };
-    const service = createAuthService({ repository, verificationDelivery: { deliver: vi.fn() }, auditService: { record: vi.fn() } });
+    const service = createAuthService({ repository, verificationDelivery: { deliver: vi.fn() }, auditService: { record: vi.fn() }, captchaVerifier: acceptingCaptcha });
 
     await expect(service.login({ email: "COACH@example.com", password: "Strongpass1" })).resolves.toMatchObject({ user: { id: "staff-1", role: "coach" }, permissions: ["class.read"] });
     expect(repository.createSession).toHaveBeenCalledWith(expect.objectContaining({ userId: "staff-1" }));
@@ -112,7 +125,7 @@ describe("auth service login protection", () => {
       createSession: vi.fn().mockResolvedValue({ id: "session-1" }),
       getPermissions: vi.fn().mockResolvedValue([{ permission_code: "class.read" }]),
     };
-    const service = createAuthService({ repository, verificationDelivery: { deliver: vi.fn() }, auditService: { record: vi.fn() } });
+    const service = createAuthService({ repository, verificationDelivery: { deliver: vi.fn() }, auditService: { record: vi.fn() }, captchaVerifier: acceptingCaptcha });
 
     await expect(service.verifyStaffEmailOtp({ challengeId: "challenge-1", code })).resolves.toMatchObject({ user: { id: "staff-1", role: "coach" }, permissions: ["class.read"] });
     expect(repository.markVerificationVerifiedOnce).toHaveBeenCalledWith("challenge-1");

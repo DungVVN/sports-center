@@ -60,8 +60,17 @@ describe("Auth routes", () => {
     const response = await request(createApp({ authService: service })).post("/api/v1/auth/mfa/totp/verify").send({ challengeId: "b7f2c76c-9c97-4d5a-91b8-936e2acff972", code: "123456" }).expect(200);
     expect(service.beginTotpEnrollment).toHaveBeenCalledWith({ userId: "staff-1" });
     expect(service.confirmTotpEnrollment).toHaveBeenCalledWith({ enrollmentId: "b7f2c76c-9c97-4d5a-91b8-936e2acff972", code: "123456", userId: "staff-1" });
-    expect(service.verifyMfaLogin).toHaveBeenCalledWith({ challengeId: "b7f2c76c-9c97-4d5a-91b8-936e2acff972", code: "123456" });
+    expect(service.verifyMfaLogin).toHaveBeenCalledWith({ challengeId: "b7f2c76c-9c97-4d5a-91b8-936e2acff972", code: "123456", loginSurface: "main" });
     expect(response.headers["set-cookie"][0]).toContain("sports_center_session=mfa-signed-token");
+  });
+
+  it("uses a separate Admin endpoint and passes the Admin login surface", async () => {
+    const service = makeService();
+    service.login.mockResolvedValueOnce({ token: "admin-token", expiresAt: new Date("2026-10-01T00:00:00.000Z"), user: { id: "admin-1", role: "admin" }, permissions: ["audit.read"] });
+    await request(createApp({ authService: service })).post("/api/v1/auth/admin/login").send({ email: "admin@example.com", password: "Strongpass1" }).expect(200);
+    await request(createApp({ authService: service })).post("/api/v1/auth/admin/mfa/totp/verify").send({ challengeId: "b7f2c76c-9c97-4d5a-91b8-936e2acff972", code: "123456" }).expect(200);
+    expect(service.login).toHaveBeenCalledWith(expect.objectContaining({ email: "admin@example.com", loginSurface: "admin" }));
+    expect(service.verifyMfaLogin).toHaveBeenCalledWith({ challengeId: "b7f2c76c-9c97-4d5a-91b8-936e2acff972", code: "123456", loginSurface: "admin" });
   });
 
   it("uses the authenticated permission for receptionist approval", async () => {

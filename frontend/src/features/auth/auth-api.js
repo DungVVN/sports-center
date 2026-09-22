@@ -2,7 +2,9 @@ import { apiClient } from "../../api/client.js";
 
 export const authApi = Object.freeze({
   login: (input) => apiClient.post("/auth/login", input),
+  adminLogin: (input) => apiClient.post("/auth/admin/login", input),
   verifyTotpLogin: (input) => apiClient.post("/auth/mfa/totp/verify", input),
+  verifyAdminTotpLogin: (input) => apiClient.post("/auth/admin/mfa/totp/verify", input),
   verifyStaffEmailOtp: (input) => apiClient.post("/auth/mfa/email/verify", input),
   beginTotpEnrollment: () => apiClient.post("/auth/mfa/totp/enrollment"),
   confirmTotpEnrollment: (input) => apiClient.post("/auth/mfa/totp/enrollment/confirm", input),

@@ -57,7 +57,17 @@ export function createAuthRouter(authService) {
   });
   router.post("/login", validateRequest(loginSchema), async (request, response, next) => {
     try {
-      const session = await authService.login(request.validated.body);
+      const session = await authService.login({ ...request.validated.body, loginSurface: "main" });
+      if (session.mfaRequired) {
+        return sendSuccess(response, { data: { mfaRequired: true, challengeId: session.mfaChallengeId, expiresAt: session.expiresAt } });
+      }
+      sessionCookie(response, session.token, session.expiresAt);
+      sendSuccess(response, { data: { user: session.user, permissions: session.permissions, expiresAt: session.expiresAt } });
+    } catch (error) { next(error); }
+  });
+  router.post("/admin/login", validateRequest(loginSchema), async (request, response, next) => {
+    try {
+      const session = await authService.login({ ...request.validated.body, loginSurface: "admin" });
       if (session.mfaRequired) {
         return sendSuccess(response, { data: { mfaRequired: true, challengeId: session.mfaChallengeId, expiresAt: session.expiresAt } });
       }
@@ -73,7 +83,14 @@ export function createAuthRouter(authService) {
   });
   router.post("/mfa/totp/verify", validateRequest(mfaLoginSchema), async (request, response, next) => {
     try {
-      const session = await authService.verifyMfaLogin(request.validated.body);
+      const session = await authService.verifyMfaLogin({ ...request.validated.body, loginSurface: "main" });
+      sessionCookie(response, session.token, session.expiresAt);
+      sendSuccess(response, { data: { user: session.user, permissions: session.permissions, expiresAt: session.expiresAt } });
+    } catch (error) { next(error); }
+  });
+  router.post("/admin/mfa/totp/verify", validateRequest(mfaLoginSchema), async (request, response, next) => {
+    try {
+      const session = await authService.verifyMfaLogin({ ...request.validated.body, loginSurface: "admin" });
       sessionCookie(response, session.token, session.expiresAt);
       sendSuccess(response, { data: { user: session.user, permissions: session.permissions, expiresAt: session.expiresAt } });
     } catch (error) { next(error); }

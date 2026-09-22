@@ -166,8 +166,8 @@ export const authRepository = {
     });
   },
 
-  createMfaLoginChallenge({ userId, expiresAt }) {
-    return prisma.auth_mfa_login_challenges.create({ data: { user_id: userId, expires_at: expiresAt } });
+  createMfaLoginChallenge({ userId, expiresAt, loginSurface = "main" }) {
+    return prisma.auth_mfa_login_challenges.create({ data: { user_id: userId, expires_at: expiresAt, login_surface: loginSurface } });
   },
 
   async findMfaLoginChallenge(challengeId) {

@@ -125,7 +125,7 @@ export function createAuthService({
       return { status: "pending_verification" };
     },
 
-    async login({ email: rawEmail, password, captchaToken }) {
+    async login({ email: rawEmail, password, captchaToken, loginSurface = "main" }) {
       const email = normalizeEmail(rawEmail);
       loginLimiter.assertAllowed(email);
       await captchaVerifier.assertValid(captchaToken);
@@ -143,10 +143,16 @@ export function createAuthService({
         };
         throw new AppError({ statusCode: 403, code: "ACCOUNT_NOT_ACTIVE", message: messageByStatus[user.status] ?? "Tài khoản chưa thể đăng nhập." });
       }
+      if (loginSurface === "admin" && user.role !== "admin") {
+        throw new AppError({ statusCode: 403, code: "ADMIN_ACCOUNT_REQUIRED", message: "Cổng này chỉ dành cho Quản trị hệ thống." });
+      }
+      if (loginSurface !== "admin" && user.role === "admin") {
+        throw new AppError({ statusCode: 403, code: "ADMIN_LOGIN_REQUIRED", message: "Tài khoản quản trị chỉ đăng nhập tại cổng Admin riêng." });
+      }
       const factor = repository.findTotpFactor ? await repository.findTotpFactor(user.id) : null;
       if (factor) {
         const expiresAt = new Date(Date.now() + env.authMfaChallengeTtlMinutes * 60_000);
-        const challenge = await repository.createMfaLoginChallenge({ userId: user.id, expiresAt });
+        const challenge = await repository.createMfaLoginChallenge({ userId: user.id, expiresAt, loginSurface });
         loginLimiter.clear(email);
         await auditService.record({ actorUserId: user.id, action: "auth.mfa_challenge_created", entityType: "auth_mfa_login_challenge", entityId: challenge.id, summary: "Đã yêu cầu mã Authenticator để hoàn tất đăng nhập." });
         return { mfaRequired: true, mfaChallengeId: challenge.id, expiresAt };
@@ -188,9 +194,12 @@ export function createAuthService({
       return { enrolled: true };
     },
 
-    async verifyMfaLogin({ challengeId, code }) {
+    async verifyMfaLogin({ challengeId, code, loginSurface = "main" }) {
       const challenge = await repository.findMfaLoginChallenge(challengeId);
       if (!challenge) throw new AppError({ statusCode: 422, code: "MFA_CHALLENGE_EXPIRED", message: "Phiên xác thực MFA không hợp lệ hoặc đã hết hạn." });
+      if ((challenge.login_surface ?? "main") !== loginSurface) {
+        throw new AppError({ statusCode: 403, code: "MFA_LOGIN_SURFACE_INVALID", message: "Phiên xác thực này phải được hoàn tất tại đúng cổng đăng nhập." });
+      }
       const factor = await repository.findTotpFactor(challenge.user_id);
       if (!factor || !verifyTotp({ secret: decryptTotpSecret(factor.secret_ciphertext), code })) {
         throw new AppError({ statusCode: 422, code: "MFA_CODE_INVALID", message: "Mã Authenticator không chính xác." });
@@ -198,6 +207,7 @@ export function createAuthService({
       if (!await repository.consumeMfaLoginChallenge(challengeId)) throw new AppError({ statusCode: 409, code: "MFA_CHALLENGE_CONSUMED", message: "Phiên xác thực MFA đã được sử dụng." });
       const user = await repository.findUserById(challenge.user_id);
       if (!user || user.status !== "active") throw new AppError({ statusCode: 401, code: "UNAUTHENTICATED", message: "Tài khoản không còn hoạt động." });
+      if (loginSurface === "admin" && user.role !== "admin") throw new AppError({ statusCode: 403, code: "ADMIN_ACCOUNT_REQUIRED", message: "Cổng này chỉ dành cho Quản trị hệ thống." });
       const expiresAt = new Date(Date.now() + env.authSessionTtlHours * 60 * 60_000);
       const session = await repository.createSession({ expiresAt, userId: user.id });
       const token = await createSessionToken({ sessionId: session.id, userId: user.id, expiresAt });
