@@ -153,7 +153,7 @@
 }
 
 .training-field-group fieldset {
-  background: var(--color-surface-muted);
+  background: transparent;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
   display: grid;
@@ -166,7 +166,7 @@
 }
 
 .training-field-group legend {
-  background: var(--color-surface-muted);
+  background: var(--color-surface);
   color: var(--color-text);
   font-size: 14px;
   font-weight: var(--font-weight-semibold);
@@ -181,8 +181,9 @@
 .training-field-group > .button,
 .training-session-form > .button[type="submit"] {
   grid-column: 1 / -1;
-  justify-self: stretch;
-  width: 100%;
+  justify-self: start;
+  min-width: 10rem;
+  width: auto;
 }
 
 .staff-form--create > button {

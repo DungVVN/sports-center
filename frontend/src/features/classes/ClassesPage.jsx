@@ -10,6 +10,7 @@ import { Pagination } from "../../components/ui/Pagination.jsx";
 import { usePagination } from "../../components/ui/usePagination.js";
 import { sortTable } from "../../lib/table.js";
 import { classApi } from "./class-api.js";
+import { hasSessionPermission } from "../../utils/session-permissions.js";
 import "../members/members.css";
 
 const emptyChange = {
@@ -65,9 +66,9 @@ export function ClassesPage({ session }) {
     direction: "asc",
   });
   const role = session?.user?.role;
-  const canManage = session?.permissions?.includes("class.manage") ?? false;
-  const canReview = session?.permissions?.includes("class.change.review") ?? false;
-  const canRequest = session?.permissions?.includes("class.change.request") ?? false;
+  const canManage = hasSessionPermission(session, "class.manage");
+  const canReview = hasSessionPermission(session, "class.change.review");
+  const canRequest = hasSessionPermission(session, "class.change.request");
   const ownClasses = useMemo(
     () =>
       role === "coach"

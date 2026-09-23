@@ -11,7 +11,8 @@
 
 @media(min-width:768px){
   .app-sidebar{box-sizing:border-box;display:flex;height:100dvh;max-height:100dvh;min-height:0;overflow:hidden}
-  .app-sidebar__navigation{flex:1 1 0;min-height:0;overflow-y:auto;width:100%}
+  .app-sidebar__navigation{-ms-overflow-style:none;flex:1 1 0;min-height:0;overflow-y:auto;scrollbar-width:none;width:100%}
+  .app-sidebar__navigation::-webkit-scrollbar{display:none}
   .app-sidebar__navigation nav{display:grid;gap:4px;min-height:0;padding-bottom:var(--space-12)}
   .app-sidebar__footer{background:var(--color-sidebar);flex:0 0 auto;padding-top:var(--space-8);width:100%}
   .app-sidebar__logout{margin:0;position:static;width:100%}

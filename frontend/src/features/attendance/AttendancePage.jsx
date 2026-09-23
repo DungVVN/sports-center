@@ -7,6 +7,7 @@ import { usePagination } from "../../components/ui/usePagination.js";
 import { bookingApi } from "../bookings/booking-api.js";
 import { classApi } from "../classes/class-api.js";
 import { attendanceApi } from "./attendance-api.js";
+import { hasSessionPermission } from "../../utils/session-permissions.js";
 import "../members/members.css";
 
 const statusLabels = {
@@ -39,7 +40,7 @@ export function AttendancePage({ session }) {
   const [now, setNow] = useState(() => new Date());
   const role = session?.user?.role;
   const coachId = role === "coach" ? session.user.id : null;
-  const canOperate = session?.permissions?.includes("attendance.write") ?? false;
+  const canOperate = hasSessionPermission(session, "attendance.write");
   const canCorrect = canOperate;
   const availableClasses = useMemo(() => {
     const dayStart = new Date(now);

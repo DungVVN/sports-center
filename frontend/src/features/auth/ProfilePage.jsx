@@ -297,7 +297,7 @@ export function ProfilePage({ onSessionRevoked, onProfileSaved }) {
             </div>
           </form>
 
-          <form className="members-form profile-page__form" onSubmit={changePassword}>
+          <form className="members-form profile-page__form profile-page__password-form" onSubmit={changePassword}>
             <div className="list-heading">
               <h2>Đổi mật khẩu</h2>
             </div>

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Button } from "../../components/ui/Button.jsx";
 import { Dialog } from "../../components/ui/Dialog.jsx";
 import { supportApi } from "./support-api.js";
+import { hasSessionPermission } from "../../utils/session-permissions.js";
 import "../members/members.css";
 
 const formatDate = (value) => value ? new Date(value).toLocaleString("vi-VN") : "—";
@@ -19,7 +20,7 @@ const priorityLabels = {
 };
 
 export function SupportPage({ session }) {
-  const canCreate = session?.permissions?.includes("support.ticket.create") ?? false;
+  const canCreate = hasSessionPermission(session, "support.ticket.create");
   const [items, setItems] = useState([]);
   const [form, setForm] = useState({ subject: "", body: "", priority: "normal" });
   const [detail, setDetail] = useState(null);

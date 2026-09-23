@@ -7,6 +7,7 @@ import { sortTable } from "../../lib/table.js";
 import { memberApi } from "../members/member-api.js";
 import { membershipApi } from "../memberships/membership-api.js";
 import { paymentApi } from "./payment-api.js";
+import { hasSessionPermission } from "../../utils/session-permissions.js";
 import "../members/members.css";
 
 const emptyForm = { memberId: "", membershipId: "", amountVnd: "", method: "cash", provider: "payos", notes: "" };
@@ -35,7 +36,7 @@ export function PaymentsPage({ session }) {
   const [paymentPackageFilters, setPaymentPackageFilters] = useState([]);
   const [isPaymentFilterOpen, setIsPaymentFilterOpen] = useState(false);
   const [paymentSort, setPaymentSort] = useState({ key: "amountVnd", direction: "desc" });
-  const isCashier = session?.permissions?.includes("payment.record") ?? false;
+  const isCashier = hasSessionPermission(session, "payment.record");
   const paymentPackages = useMemo(
     () =>
       [...new Set(items.map((item) => item.membership?.packageName).filter(Boolean))]

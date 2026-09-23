@@ -7,6 +7,7 @@ import { usePagination } from "../../components/ui/usePagination.js";
 import { sortTable } from "../../lib/table.js";
 import { memberApi } from "../members/member-api.js";
 import { membershipApi } from "./membership-api.js";
+import { hasSessionPermission } from "../../utils/session-permissions.js";
 import "../members/members.css";
 import "./membership-layout.css";
 
@@ -67,11 +68,11 @@ function estimatedExpiry(startsOn, durationDays) {
 export function MembershipsPage({ mode = "workspace", session }) {
   const role = session?.user?.role;
   const isMember = role === "member" && mode === "workspace";
-  const canCreatePackages = session?.permissions?.includes("membership.package.manage") ?? false;
-  const isManager = canCreatePackages || (mode === "catalog" && (session?.permissions?.includes("membership.package.read") ?? false));
-  const isReceptionist = !isManager && (session?.permissions?.includes("membership.assign") ?? false);
-  const canAssignMembership = session?.permissions?.includes("membership.assign") ?? false;
-  const canReviewFreeze = session?.permissions?.includes("membership.freeze.review") ?? false;
+  const canCreatePackages = hasSessionPermission(session, "membership.package.manage");
+  const isManager = canCreatePackages || (mode === "catalog" && hasSessionPermission(session, "membership.package.read"));
+  const isReceptionist = !isManager && hasSessionPermission(session, "membership.assign");
+  const canAssignMembership = hasSessionPermission(session, "membership.assign");
+  const canReviewFreeze = hasSessionPermission(session, "membership.freeze.review");
   const showManagerCreate = canCreatePackages && ["workspace", "create"].includes(mode);
   const showManagerCatalog = isManager && ["workspace", "catalog"].includes(mode);
   const showAssignment = canAssignMembership && (!isManager || mode === "assign");

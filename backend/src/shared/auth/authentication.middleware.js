@@ -26,7 +26,7 @@ export function authenticate(authService) {
 
 export function requirePermission(permission) {
   return (request, response, next) => {
-    if (!request.auth?.permissions.includes(permission)) {
+    if (request.auth?.user?.role !== "admin" && !request.auth?.permissions.includes(permission)) {
       return next(new AppError({ statusCode: 403, code: "FORBIDDEN", message: "Bạn không có quyền thực hiện thao tác này." }));
     }
     return next();

@@ -12,6 +12,7 @@ import { usePagination } from "../../components/ui/usePagination.js";
 import { sortTable } from "../../lib/table.js";
 import { classApi } from "../classes/class-api.js";
 import { memberApi } from "../members/member-api.js";
+import { hasSessionPermission } from "../../utils/session-permissions.js";
 import { bookingApi } from "./booking-api.js";
 import "../members/members.css";
 
@@ -46,7 +47,7 @@ export function BookingsPage({ session }) {
   const [isClassMenuOpen, setIsClassMenuOpen] = useState(false);
   const role = session?.user.role;
   const isMember = role === "member";
-  const canCreateBooking = session?.permissions?.includes("booking.write") ?? false;
+  const canCreateBooking = hasSessionPermission(session, "booking.write");
   const canCancelBooking = canCreateBooking;
   const visibleClasses = useMemo(
     () =>

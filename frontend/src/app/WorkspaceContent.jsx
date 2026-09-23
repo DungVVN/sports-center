@@ -19,6 +19,7 @@ import { MemberTrainingPage } from "../features/training/MemberTrainingPage.jsx"
 import { NotificationPreferencesPage } from "../features/notifications/NotificationPreferencesPage.jsx";
 import { RolePermissionPage } from "../features/role-permissions/RolePermissionPage.jsx";
 import { FacilityCalendarPage } from "../features/facilities/FacilityCalendarPage.jsx";
+import { hasSessionPermission } from "../utils/session-permissions.js";
 
 export function WorkspaceContent({ onNavigate, onProfileSaved, onSessionRevoked, session, view, dashboardRole = "manager" }) {
   const pages = {
@@ -30,7 +31,7 @@ export function WorkspaceContent({ onNavigate, onProfileSaved, onSessionRevoked,
     dashboard: <DashboardHome onNavigate={onNavigate} role={dashboardRole} />,
     packageCatalog: <MembershipsPage mode="catalog" session={session} />,
     packageCreate: <MembershipsPage mode="create" session={session} />,
-    members: <MembersPage readOnly={!session.permissions?.includes("member.write")} />,
+    members: <MembersPage readOnly={!hasSessionPermission(session, "member.write")} />,
     memberMemberships: <MembershipsPage mode="assign" session={session} />,
     "my-memberships": <MembershipsPage session={session} />,
     packages: <MembershipsPage session={session} />,

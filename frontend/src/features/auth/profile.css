@@ -1,18 +1,21 @@
 .profile-page__grid {
-  align-items: start;
   display: grid;
   gap: var(--space-24);
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .profile-page__main-col,
 .profile-page__side-col {
-  display: grid;
-  gap: var(--space-24);
-  align-content: start;
+  display: contents;
 }
 .profile-page__form {
+  align-self: stretch;
   gap: var(--space-20);
 }
+.profile-page__form:first-child { order: 1; }
+.profile-page__summary,
+.profile-page__contacts { order: 2; }
+.profile-page__password-form { order: 3; }
+.profile-page__mfa { order: 4; }
 .profile-page__identity {
   display: grid;
   gap: var(--space-12);
@@ -93,15 +96,31 @@
   display: grid;
   gap: var(--space-16);
 }
-.profile-page__mfa { display: grid; gap: var(--space-16); }
+.profile-page__mfa {
+  align-content: space-between;
+  display: grid;
+  gap: var(--space-20);
+}
 .profile-page__mfa .list-heading p { color: var(--color-text-secondary); font-size: 12px; font-weight: 400; margin: var(--space-4) 0 0; }
 .profile-page__mfa-form { display: grid; gap: var(--space-12); }
 .profile-page__mfa-form > p { color: var(--color-text-secondary); font-size: 13px; line-height: 1.5; margin: 0; }
 .profile-page__mfa-form label { display: grid; font-size: 12px; font-weight: 600; gap: var(--space-6); }
 .profile-page__mfa-form input { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-control); color: var(--color-text); min-height: var(--control-height); padding: 0 var(--space-12); width: 100%; }
 .profile-page__mfa-form input[readonly] { background: var(--color-surface-muted); font-family: var(--font-mono); }
+.profile-page__mfa-enrollment { align-items: center; background: var(--color-surface-muted); border: 1px solid var(--color-border); border-radius: var(--radius-control); display: grid; gap: var(--space-16); grid-template-columns: minmax(10.5rem, 0.7fr) minmax(0, 1fr); padding: var(--space-16); }
+.profile-page__mfa-enrollment--manual { grid-template-columns: 1fr; }
+.profile-page__mfa-qr { align-items: center; display: grid; gap: var(--space-8); justify-items: center; text-align: center; }
+.profile-page__mfa-qr h3 { font-size: 13px; margin: 0; }
+.profile-page__mfa-qr img,
+.profile-page__mfa-qr-placeholder { background: #fff; border: 1px solid var(--color-border); border-radius: var(--radius-control); height: 10.5rem; object-fit: contain; padding: var(--space-8); width: 10.5rem; }
+.profile-page__mfa-qr-placeholder { align-content: center; color: var(--color-text-secondary); display: grid; font-size: 12px; line-height: 1.4; }
+.profile-page__mfa-qr p,
+.profile-page__mfa-manual > p { color: var(--color-text-secondary); font-size: 12px; line-height: 1.5; margin: 0; }
+.profile-page__mfa-manual { display: grid; gap: var(--space-16); }
+.profile-page__mfa-secret { align-items: center; display: flex; gap: var(--space-8); }
+.profile-page__mfa-secret input { flex: 1 1 auto; min-width: 0; }
 .profile-page__summary {
-  align-content: start;
+  align-content: space-between;
   display: grid;
   gap: var(--space-24);
 }
@@ -120,6 +139,7 @@
 .profile-page__specialties p, .profile-page__summary-note { line-height: 1.5; margin: 0; }
 .profile-page__specialties ul { display: flex; flex-wrap: wrap; gap: var(--space-8); list-style: none; margin: 0; padding: 0; }
 .profile-page__specialties li { background: var(--color-surface-muted); border: 1px solid var(--color-border); border-radius: var(--radius-control); font-size: 12px; padding: 6px var(--space-8); }
+.profile-page__password-form .profile-page__fields > label:last-child { grid-column: 1 / -1; max-width: calc(50% - var(--space-8)); }
 .profile-page__contacts .list-heading {
   margin: 0;
 }
@@ -173,6 +193,7 @@
   .profile-page__grid {
     grid-template-columns: 1fr;
   }
+  .profile-page__password-form .profile-page__fields > label:last-child { max-width: none; }
 }
 @media (max-width: 640px) {
   .profile-page__identity,
@@ -186,4 +207,5 @@
   .profile-page__actions .button {
     width: 100%;
   }
+  .profile-page__mfa-enrollment { grid-template-columns: 1fr; }
 }

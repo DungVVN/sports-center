@@ -3,6 +3,7 @@ import { Button } from "../../components/ui/Button.jsx";
 import { Pagination } from "../../components/ui/Pagination.jsx";
 import { usePagination } from "../../components/ui/usePagination.js";
 import { trainingApi } from "./training-api.js";
+import { hasSessionPermission } from "../../utils/session-permissions.js";
 import "../members/members.css";
 
 const newPlan = {
@@ -48,10 +49,10 @@ export function TrainingPage({ session }) {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const canViewAi = session?.permissions?.includes("ai.assist.read") ?? false;
-  const canDeliverAi = session?.permissions?.includes("ai.assist.deliver") ?? false;
+  const canViewAi = hasSessionPermission(session, "ai.assist.read");
+  const canDeliverAi = hasSessionPermission(session, "ai.assist.deliver");
   const canCreateTemplate =
-    session?.permissions?.includes("training.template.manage") ?? false;
+    hasSessionPermission(session, "training.template.manage");
   const membersById = useMemo(
     () => new Map(members.map((item) => [item.id, item])),
     [members],

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { MessageSquare } from "lucide-react";
 import { Button } from "../../components/ui/Button.jsx";
 import { supportApi } from "./support-api.js";
+import { hasSessionPermission } from "../../utils/session-permissions.js";
 import "../members/members.css";
 
 const statusLabels = {
@@ -17,7 +18,7 @@ const priorityLabels = {
 };
 
 export function SupportStaffPage({ session }) {
-  const canRespond = session?.permissions?.includes("support.ticket.respond") ?? false;
+  const canRespond = hasSessionPermission(session, "support.ticket.respond");
   const [tickets, setTickets] = useState([]);
   const [selected, setSelected] = useState(null);
   const [reply, setReply] = useState("");
