@@ -5,18 +5,13 @@
 }
 .profile-page__main-col,
 .profile-page__side-col {
-  display: contents;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
 }
 .profile-page__form {
-  align-self: start;
   gap: var(--space-20);
 }
-.profile-page__form:first-child { order: 1; }
-.profile-page__summary,
-.profile-page__contacts { order: 2; }
-.profile-page__password-form { order: 3; }
-.profile-page__mfa { order: 4; }
-.profile-page__notifications { order: 5; }
 .profile-page__identity {
   display: grid;
   gap: var(--space-12);
