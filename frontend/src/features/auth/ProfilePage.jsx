@@ -299,7 +299,8 @@ export function ProfilePage({ onSessionRevoked, onProfileSaved, session }) {
             </div>
           </form>
 
-          <form className="members-form profile-page__form profile-page__password-form" onSubmit={changePassword}>
+          <div className="profile-page__security-group">
+            <form className="members-form profile-page__form profile-page__password-form" onSubmit={changePassword}>
             <div className="list-heading">
               <h2>Đổi mật khẩu</h2>
             </div>
@@ -395,6 +396,7 @@ export function ProfilePage({ onSessionRevoked, onProfileSaved, session }) {
           {hasSessionPermission(session, "notification.preference.manage") && (
             <NotificationPreferencesPanel className="profile-page__notifications" />
           )}
+          </div>
         </div>
 
         <div className="profile-page__side-col">
