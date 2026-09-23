@@ -77,7 +77,7 @@ export function SupportStaffPage({ session }) {
         <h1>Yêu cầu cần xử lý</h1>
       </header>
       {error && <p className="auth-alert" role="alert">{error}</p>}
-      <section className="members-grid support-staff-workspace">
+      <section className="members-workspace-stacked support-staff-workspace">
         <section className="members-list">
           <div className="list-heading">
             <h2>Danh sách ticket</h2>

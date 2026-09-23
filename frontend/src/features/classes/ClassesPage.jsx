@@ -322,7 +322,7 @@ export function ClassesPage({ session }) {
           visibleClassRows={visibleClassRows}
         />
       ) : (
-      <div className="members-grid classes-workspace">
+      <div className="members-workspace-stacked classes-workspace">
         {canManage ? (
           <form className="members-form classes-create-form" onSubmit={createClass}>
             <h2>Tạo lớp học</h2>
