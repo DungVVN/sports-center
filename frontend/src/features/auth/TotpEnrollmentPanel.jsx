@@ -12,33 +12,6 @@ export function TotpEnrollmentPanel({ onEnrollmentCompleted }) {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(false);
-  const [qrCodeSrc, setQrCodeSrc] = useState("");
-  const [qrCodeError, setQrCodeError] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    setQrCodeSrc("");
-    setQrCodeError(false);
-    if (!enrollment?.otpauthUri) return undefined;
-
-    QRCode.toDataURL(enrollment.otpauthUri, {
-      color: { dark: "#122b45", light: "#ffffff" },
-      errorCorrectionLevel: "M",
-      margin: 1,
-      width: 216,
-    })
-      .then((value) => {
-        if (!cancelled) setQrCodeSrc(value);
-      })
-      .catch(() => {
-        if (!cancelled) setQrCodeError(true);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [enrollment?.otpauthUri]);
-
   async function begin() {
     setError("");
     setNotice("");
@@ -96,13 +69,7 @@ export function TotpEnrollmentPanel({ onEnrollmentCompleted }) {
             {enrollment.otpauthUri && (
               <section className="profile-page__mfa-qr" aria-label="Mã QR thiết lập Authenticator">
                 <h3>Quét mã QR</h3>
-                {qrCodeSrc ? (
-                  <img alt="Mã QR thiết lập Authenticator" src={qrCodeSrc} />
-                ) : (
-                  <div aria-live="polite" className="profile-page__mfa-qr-placeholder">
-                    {qrCodeError ? "Không thể tạo mã QR." : "Đang tạo mã QR…"}
-                  </div>
-                )}
+                <TotpQrCode key={enrollment.otpauthUri} otpauthUri={enrollment.otpauthUri} />
                 <p>Mở Authenticator, chọn thêm tài khoản rồi quét mã này.</p>
               </section>
             )}
@@ -143,5 +110,39 @@ export function TotpEnrollmentPanel({ onEnrollmentCompleted }) {
         </form>
       )}
     </section>
+  );
+}
+
+function TotpQrCode({ otpauthUri }) {
+  const [qrCodeSrc, setQrCodeSrc] = useState("");
+  const [qrCodeError, setQrCodeError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    QRCode.toDataURL(otpauthUri, {
+      color: { dark: "#122b45", light: "#ffffff" },
+      errorCorrectionLevel: "M",
+      margin: 1,
+      width: 216,
+    })
+      .then((value) => {
+        if (!cancelled) setQrCodeSrc(value);
+      })
+      .catch(() => {
+        if (!cancelled) setQrCodeError(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [otpauthUri]);
+
+  if (qrCodeSrc) return <img alt="Mã QR thiết lập Authenticator" src={qrCodeSrc} />;
+
+  return (
+    <div aria-live="polite" className="profile-page__mfa-qr-placeholder">
+      {qrCodeError ? "Không thể tạo mã QR." : "Đang tạo mã QR…"}
+    </div>
   );
 }
