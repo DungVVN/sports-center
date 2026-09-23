@@ -55,13 +55,21 @@ export function ReportsPage() {
       {error && <p className="auth-alert" role="alert">{error}</p>}
       <section className="members-list reports-page__content">
         <section className="report-period">
-          <strong>Khoảng thời gian</strong>
-          <div>
-            {periods.map(([value, label]) => (
-              <button aria-pressed={period === value} className={period === value ? "is-selected" : ""} key={value} onClick={() => setPeriod(value)} type="button">
-                {label}
-              </button>
-            ))}
+          <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "16px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <strong>Khoảng thời gian</strong>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                {periods.map(([value, label]) => (
+                  <button aria-pressed={period === value} className={period === value ? "is-selected" : ""} key={value} onClick={() => setPeriod(value)} type="button">
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: "12px", alignItems: "flex-end", flexWrap: "wrap" }}>
+              <button disabled={loading} onClick={() => void download("revenue")} type="button">Tải CSV doanh thu</button>
+              <button disabled={loading} onClick={() => void download("attendance")} type="button">Tải CSV điểm danh</button>
+            </div>
           </div>
           <label>
             Huấn luyện viên (lọc điểm danh)
@@ -81,10 +89,7 @@ export function ReportsPage() {
             </p>
           )}
           <small>Dữ liệu: <b>{dateRange}</b></small>
-          <p>
-            <button disabled={loading} onClick={() => void download("revenue")} type="button">Tải CSV doanh thu</button>{" "}
-            <button disabled={loading} onClick={() => void download("attendance")} type="button">Tải CSV điểm danh</button>
-          </p>
+
         </section>
         {loading ? (
           <p>Đang tải báo cáo…</p>

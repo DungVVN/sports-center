@@ -71,8 +71,8 @@ export function AuditLogsPage() {
   return (
     <main className="members-page">
       <header>
-        <p>Kiểm toán</p>
-        <h1>Nhật ký kiểm toán</h1>
+        <p>Nhật kí hoạt động</p>
+        <h1>Nhật kí hoạt động</h1>
       </header>
       {error && (
         <p className="auth-alert" role="alert">

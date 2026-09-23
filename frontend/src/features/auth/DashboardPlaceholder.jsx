@@ -32,7 +32,7 @@ const navigationItems = [
   { id: "staff", label: "Danh tính & nhân sự" },
   { id: "training", label: "Giáo án" },
   { id: "reports", label: "Báo cáo" },
-  { id: "audit", label: "Kiểm toán" },
+  { id: "audit", label: "Nhật kí hoạt động" },
   { id: "support", label: "Hỗ trợ" },
 ];
 const memberSelfItems = [

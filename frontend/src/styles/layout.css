@@ -263,7 +263,7 @@
 }
 
 @media (min-width: 1024px) {
-  .members-form--payment-create > label:has(textarea) {
+  .members-form--payment-create > label:has(input[name="notes"]) {
     grid-column: span 2;
   }
 }

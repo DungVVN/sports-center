@@ -251,7 +251,7 @@ export function PaymentsPage({ session }) {
           </label>
           <label>
             Ghi chú
-            <textarea name="notes" onChange={updateForm} value={form.notes} />
+            <input type="text" name="notes" onChange={updateForm} value={form.notes} />
           </label>
           <Button loading={submitting} type="submit">
             Lập phiếu thu
