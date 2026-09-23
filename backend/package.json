@@ -15,7 +15,7 @@
     "backup:restore-verify": "node scripts/backup-restore-verify.js",
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
-    "db:migrate": "prisma migrate deploy",
+    "db:migrate": "node scripts/migrate-with-retry.js",
     "admin:provision": "node scripts/provision-admin.mjs",
     "test:runtime-rate-limit": "node scripts/auth-rate-limit-runtime.js",
     "backup:verify": "node scripts/backup-restore-verify.js"

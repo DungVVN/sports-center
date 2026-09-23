@@ -9,7 +9,7 @@ Migration đầu tiên vẫn giữ nguyên lời chú thích lịch sử nhắc 
 ## Cấu hình
 
 - `DATABASE_URL`: kết nối runtime của backend.
-- `MIGRATE_DATABASE_URL`: kết nối có quyền DDL dùng cho migration; nếu thiếu, Prisma dùng `DATABASE_URL` theo `../prisma.config.js`.
+- `MIGRATE_DATABASE_URL`: kết nối có quyền DDL dùng cho migration; nếu thiếu, Prisma dùng `DATABASE_URL` theo `../prisma.config.js`. Với Neon, dùng endpoint **direct** cho biến này (không chứa `-pooler`) để Prisma giữ được advisory lock trong suốt migration.
 - Hai URL phải trỏ đến cùng database và schema dự định nâng cấp. Giữ giá trị thật trong `.env` cục bộ hoặc biến môi trường bảo mật của Render; không commit URL hay mật khẩu.
 - Không dùng Docker cho database production; Neon là nguồn dữ liệu production.
 
@@ -20,7 +20,7 @@ Migration đầu tiên vẫn giữ nguyên lời chú thích lịch sử nhắc 
 3. Kiểm tra đúng host/database/schema đích, sau đó chạy `npm run db:migrate` để áp dụng toàn bộ migration theo thứ tự.
 4. Chạy `npm run db:generate` để tạo Prisma Client và `npx prisma migrate status` để xác nhận không còn migration chờ áp dụng.
 
-`npm run db:migrate` **thay đổi DB**. Với Neon đang có dữ liệu, chỉ chạy trong quy trình deploy đã được phê duyệt; không dùng `prisma migrate reset`, `db push` hoặc SQL snapshot để đồng bộ thủ công. Khi thay đổi schema, thêm migration mới, không sửa migration đã áp dụng.
+`npm run db:migrate` **thay đổi DB**. Script giữ advisory lock của Prisma và tự thử lại tối đa năm lần khi lock tạm thời bận (`P1002`); các lỗi migration khác vẫn dừng ngay. Với Neon đang có dữ liệu, chỉ chạy trong quy trình deploy đã được phê duyệt; không dùng `prisma migrate reset`, `db push` hoặc SQL snapshot để đồng bộ thủ công. Khi thay đổi schema, thêm migration mới, không sửa migration đã áp dụng.
 
 ## Phạm vi hiện tại
 
