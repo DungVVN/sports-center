@@ -4,7 +4,7 @@ import { dashboardApi } from "../dashboard/dashboard-api.js";
 import { authApi } from "./auth-api.js";
 import "./auth.css";
 
-const ManagerPageContent = lazy(() => import("../../pages/manager/ManagerPageContent.jsx").then(({ ManagerPageContent: Component }) => ({ default: Component })));
+const WorkspaceContent = lazy(() => import("../../app/WorkspaceContent.jsx").then(({ WorkspaceContent: Component }) => ({ default: Component })));
 
 const labels = {
   admin: "Quản trị hệ thống",
@@ -27,6 +27,7 @@ const navigationItems = [
   ] },
   { id: "classes", label: "Lớp học" },
   { id: "bookings", label: "Đặt chỗ" },
+  { id: "facility-calendar", label: "Lịch sân" },
   { id: "attendance", label: "Điểm danh" },
   { id: "payments", label: "Thanh toán" },
   { id: "staff", label: "Danh tính & nhân sự" },
@@ -98,7 +99,7 @@ export function DashboardPlaceholder({ initialView = "dashboard", session, onLog
   }
   const content = (
     <Suspense fallback={<p className="app-shell__loading" role="status">Đang tải không gian làm việc...</p>}>
-      <ManagerPageContent dashboardRole={session.user.role} onNavigate={(next) => { if (allowedViews.has(next)) setView(next); }} onProfileSaved={onProfileSaved} onSessionRevoked={onLogout} session={session} view={allowedViews.has(view) ? view : "dashboard"} />
+      <WorkspaceContent dashboardRole={session.user.role} onNavigate={(next) => { if (allowedViews.has(next)) setView(next); }} onProfileSaved={onProfileSaved} onSessionRevoked={onLogout} session={session} view={allowedViews.has(view) ? view : "dashboard"} />
     </Suspense>
   );
   return (

@@ -1,0 +1,47 @@
+.public-page-logo {
+  color: inherit;
+  text-decoration: none;
+}
+
+.public-page-logo:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 4px;
+}
+
+.public-page-body {
+  min-height: 80dvh;
+  padding-top: 80px;
+  position: relative;
+  z-index: 2;
+}
+
+.public-page-back-row {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px 24px 0;
+}
+
+.public-page-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-primary);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.public-page-back:hover { color: var(--color-primary-hover); }
+.public-page-back:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 4px; }
+.public-page-body > .facility-calendar { padding-top: 24px; }
+
+@media (max-width: 768px) {
+  .public-page-body { padding-top: 70px; }
+  .public-page-back-row { padding: 16px 16px 0; }
+  .public-page-body > .facility-calendar { padding-top: 16px; }
+  .public-page-body > .section-gallery { padding-top: 12px; }
+}

@@ -7,6 +7,8 @@ export const assignablePermissionCodes = Object.freeze([
   "membership.self.read", "notification.preference.manage", "payment.read", "payment.record", "payment.self.read",
   "registration.approve", "report.read", "staff.manage", "support.ticket.create", "support.ticket.read",
   "support.ticket.respond", "training.self.read", "training.template.manage", "training.write",
+  "facility.manage", "facility.day.manage", "facility.booking.self.read", "facility.booking.request",
+  "facility.booking.read", "facility.booking.approve", "facility.booking.cancel",
 ]);
 
 export const permissionDependencies = Object.freeze({
@@ -27,6 +29,9 @@ export const permissionDependencies = Object.freeze({
   "training.template.manage": ["training.write"],
   "ai.assist.read": ["training.write"],
   "ai.assist.deliver": ["ai.assist.read"],
+  "facility.booking.request": ["facility.booking.self.read"],
+  "facility.booking.approve": ["facility.booking.read"],
+  "facility.booking.cancel": ["facility.booking.read"],
 });
 
 // These APIs require a member profile and cannot operate for staff accounts.

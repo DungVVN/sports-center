@@ -53,6 +53,9 @@ import { createAssignmentService } from "./modules/assignments/assignment.servic
 import { rolePermissionRepository } from "./modules/role-permissions/role-permission.repository.js";
 import { createRolePermissionService } from "./modules/role-permissions/role-permission.service.js";
 import { createRolePermissionRouter } from "./modules/role-permissions/role-permission.routes.js";
+import { facilityRepository } from "./modules/facilities/facility.repository.js";
+import { createFacilityService } from "./modules/facilities/facility.service.js";
+import { createFacilityRouter } from "./modules/facilities/facility.routes.js";
 import { auditService } from "./shared/audit/audit.service.js";
 import { openApiSpec } from "./openapi/spec.js";
 import { sendSuccess } from "./shared/http/response.js";
@@ -65,7 +68,7 @@ function isAllowedOrigin(origin) {
   return !origin || env.corsOrigins.includes(origin);
 }
 
-export function createApp({ authService = createAuthService({ repository: authRepository, verificationDelivery: verificationDeliveryService, auditService }), staffService = createStaffService({ repository: staffRepository, auditService }), memberService = createMemberService({ repository: memberRepository, auditService }), membershipService = createMembershipService({ repository: membershipRepository, auditService }), classService = createClassService({ repository: classRepository, auditService }), bookingService = createBookingService({ repository: bookingRepository, auditService }), attendanceService = createAttendanceService({ repository: attendanceRepository, auditService }), paymentService = createPaymentService({ repository: paymentRepository, auditService }), supportService = createSupportService({ repository: supportRepository, auditService }), notificationPreferenceService = createNotificationPreferenceService({ repository: notificationPreferenceRepository }), aiAssistService = createAiAssistService({ repository: aiAssistRepository, auditService }), trainingService = createTrainingService({ repository: trainingRepository, auditService }), insightService = createInsightService({ repository: insightRepository }), assignmentService = createAssignmentService({ repository: assignmentRepository, auditService }), auditLogService = createAuditLogService({ repository: auditRepository }), rolePermissionService = createRolePermissionService({ repository: rolePermissionRepository }) } = {}) {
+export function createApp({ authService = createAuthService({ repository: authRepository, verificationDelivery: verificationDeliveryService, auditService }), staffService = createStaffService({ repository: staffRepository, auditService }), memberService = createMemberService({ repository: memberRepository, auditService }), membershipService = createMembershipService({ repository: membershipRepository, auditService }), classService = createClassService({ repository: classRepository, auditService }), bookingService = createBookingService({ repository: bookingRepository, auditService }), facilityService = createFacilityService({ repository: facilityRepository, auditService }), attendanceService = createAttendanceService({ repository: attendanceRepository, auditService }), paymentService = createPaymentService({ repository: paymentRepository, auditService }), supportService = createSupportService({ repository: supportRepository, auditService }), notificationPreferenceService = createNotificationPreferenceService({ repository: notificationPreferenceRepository }), aiAssistService = createAiAssistService({ repository: aiAssistRepository, auditService }), trainingService = createTrainingService({ repository: trainingRepository, auditService }), insightService = createInsightService({ repository: insightRepository }), assignmentService = createAssignmentService({ repository: assignmentRepository, auditService }), auditLogService = createAuditLogService({ repository: auditRepository }), rolePermissionService = createRolePermissionService({ repository: rolePermissionRepository }) } = {}) {
   const app = express();
 
   app.disable("x-powered-by");
@@ -92,6 +95,7 @@ export function createApp({ authService = createAuthService({ repository: authRe
   app.use(env.apiBasePath, createMembershipRouter(membershipService, authService));
   app.use(env.apiBasePath, createClassRouter(classService, authService));
   app.use(env.apiBasePath, createBookingRouter(bookingService, authService));
+  app.use(env.apiBasePath, createFacilityRouter(facilityService, authService));
   app.use(env.apiBasePath, createAttendanceRouter(attendanceService, authService));
   app.use(env.apiBasePath, createPaymentRouter(paymentService, authService));
   app.use(env.apiBasePath, createSupportRouter(supportService, authService));

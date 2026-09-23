@@ -31,6 +31,7 @@ const icons = {
   "my-memberships": Package,
   classes: CalendarDays,
   bookings: ReceiptText,
+  "facility-calendar": CalendarDays,
   attendance: ClipboardCheck,
   payments: CreditCard,
   profile: UserRoundCog,

@@ -55,4 +55,18 @@ describe("OpenAPI contract", () => {
       expect(openApiSpec.paths[path][method].requestBody.content["application/json"].schema).toBeDefined();
     }
   });
+
+  it("documents the facility write responses with their actual API field names", () => {
+    for (const [path, method, status, field] of [
+      ["/facility-types", "post", 201, "is_active"],
+      ["/facilities", "post", 201, "open_minute"],
+      ["/facility-days", "post", 201, "open_on"],
+      ["/facility-reservations", "post", 201, "requested_start_minute"],
+      ["/facility-reservations/{id}/review", "patch", 200, "assigned_start_minute"],
+      ["/facility-reservations/{id}/cancel", "patch", 200, "decision_reason"],
+    ]) {
+      const data = openApiSpec.paths[path][method].responses[status].content["application/json"].schema.properties.data;
+      expect(data.properties[field]).toBeDefined();
+    }
+  });
 });

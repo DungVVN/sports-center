@@ -24,3 +24,6 @@ vite.config.*.timestamp-*
 
 # Disposable Figma reference; it is not product source.
 project/
+
+# Local documentation is kept on disk but not versioned.
+docs/

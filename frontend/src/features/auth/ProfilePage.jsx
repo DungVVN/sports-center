@@ -32,6 +32,11 @@ function toForm(profile) {
   };
 }
 
+export function ProfileAvatar({ src, alt, fallback }) {
+  const [failed, setFailed] = useState(false);
+  return !src || failed ? fallback : <img alt={alt} onError={() => setFailed(true)} src={src} />;
+}
+
 export function ProfilePage({ onSessionRevoked, onProfileSaved }) {
   const [profile, setProfile] = useState(null);
   const [form, setForm] = useState(null);
@@ -258,11 +263,10 @@ export function ProfilePage({ onSessionRevoked, onProfileSaved }) {
                   value={form.avatarUrl}
                 />
                 {form.avatarUrl && (
-                  <img
+                  <ProfileAvatar
+                    key={form.avatarUrl}
                     alt="Xem trước ảnh đại diện"
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none";
-                    }}
+                    fallback={<span className="profile-page__avatar-error" role="status">Không tải được ảnh từ đường dẫn này.</span>}
                     src={form.avatarUrl}
                   />
                 )}
@@ -498,19 +502,16 @@ export function ProfilePage({ onSessionRevoked, onProfileSaved }) {
           {!isMember && (
             <aside className="members-list profile-page__summary">
               <div className="profile-page__summary-hero">
-                {profile.avatarUrl ? (
-                  <img
-                    alt={`Ảnh đại diện ${profile.fullName}`}
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none";
-                    }}
-                    src={profile.avatarUrl}
-                  />
-                ) : (
-                  <span aria-hidden="true">
-                    {profile.fullName.trim().split(/\s+/).slice(-2).map((item) => item[0]).join("")}
-                  </span>
-                )}
+                <ProfileAvatar
+                  key={profile.avatarUrl ?? "no-avatar"}
+                  alt={`Ảnh đại diện ${profile.fullName}`}
+                  src={profile.avatarUrl}
+                  fallback={
+                    <span aria-hidden="true">
+                      {profile.fullName.trim().split(/\s+/).slice(-2).map((item) => item[0]).join("")}
+                    </span>
+                  }
+                />
                 <div>
                   <p>Hồ sơ nhân sự</p>
                   <h2>{profile.fullName}</h2>

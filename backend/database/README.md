@@ -1,46 +1,29 @@
-# Database foundation
+# Cơ sở dữ liệu Sports Center
 
-This folder provides the PostgreSQL 16+ database foundation for the Sports Center backend. It deliberately contains no credentials and does not start a database service.
+Ứng dụng dùng Neon PostgreSQL. Thư mục này chứa Prisma schema, migration và hướng dẫn; không có script SQL độc lập để khởi tạo hoặc nâng cấp database. Nguồn chuẩn của cấu trúc dữ liệu là [`prisma/schema.prisma`](prisma/schema.prisma) cùng các migration theo thứ tự trong [`prisma/migrations/`](prisma/migrations/). Prisma ghi nhận migration đã chạy trong bảng `_prisma_migrations`.
 
-## Environment
+File `database/schema.sql` cũ đã được bỏ vì là snapshot trước các thay đổi về Admin, phân quyền cấu hình, onboarding và PayOS. Không chạy lại snapshot đó trên Neon hoặc trên database mới: nó không tạo ledger migration và có thể khiến schema lệch với ứng dụng.
 
-The production database is Neon PostgreSQL (Singapore). Docker is not used.
+Migration đầu tiên vẫn giữ nguyên lời chú thích lịch sử nhắc tới `database/schema.sql`; migration đó đã được áp dụng nên không chỉnh sửa lại. Khi dựng DB mới, chỉ chạy qua Prisma để các migration sau nâng schema lên trạng thái hiện tại.
 
-1. Copy `../.env.example` to `../.env` only on a trusted local machine.
-2. Put the Neon connection string in `DATABASE_URL` and, while there is a single owner account, in `MIGRATE_DATABASE_URL` too.
-3. In Render, configure the same values as encrypted environment variables; do not commit them.
+## Cấu hình
 
-## Run migrations
+- `DATABASE_URL`: kết nối runtime của backend.
+- `MIGRATE_DATABASE_URL`: kết nối có quyền DDL dùng cho migration; nếu thiếu, Prisma dùng `DATABASE_URL` theo `../prisma.config.js`.
+- Hai URL phải trỏ đến cùng database và schema dự định nâng cấp. Giữ giá trị thật trong `.env` cục bộ hoặc biến môi trường bảo mật của Render; không commit URL hay mật khẩu.
+- Không dùng Docker cho database production; Neon là nguồn dữ liệu production.
 
-1. Create an empty PostgreSQL database.
-2. Provide its Neon connection string as `DATABASE_URL`.
-3. Run `npm run db:migrate`.
+## Dựng database mới
 
-Sports Center now follows the same Prisma/PostgreSQL migration layout as UBND-BE: `prisma/migrations/` is the source of truth and Prisma owns its `_prisma_migrations` ledger. `prisma/migrations/20260913000000_initial_sports_center/migration.sql` is the initial migration and `20260913000100_membership_access_rules` is the deployed business-rule adjustment. Do not run `database/schema.sql` manually on a Prisma-managed database.
+1. Tạo một Neon PostgreSQL database rỗng và cấu hình hai biến môi trường nêu trên.
+2. Từ thư mục `backend/`, chạy `npm ci` và `npm run db:validate`.
+3. Kiểm tra đúng host/database/schema đích, sau đó chạy `npm run db:migrate` để áp dụng toàn bộ migration theo thứ tự.
+4. Chạy `npm run db:generate` để tạo Prisma Client và `npx prisma migrate status` để xác nhận không còn migration chờ áp dụng.
 
-For every later database change, create a new migration through Prisma with a higher timestamp. Never modify an already-applied migration.
+`npm run db:migrate` **thay đổi DB**. Với Neon đang có dữ liệu, chỉ chạy trong quy trình deploy đã được phê duyệt; không dùng `prisma migrate reset`, `db push` hoặc SQL snapshot để đồng bộ thủ công. Khi thay đổi schema, thêm migration mới, không sửa migration đã áp dụng.
 
-## What is covered
+## Phạm vi hiện tại
 
-- Accounts, roles, exact permissions, staff and member profiles.
-- Tiered membership entitlements, payment-gated activation and auditable membership history.
-- Rooms, concrete class sessions, bookings, facility check-ins, class attendance and direct Coach corrections.
-- Payments, append-only payment events and paid-at revenue reporting; legacy refund records are retained but new requests are disabled by policy.
-- Training plans, exercises and recorded outcomes.
-- Notifications, support tickets and audit logs.
+Schema/migration hiện bao gồm tài khoản và xác thực, Admin cùng bốn role nghiệp vụ, bảng quyền và quyền cấu hình theo role, hồ sơ nhân viên/hội viên, gói hội viên và quyền sử dụng, lớp và booking, điểm danh, thanh toán PayOS, giáo án, thông báo, hỗ trợ và audit. Quy tắc phân quyền theo người dùng/phạm vi dữ liệu vẫn được backend kiểm tra, không suy ra chỉ từ bảng quyền hoặc giao diện.
 
-## Prisma workflow
-
-- `npm run db:validate` validates `prisma/schema.prisma`.
-- `npm run db:migrate` applies versioned SQL through Prisma using `MIGRATE_DATABASE_URL` when present.
-- `npm run db:generate` creates the typed client at `src/generated/prisma`.
-
-## Important server rules
-
-The database prevents a pending-payment or out-of-window member from booking/checking in, rejects duplicate live bookings, serializes capacity checks by locking the class row, activates a pending membership only after a successful payment, and requires a Coach reason plus audit log for attendance correction. Settled payment identity/amount/method fields cannot be edited in place.
-
-The future backend must additionally enforce endpoint authorization and data scope (Coach = assigned students/classes; Member = own records only). Do not treat navigation visibility in the UI as authorization. It must also run the expiry-notification and automatic-expiry job; the database preserves the required timestamps but does not schedule notifications itself.
-
-## Deliberate implementation boundary
-
-No backend/API, password-creation endpoint, or real payment provider has been added because this project currently contains only a Figma Make frontend. A future server should use the generated Prisma client and a restricted runtime database account; the migration account should be supplied through `MIGRATE_DATABASE_URL`.
+Swagger/OpenAPI tại `../src/openapi/spec.js` là nguồn chuẩn của HTTP contract, không phải nguồn chuẩn của cấu trúc DB.

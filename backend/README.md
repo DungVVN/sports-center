@@ -4,13 +4,13 @@ This folder contains the Node.js/Express API, Prisma database layer, OpenAPI con
 
 ## Database
 
-- Prisma schema: `prisma/schema.prisma`
-- Versioned migration: `prisma/migrations/`
+- Prisma schema: `database/prisma/schema.prisma`
+- Versioned migration: `database/prisma/migrations/`
 - Production database: Neon PostgreSQL, Singapore
 - Runtime config: `DATABASE_URL`
 - Migration config: `MIGRATE_DATABASE_URL` (falls back to `DATABASE_URL`)
 
-Run `npm run db:migrate` only when Prisma CLI is available in the deployment environment. The initial migration has already been applied to the Neon production database. Later business-rule changes are additive migrations and must not modify an applied migration.
+Use the workflow in [`database/README.md`](database/README.md) to set up a new database. The deployed Neon database is managed through the complete versioned Prisma migration history, not a standalone SQL snapshot. Never modify an applied migration.
 
 Do not commit a real Neon connection string. Copy `.env.example` to `.env` only on a trusted local machine or configure the variables in Render.
 

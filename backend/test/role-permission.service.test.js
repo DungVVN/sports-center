@@ -40,6 +40,14 @@ describe("role permission configuration", () => {
     expect(repository.replace).toHaveBeenCalledWith({ role: "manager", version: 2, permissionCodes: [], actorUserId: "admin-1" });
   });
 
+  it("lets Admin assign facility functions by permission rather than a fixed role", async () => {
+    const { service, repository } = setup();
+    await service.replace({ role: "receptionist", version: 0, permissionCodes: ["facility.manage", "facility.day.manage"], actorUserId: "admin-1" });
+    expect(repository.replace).toHaveBeenCalledWith({ role: "receptionist", version: 0, permissionCodes: ["facility.day.manage", "facility.manage"], actorUserId: "admin-1" });
+    await service.replace({ role: "coach", version: 0, permissionCodes: ["facility.booking.self.read", "facility.booking.request"], actorUserId: "admin-1" });
+    expect(repository.replace).toHaveBeenCalledWith({ role: "coach", version: 0, permissionCodes: ["facility.booking.request", "facility.booking.self.read"], actorUserId: "admin-1" });
+  });
+
   it("rejects Admin modification, duplicate codes and stale edits", async () => {
     const { service, repository } = setup();
     await expect(service.replace({ role: "admin", version: 0, permissionCodes: [], actorUserId: "admin-1" })).rejects.toMatchObject({ code: "ROLE_NOT_CONFIGURABLE" });

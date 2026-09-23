@@ -11,6 +11,8 @@ import { InitialPasswordChangePage } from "../features/auth/InitialPasswordChang
 import { authenticationExpiredEvent, permissionsChangedEvent } from "../api/client.js";
 import { authApi } from "../features/auth/auth-api.js";
 import { LandingPage } from "../pages/LandingPage/LandingPage.jsx";
+import { GalleryPage } from "../pages/GalleryPage/GalleryPage.jsx";
+import { CalendarPage } from "../pages/CalendarPage/CalendarPage.jsx";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -28,6 +30,8 @@ export function App() {
     if (path === "/register") return "register";
     if (path === "/verify") return "verify";
     if (path === "/pending") return "pending";
+    if (path === "/gallery") return "gallery";
+    if (path === "/calendar") return "calendar";
     return "landing";
   };
 
@@ -51,6 +55,8 @@ export function App() {
       else if (path === "/register") setView("register");
       else if (path === "/verify") setView("verify");
       else if (path === "/pending") setView("pending");
+      else if (path === "/gallery") setView("gallery");
+      else if (path === "/calendar") setView("calendar");
       else setView("landing");
     };
     window.addEventListener("popstate", handlePopState);
@@ -84,7 +90,9 @@ export function App() {
     ? <InitialPasswordChangePage onCompleted={() => { setSession((current) => ({ ...current, user: { ...current.user, mustChangePassword: false } })); }} />
     : session ? <DashboardPlaceholder initialView={session.user.profileSetupRequired ? "profile" : "dashboard"} session={session} onProfileSaved={() => setSession((current) => ({ ...current, user: { ...current.user, profileSetupRequired: false } }))} onLogout={() => { setSession(null); navigate("login"); }} /> : {
     login: loginPage,
-    landing: <LandingPage onLoginClick={() => navigate("login")} onRegisterClick={() => navigate("register")} />,
+    landing: <LandingPage onLoginClick={() => navigate("login")} onRegisterClick={() => navigate("register")} onGalleryClick={() => navigate("gallery")} onCalendarClick={() => navigate("calendar")} />,
+    gallery: <GalleryPage onLoginClick={() => navigate("login")} onHomeClick={() => navigate("landing")} />,
+    calendar: <CalendarPage onLoginClick={() => navigate("login")} onHomeClick={() => navigate("landing")} />,
     register: isAdminPortal ? loginPage : <RegisterPage onLogin={() => navigate("login")} onRegistered={(value) => { setRegistration(value); navigate("verify"); }} />,
     verify: registration ? <VerificationPage registration={registration} onCompleted={() => navigate("pending")} /> : loginPage,
     pending: <PendingApprovalPage onLogin={() => navigate("login")} />,
