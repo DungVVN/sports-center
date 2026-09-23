@@ -8,7 +8,7 @@
   display: contents;
 }
 .profile-page__form {
-  align-self: stretch;
+  align-self: start;
   gap: var(--space-20);
 }
 .profile-page__form:first-child { order: 1; }
@@ -99,7 +99,6 @@
 }
 .profile-page__mfa {
   align-content: space-between;
-  align-self: start;
   display: grid;
   gap: var(--space-20);
 }
