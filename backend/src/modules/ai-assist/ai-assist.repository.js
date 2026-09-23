@@ -4,6 +4,7 @@ const now = () => new Date();
 const activeAssignmentWhere = (coachId) => ({ coach_user_id: coachId, effective_from: { lte: now() }, OR: [{ effective_to: null }, { effective_to: { gte: now() } }] });
 
 export const aiAssistRepository = {
+  member: (id) => prisma.members.findUnique({ where: { id }, select: { id: true, user_id: true, full_name: true } }),
   coachClasses: (coachId) => prisma.class_sessions.findMany({ where: { coach_user_id: coachId, starts_at: { gte: now() } }, orderBy: { starts_at: "asc" }, take: 5, select: { id: true, name: true, starts_at: true } }),
   stalePlans: (coachId) => prisma.training_plans.findMany({ where: { coach_user_id: coachId, status: "active", updated_at: { lt: new Date(Date.now() - 14 * 86400000) } }, select: { id: true, name: true } }),
   async upcomingBookings(coachId) {

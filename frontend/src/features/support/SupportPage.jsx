@@ -18,7 +18,8 @@ const priorityLabels = {
   high: "Cao",
 };
 
-export function SupportPage() {
+export function SupportPage({ session }) {
+  const canCreate = session?.permissions?.includes("support.ticket.create") ?? false;
   const [items, setItems] = useState([]);
   const [form, setForm] = useState({ subject: "", body: "", priority: "normal" });
   const [detail, setDetail] = useState(null);
@@ -61,7 +62,7 @@ export function SupportPage() {
       </header>
       {error && <p className="auth-alert" role="alert">{error}</p>}
       <section className="members-grid">
-        <form className="members-form" onSubmit={submit}>
+        {canCreate && <form className="members-form" onSubmit={submit}>
           <label>
             Tiêu đề
             <input
@@ -92,7 +93,7 @@ export function SupportPage() {
             </select>
           </label>
           <Button type="submit">Gửi yêu cầu</Button>
-        </form>
+        </form>}
         <section className="members-list">
           <div className="list-heading">
             <h2>Lịch sử yêu cầu</h2>

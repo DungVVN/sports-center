@@ -16,7 +16,8 @@ const priorityLabels = {
   high: "Cao",
 };
 
-export function SupportStaffPage() {
+export function SupportStaffPage({ session }) {
+  const canRespond = session?.permissions?.includes("support.ticket.respond") ?? false;
   const [tickets, setTickets] = useState([]);
   const [selected, setSelected] = useState(null);
   const [reply, setReply] = useState("");
@@ -159,9 +160,9 @@ export function SupportStaffPage() {
               <strong>{priorityLabels[selected.ticket.priority] ?? selected.ticket.priority}</strong>
             </p>
             <p>{selected.ticket.body}</p>
-            <Button onClick={() => assign(selected.ticket.id)} size="sm" type="button" variant="secondary">
+            {canRespond && <Button onClick={() => assign(selected.ticket.id)} size="sm" type="button" variant="secondary">
               Nhận phụ trách
-            </Button>
+            </Button>}
             <h3>Trao đổi</h3>
             {selected.responses.length === 0 ? (
               <p>Chưa có trao đổi nào.</p>
@@ -172,7 +173,7 @@ export function SupportStaffPage() {
                 </article>
               ))
             )}
-            <form className="members-form" onSubmit={submit}>
+            {canRespond && <form className="members-form" onSubmit={submit}>
               <label>
                 Phản hồi
                 <textarea onChange={(event) => setReply(event.target.value)} required value={reply} />
@@ -186,7 +187,7 @@ export function SupportStaffPage() {
                 </select>
               </label>
               <Button type="submit">Gửi phản hồi</Button>
-            </form>
+            </form>}
           </section>
         )}
       </section>

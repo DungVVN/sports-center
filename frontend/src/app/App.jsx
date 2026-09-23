@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { DashboardPlaceholder } from "../features/auth/DashboardPlaceholder.jsx";
 import { AdminLoginPage } from "../features/auth/AdminLoginPage.jsx";
 import { LoginPage } from "../features/auth/LoginPage.jsx";
@@ -8,8 +8,9 @@ import { PendingApprovalPage } from "../features/auth/PendingApprovalPage.jsx";
 import { RegisterPage } from "../features/auth/RegisterPage.jsx";
 import { VerificationPage } from "../features/auth/VerificationPage.jsx";
 import { InitialPasswordChangePage } from "../features/auth/InitialPasswordChangePage.jsx";
-import { authenticationExpiredEvent } from "../api/client.js";
+import { authenticationExpiredEvent, permissionsChangedEvent } from "../api/client.js";
 import { authApi } from "../features/auth/auth-api.js";
+import { LandingPage } from "../pages/LandingPage/LandingPage.jsx";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,33 +20,75 @@ const queryClient = new QueryClient({
 
 export function App() {
   const isAdminPortal = window.location.hostname === "admin.kineticsports.io.vn" || import.meta.env.VITE_ADMIN_PORTAL === "true";
-  const [view, setView] = useState("login");
+
+  const getInitialView = () => {
+    if (isAdminPortal) return "login";
+    const path = window.location.pathname;
+    if (path === "/login") return "login";
+    if (path === "/register") return "register";
+    if (path === "/verify") return "verify";
+    if (path === "/pending") return "pending";
+    return "landing";
+  };
+
+  const [view, setView] = useState(getInitialView());
   const [registration, setRegistration] = useState(null);
   const [session, setSession] = useState(null);
-  const [firstLoginProfile, setFirstLoginProfile] = useState(false);
   const [mfaChallenge, setMfaChallenge] = useState(null);
+
+  const navigate = useCallback((newView) => {
+    setView(newView);
+    if (!isAdminPortal) {
+      const path = newView === "landing" ? "/" : `/${newView}`;
+      window.history.pushState({}, "", path);
+    }
+  }, [isAdminPortal]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname;
+      if (path === "/login") setView("login");
+      else if (path === "/register") setView("register");
+      else if (path === "/verify") setView("verify");
+      else if (path === "/pending") setView("pending");
+      else setView("landing");
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
   useEffect(() => {
     const resetToLogin = () => {
       setSession(null);
-      setFirstLoginProfile(false);
-      setView("login");
+      navigate("login");
     };
     window.addEventListener(authenticationExpiredEvent, resetToLogin);
     return () => window.removeEventListener(authenticationExpiredEvent, resetToLogin);
-  }, []);
+  }, [navigate]);
+  useEffect(() => {
+    if (!session) return undefined;
+    const refreshSession = () => { void authApi.me().then(setSession).catch(() => {}); };
+    window.addEventListener("focus", refreshSession);
+    window.addEventListener(permissionsChangedEvent, refreshSession);
+    return () => {
+      window.removeEventListener("focus", refreshSession);
+      window.removeEventListener(permissionsChangedEvent, refreshSession);
+    };
+  }, [session]);
   useEffect(() => { document.title = isAdminPortal ? "Kinetic Admin" : "Kinetic Sports Center"; }, [isAdminPortal]);
-  const onMfaRequired = (challenge) => { setMfaChallenge(challenge); setView("mfa"); };
+  const onMfaRequired = (challenge) => { setMfaChallenge(challenge); navigate("mfa"); };
   const loginPage = isAdminPortal
     ? <AdminLoginPage onLoggedIn={setSession} onMfaRequired={onMfaRequired} />
-    : <LoginPage onLoggedIn={setSession} onMfaRequired={onMfaRequired} onRegister={() => setView("register")} />;
+    : <LoginPage onLoggedIn={setSession} onMfaRequired={onMfaRequired} onRegister={() => navigate("register")} />;
   const content = session?.user.mustChangePassword
-    ? <InitialPasswordChangePage onCompleted={() => { setSession((current) => ({ ...current, user: { ...current.user, mustChangePassword: false } })); setFirstLoginProfile(true); }} />
-    : session ? <DashboardPlaceholder initialView={firstLoginProfile ? "profile" : "dashboard"} session={session} onLogout={() => { setSession(null); setFirstLoginProfile(false); setView("login"); }} /> : {
+    ? <InitialPasswordChangePage onCompleted={() => { setSession((current) => ({ ...current, user: { ...current.user, mustChangePassword: false } })); }} />
+    : session ? <DashboardPlaceholder initialView={session.user.profileSetupRequired ? "profile" : "dashboard"} session={session} onProfileSaved={() => setSession((current) => ({ ...current, user: { ...current.user, profileSetupRequired: false } }))} onLogout={() => { setSession(null); navigate("login"); }} /> : {
     login: loginPage,
-    register: isAdminPortal ? loginPage : <RegisterPage onLogin={() => setView("login")} onRegistered={(value) => { setRegistration(value); setView("verify"); }} />,
-    verify: registration ? <VerificationPage registration={registration} onCompleted={() => setView("pending")} /> : loginPage,
-    pending: <PendingApprovalPage onLogin={() => setView("login")} />,
-    mfa: mfaChallenge ? <TotpVerificationPage challenge={mfaChallenge} onCancel={() => { setMfaChallenge(null); setView("login"); }} onCompleted={setSession} verifyLogin={isAdminPortal ? authApi.verifyAdminTotpLogin : authApi.verifyTotpLogin} portalName={isAdminPortal ? "cổng quản trị" : "hệ thống"} /> : loginPage,
+    landing: <LandingPage onLoginClick={() => navigate("login")} onRegisterClick={() => navigate("register")} />,
+    register: isAdminPortal ? loginPage : <RegisterPage onLogin={() => navigate("login")} onRegistered={(value) => { setRegistration(value); navigate("verify"); }} />,
+    verify: registration ? <VerificationPage registration={registration} onCompleted={() => navigate("pending")} /> : loginPage,
+    pending: <PendingApprovalPage onLogin={() => navigate("login")} />,
+    mfa: mfaChallenge ? <TotpVerificationPage challenge={mfaChallenge} onCancel={() => { setMfaChallenge(null); navigate("login"); }} onCompleted={setSession} verifyLogin={isAdminPortal ? authApi.verifyAdminTotpLogin : authApi.verifyTotpLogin} portalName={isAdminPortal ? "cổng quản trị" : "hệ thống"} /> : loginPage,
   }[view];
   return (
     <QueryClientProvider client={queryClient}>

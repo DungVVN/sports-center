@@ -9,9 +9,9 @@ function authService(permissions, role = "receptionist") { return { getAuthentic
 function paymentService() { return { ownPayments: vi.fn().mockResolvedValue([]), ownReceipt: vi.fn().mockResolvedValue({ id: paymentId, events: [] }), list: vi.fn().mockResolvedValue([]), create: vi.fn().mockResolvedValue({ id: paymentId, status: "pending" }), get: vi.fn(), confirm: vi.fn().mockResolvedValue({ id: paymentId, status: "paid" }), providerCallback: vi.fn(), payosCallback: vi.fn().mockResolvedValue({ id: paymentId, status: "paid" }) }; }
 
 describe("Payment routes", () => {
-  it("lets a Member view their own payment statuses without payment.record", async () => {
+  it("lets a Member view their own payment statuses with payment.self.read", async () => {
     const service = paymentService();
-    await request(createApp({ authService: authService([], "member"), paymentService: service })).get("/api/v1/members/me/payments").set("Authorization", "Bearer token").expect(200);
+    await request(createApp({ authService: authService(["payment.self.read"], "member"), paymentService: service })).get("/api/v1/members/me/payments").set("Authorization", "Bearer token").expect(200);
     expect(service.ownPayments).toHaveBeenCalledWith({ id: "receptionist-1", role: "member" });
   });
   it("creates a cash payment with its linked pending membership", async () => {
@@ -61,7 +61,7 @@ describe("Payment routes", () => {
   });
   it("lets a Member view only a receipt addressed to their own account", async () => {
     const service = paymentService();
-    await request(createApp({ authService: authService([], "member"), paymentService: service })).get(`/api/v1/members/me/payments/${paymentId}`).set("Authorization", "Bearer token").expect(200);
+    await request(createApp({ authService: authService(["payment.self.read"], "member"), paymentService: service })).get(`/api/v1/members/me/payments/${paymentId}`).set("Authorization", "Bearer token").expect(200);
     expect(service.ownReceipt).toHaveBeenCalledWith(paymentId, { id: "receptionist-1", role: "member" });
   });
 

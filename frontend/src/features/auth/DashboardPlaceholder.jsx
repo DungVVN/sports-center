@@ -1,14 +1,10 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { AppShell } from "../../components/layout/AppShell.jsx";
 import { dashboardApi } from "../dashboard/dashboard-api.js";
 import { authApi } from "./auth-api.js";
 import "./auth.css";
 
-const CoachPageContent = lazy(() => import("../../pages/coach/CoachPageContent.jsx").then(({ CoachPageContent: Component }) => ({ default: Component })));
 const ManagerPageContent = lazy(() => import("../../pages/manager/ManagerPageContent.jsx").then(({ ManagerPageContent: Component }) => ({ default: Component })));
-const MemberPageContent = lazy(() => import("../../pages/member/MemberPageContent.jsx").then(({ MemberPageContent: Component }) => ({ default: Component })));
-const ReceptionistPageContent = lazy(() => import("../../pages/receptionist/ReceptionistPageContent.jsx").then(({ ReceptionistPageContent: Component }) => ({ default: Component })));
-const AdminPageContent = lazy(() => import("../../pages/admin/AdminPageContent.jsx").then(({ AdminPageContent: Component }) => ({ default: Component })));
 
 const labels = {
   admin: "Quản trị hệ thống",
@@ -17,91 +13,62 @@ const labels = {
   coach: "Huấn luyện viên",
   member: "Hội viên",
 };
-const navigationByRole = {
-  admin: [
-    { id: "dashboard", label: "Toàn cảnh" },
-    { id: "profile", label: "Hồ sơ" },
-    { id: "members", label: "Hội viên" },
-    { id: "registrations", label: "Duyệt đăng ký" },
-    {
-      id: "packages",
-      label: "Gói tập",
-      children: [
-        { id: "packageCreate", label: "Tạo gói tập" },
-        { id: "packageCatalog", label: "Danh mục gói" },
-      ],
-    },
-    { id: "classes", label: "Lớp học" },
-    { id: "bookings", label: "Đặt chỗ" },
-    { id: "attendance", label: "Điểm danh" },
-    { id: "payments", label: "Thanh toán" },
-    { id: "staff", label: "Danh tính & nhân sự" },
-    { id: "training", label: "Giáo án" },
-    { id: "reports", label: "Báo cáo" },
-    { id: "audit", label: "Kiểm toán" },
-    { id: "support", label: "Hỗ trợ" },
-  ],
-  manager: [
-    { id: "dashboard", label: "Tổng quan" },
-    { id: "profile", label: "Hồ sơ" },
-    { id: "members", label: "Hội viên" },
-    { id: "registrations", label: "Duyệt đăng ký" },
-    {
-      id: "packages",
-      label: "Gói tập",
-      children: [
-        { id: "packageCreate", label: "Tạo gói tập" },
-        { id: "packageCatalog", label: "Danh mục gói" },
-      ],
-    },
-    { id: "classes", label: "Lớp học" },
-    { id: "bookings", label: "Đặt chỗ" },
-    { id: "attendance", label: "Điểm danh" },
-    { id: "payments", label: "Thanh toán" },
-    { id: "training", label: "Giáo án" },
-    { id: "reports", label: "Báo cáo" },
-    { id: "support", label: "Hỗ trợ" },
-  ],
-  receptionist: [
-    { id: "dashboard", label: "Tổng quan" },
-    { id: "profile", label: "Hồ sơ" },
-    { id: "members", label: "Hội viên" },
-    { id: "registrations", label: "Duyệt đăng ký" },
-    { id: "packages", label: "Gói tập" },
-    { id: "classes", label: "Lớp học" },
-    { id: "bookings", label: "Đặt chỗ" },
-    { id: "attendance", label: "Điểm danh" },
-    { id: "payments", label: "Thanh toán" },
-    { id: "support", label: "Hỗ trợ" },
-  ],
-  coach: [
-    { id: "dashboard", label: "Tổng quan" },
-    { id: "profile", label: "Hồ sơ" },
-    { id: "classes", label: "Lớp học" },
-    { id: "bookings", label: "Đặt chỗ" },
-    { id: "attendance", label: "Điểm danh" },
-    { id: "training", label: "Giáo án" },
-  ],
-  member: [
-    { id: "dashboard", label: "Tổng quan" },
-    { id: "profile", label: "Hồ sơ" },
-    { id: "packages", label: "Gói tập" },
-    { id: "bookings", label: "Đặt chỗ" },
-    { id: "my-attendance", label: "Điểm danh" },
-    { id: "my-training", label: "Giáo án" },
-    { id: "my-payments", label: "Thanh toán" },
-    { id: "support", label: "Hỗ trợ" },
-    { id: "notification-preferences", label: "Tùy chọn thông báo" },
-  ],
-};
+const navigationItems = [
+  { id: "dashboard", label: "Tổng quan" },
+  { id: "profile", label: "Hồ sơ" },
+  { id: "rolePermissions", label: "Phân quyền chức năng" },
+  { id: "notification-preferences", label: "Tùy chọn thông báo" },
+  { id: "members", label: "Hội viên" },
+  { id: "registrations", label: "Duyệt đăng ký" },
+  { id: "packages", label: "Gói tập", children: [
+    { id: "packageCreate", label: "Tạo gói tập" },
+    { id: "packageCatalog", label: "Danh mục gói" },
+    { id: "memberMemberships", label: "Gán gói hội viên" },
+  ] },
+  { id: "classes", label: "Lớp học" },
+  { id: "bookings", label: "Đặt chỗ" },
+  { id: "attendance", label: "Điểm danh" },
+  { id: "payments", label: "Thanh toán" },
+  { id: "staff", label: "Danh tính & nhân sự" },
+  { id: "training", label: "Giáo án" },
+  { id: "reports", label: "Báo cáo" },
+  { id: "audit", label: "Kiểm toán" },
+  { id: "support", label: "Hỗ trợ" },
+];
+const memberSelfItems = [
+  { id: "my-memberships", label: "Gói tập của tôi", permission: "membership.self.read" },
+  { id: "my-attendance", label: "Điểm danh của tôi", permission: "attendance.self.read" },
+  { id: "my-training", label: "Giáo án của tôi", permission: "training.self.read" },
+  { id: "my-payments", label: "Thanh toán của tôi", permission: "payment.self.read" },
+];
 
-export function DashboardPlaceholder({ initialView = "dashboard", session, onLogout }) {
+export function DashboardPlaceholder({ initialView = "dashboard", session, onLogout, onProfileSaved }) {
   const [view, setView] = useState(initialView);
   const [notifications, setNotifications] = useState([]);
-  const navigation = useMemo(
-    () => navigationByRole[session.user.role] ?? navigationByRole.member,
-    [session.user.role],
-  );
+  const granted = new Set(session.permissions ?? []);
+  const access = {
+    members: ["member.read", "member.write"], registrations: ["registration.approve"],
+    packageCreate: ["membership.package.manage"], packageCatalog: ["membership.package.read", "membership.package.manage"], memberMemberships: ["membership.assign"],
+    classes: ["class.read", "class.manage", "class.change.review", "class.change.request"], bookings: ["booking.read", "booking.write"],
+    attendance: ["attendance.read", "attendance.write"], payments: ["payment.read", "payment.record"],
+    staff: ["staff.manage"],
+    training: ["training.write", "training.template.manage", "ai.assist.read", "ai.assist.deliver"], reports: ["report.read"], audit: ["audit.read"],
+    support: ["support.ticket.read", "support.ticket.respond", "support.ticket.create"],
+    "notification-preferences": ["notification.preference.manage"],
+  };
+  const allowed = (id) => session.user.role === "admin" || !access[id] || access[id].some((permission) => granted.has(permission));
+  const navigation = navigationItems.flatMap((item) => {
+    if (item.id === "rolePermissions" && session.user.role !== "admin") return [];
+    if (item.children) {
+      const children = item.children.filter((child) => allowed(child.id));
+      return children.length ? [{ ...item, children }] : [];
+    }
+    return allowed(item.id) ? [item] : [];
+  });
+  if (session.user.role === "member") {
+    navigation.push(...memberSelfItems.filter((item) => granted.has(item.permission)));
+  }
+  const allowedViews = new Set(navigation.flatMap((item) => [item.id, ...(item.children ?? []).map((child) => child.id)]));
   async function loadNotifications() {
     try {
       setNotifications(await dashboardApi.notifications());
@@ -129,17 +96,9 @@ export function DashboardPlaceholder({ initialView = "dashboard", session, onLog
       /* A notification remains unread if the server rejects the update. */
     }
   }
-  const rolePages = {
-    admin: AdminPageContent,
-    coach: CoachPageContent,
-    manager: ManagerPageContent,
-    member: MemberPageContent,
-    receptionist: ReceptionistPageContent,
-  };
-  const RolePageContent = rolePages[session.user.role] ?? MemberPageContent;
   const content = (
     <Suspense fallback={<p className="app-shell__loading" role="status">Đang tải không gian làm việc...</p>}>
-      <RolePageContent onNavigate={setView} onSessionRevoked={onLogout} session={session} view={view} />
+      <ManagerPageContent dashboardRole={session.user.role} onNavigate={(next) => { if (allowedViews.has(next)) setView(next); }} onProfileSaved={onProfileSaved} onSessionRevoked={onLogout} session={session} view={allowedViews.has(view) ? view : "dashboard"} />
     </Suspense>
   );
   return (

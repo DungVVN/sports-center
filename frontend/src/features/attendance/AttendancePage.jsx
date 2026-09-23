@@ -39,8 +39,8 @@ export function AttendancePage({ session }) {
   const [now, setNow] = useState(() => new Date());
   const role = session?.user?.role;
   const coachId = role === "coach" ? session.user.id : null;
-  const canOperate = role === "coach";
-  const canCorrect = role === "coach";
+  const canOperate = session?.permissions?.includes("attendance.write") ?? false;
+  const canCorrect = canOperate;
   const availableClasses = useMemo(() => {
     const dayStart = new Date(now);
     dayStart.setHours(0, 0, 0, 0);
@@ -49,11 +49,13 @@ export function AttendancePage({ session }) {
     return classes.filter(
       (item) =>
         (!coachId || item.coach_user_id === coachId) &&
-        item.status === "published" &&
-        new Date(item.starts_at) >= dayStart &&
-        new Date(item.starts_at) < dayEnd,
+        (role !== "coach"
+          ? ["published", "completed"].includes(item.status)
+          : item.status === "published" &&
+            new Date(item.starts_at) >= dayStart &&
+            new Date(item.starts_at) < dayEnd),
     );
-  }, [classes, coachId, now]);
+  }, [classes, coachId, now, role]);
   const classBookings = useMemo(
     () =>
       bookings.filter((item) =>
@@ -246,7 +248,7 @@ export function AttendancePage({ session }) {
           {loading ? (
             <p>Đang tải buổi học…</p>
           ) : availableClasses.length === 0 ? (
-            <p>Hôm nay chưa có buổi học để điểm danh.</p>
+            <p>{role === "admin" ? "Chưa có buổi học để xem điểm danh." : "Hôm nay chưa có buổi học để điểm danh."}</p>
           ) : (
             <div className="table-scroll">
               <table>

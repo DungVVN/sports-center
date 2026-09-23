@@ -91,6 +91,24 @@ describe("auth service login protection", () => {
     expect(repository.getPermissions).toHaveBeenCalledWith("manager");
   });
 
+  it("returns the member first-profile flag without requiring another password change", async () => {
+    const repository = {
+      findUserByEmail: vi.fn().mockResolvedValue({ id: "member-1", email: "member@example.com", display_name: "Member", role: "member", status: "active", password_hash: await hashPassword("Strongpass1"), must_change_password: false, profile_setup_required: true }),
+      createSession: vi.fn().mockResolvedValue({ id: "session-1" }),
+      getPermissions: vi.fn().mockResolvedValue([]),
+    };
+    const service = createAuthService({ repository, verificationDelivery: { deliver: vi.fn() }, auditService: { record: vi.fn() }, captchaVerifier: acceptingCaptcha });
+    await expect(service.login({ email: "member@example.com", password: "Strongpass1" })).resolves.toMatchObject({ user: { role: "member", mustChangePassword: false, profileSetupRequired: true } });
+  });
+
+  it("clears the first-profile flag only after a successful own-profile update", async () => {
+    const profile = { user: { id: "staff-1", role: "coach", display_name: "Coach", email: "coach@example.com", status: "active", profile_setup_required: true }, staffProfile: { phone: "0901234567" }, contacts: [] };
+    const repository = { findOwnProfile: vi.fn().mockResolvedValueOnce(profile).mockResolvedValueOnce({ ...profile, user: { ...profile.user, profile_setup_required: false } }), updateOwnProfile: vi.fn() };
+    const service = createAuthService({ repository, verificationDelivery: { deliver: vi.fn() }, auditService: { record: vi.fn() } });
+    await expect(service.updateOwnProfile({ userId: "staff-1", input: { fullName: "Coach Updated", phone: "0901234567" } })).resolves.toMatchObject({ profileSetupRequired: false });
+    expect(repository.updateOwnProfile).toHaveBeenCalledWith("staff-1", { fullName: "Coach Updated", phone: "0901234567" });
+  });
+
   it("separates the Admin login surface from the shared operational login", async () => {
     const repository = {
       findUserByEmail: vi.fn().mockResolvedValue({ id: "admin-1", email: "admin@example.com", display_name: "Admin", role: "admin", status: "active", password_hash: await hashPassword("Strongpass1") }),

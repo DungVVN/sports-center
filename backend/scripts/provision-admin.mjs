@@ -18,8 +18,8 @@ if (existingAdmin && existingAdmin.email !== email) {
 const passwordHash = await hashPassword(password);
 const user = await prisma.users.upsert({
   where: { email },
-  update: { display_name: "Quản trị hệ thống", password_hash: passwordHash, role: "admin", status: "active" },
-  create: { email, display_name: "Quản trị hệ thống", password_hash: passwordHash, role: "admin", status: "active" },
+  update: { display_name: "Quản trị hệ thống", password_hash: passwordHash, role: "admin", status: "active", must_change_password: true, profile_setup_required: true },
+  create: { email, display_name: "Quản trị hệ thống", password_hash: passwordHash, role: "admin", status: "active", must_change_password: true, profile_setup_required: true },
 });
 await prisma.staff_profiles.upsert({
   where: { user_id: user.id },

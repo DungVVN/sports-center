@@ -59,6 +59,12 @@ describe("Payment service", () => {
     expect(repository.complete).not.toHaveBeenCalled();
   });
 
+  it("retains the original VNPAY label on historical receipts without enabling new VNPAY payments", async () => {
+    const { repository, auditService } = dependencies();
+    repository.listWithDetails = vi.fn().mockResolvedValue([{ id: "legacy-payment", amount_vnd: 500000n, provider: null, legacy_provider: "vnpay" }]);
+    await expect(createPaymentService({ repository, auditService }).list()).resolves.toEqual([expect.objectContaining({ provider: "vnpay", legacy_provider: "vnpay" })]);
+  });
+
   it("records the bank-statement reconciliation note in the payment event and audit log", async () => {
     const { repository, auditService } = dependencies();
     repository.payment.mockResolvedValue({ id: "payment-1", status: "pending", method: "bank_transfer", membership_id: membershipId, amount_vnd: 500000n });

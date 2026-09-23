@@ -2,6 +2,7 @@ import { ApiError } from "./api-error.js";
 import { apiBaseUrl } from "../config/runtime.js";
 
 export const authenticationExpiredEvent = "sports-center:authentication-expired";
+export const permissionsChangedEvent = "sports-center:permissions-changed";
 
 function buildUrl(path) {
   return `${apiBaseUrl}/${path.replace(/^\//, "")}`;
@@ -38,6 +39,9 @@ export async function request(path, { method = "GET", body, headers, signal } = 
   if (!response.ok || !payload?.success) {
     if (response.status === 401 && typeof window !== "undefined") {
       window.dispatchEvent(new Event(authenticationExpiredEvent));
+    }
+    if (response.status === 403 && typeof window !== "undefined") {
+      window.dispatchEvent(new Event(permissionsChangedEvent));
     }
     throw new ApiError({
       status: response.status,

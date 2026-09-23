@@ -14,14 +14,6 @@ export function createAttendanceService({ repository, auditService }) {
       });
     return session;
   }
-  function ensureCoachActor(actor) {
-    if (actor.role !== "coach")
-      throw new AppError({
-        statusCode: 403,
-        code: "ATTENDANCE_COACH_ONLY",
-        message: "Chỉ Coach phụ trách lớp mới có thể điểm danh.",
-      });
-  }
   function ensureSessionWindow(session, now = new Date()) {
     if (!session || now < session.starts_at || now > session.ends_at)
       throw new AppError({
@@ -46,7 +38,6 @@ export function createAttendanceService({ repository, auditService }) {
       return repository.recordsForMember(member.id);
     },
     async submit(classId, entries, actor) {
-      ensureCoachActor(actor);
       const session = await ensureCoachScope(classId, actor);
       ensureSessionWindow(session);
       const result = await repository.submit(classId, entries, actor.id);
@@ -62,7 +53,6 @@ export function createAttendanceService({ repository, auditService }) {
           code: "BOOKING_NOT_ELIGIBLE",
           message: "Booking không đủ điều kiện điểm danh.",
         });
-      ensureCoachActor(actor);
       const session = await ensureCoachScope(booking.class_session_id, actor);
       ensureSessionWindow(session);
       const record = await repository.upsert({
@@ -96,7 +86,6 @@ export function createAttendanceService({ repository, auditService }) {
           code: "ATTENDANCE_ALREADY_CHECKED_OUT",
           message: "Buổi học này đã check-out.",
         });
-      ensureCoachActor(actor);
       await ensureCoachScope(current.class_session_id, actor);
       const record = await repository.checkOut(attendanceId, actor.id);
       await auditService.record({
@@ -109,12 +98,6 @@ export function createAttendanceService({ repository, auditService }) {
       return record;
     },
     async correct(attendanceId, newStatus, reason, actor) {
-      if (actor.role !== "coach")
-        throw new AppError({
-          statusCode: 403,
-          code: "ATTENDANCE_CORRECTION_FORBIDDEN",
-          message: "Chỉ Coach phụ trách lớp mới có thể sửa điểm danh.",
-        });
       const current = await repository.record(attendanceId);
       if (!current)
         throw new AppError({

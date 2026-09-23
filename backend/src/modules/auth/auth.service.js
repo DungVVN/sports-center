@@ -16,7 +16,7 @@ function normalizePhone(phone) {
 }
 
 function publicUser(user) {
-  return { id: user.id, email: user.email, displayName: user.display_name, role: user.role, status: user.status, mustChangePassword: Boolean(user.must_change_password) };
+  return { id: user.id, email: user.email, displayName: user.display_name, role: user.role, status: user.status, mustChangePassword: Boolean(user.must_change_password), profileSetupRequired: Boolean(user.profile_setup_required) };
 }
 
 function ownProfileView({ user, member, staffProfile, contacts }) {
@@ -28,6 +28,7 @@ function ownProfileView({ user, member, staffProfile, contacts }) {
     avatarUrl: user.avatar_url ?? null,
     role: user.role,
     status: user.status,
+    profileSetupRequired: Boolean(user.profile_setup_required),
     phone: isMember ? member?.phone ?? null : staffProfile?.phone ?? null,
     dateOfBirth: isMember ? member?.date_of_birth ?? null : staffProfile?.date_of_birth ?? null,
     ...(isMember

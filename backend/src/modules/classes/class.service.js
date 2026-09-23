@@ -30,13 +30,13 @@ export function createClassService({ repository, auditService }) {
       return result;
     },
     async publish(id, actorUserId) { return this.update(id, { status: "published" }, actorUserId); },
-    async requestChange(classId, input, actorUserId) {
+    async requestChange(classId, input, actor) {
       const session = await repository.find(classId);
-      if (!session || session.coach_user_id !== actorUserId || session.status !== "published") throw new AppError({ statusCode: 403, code: "CLASS_CHANGE_NOT_ALLOWED", message: "Chỉ coach phụ trách lớp đang công bố mới được đề xuất thay đổi." });
+      if (!session || session.status !== "published" || (actor.role === "coach" && session.coach_user_id !== actor.id)) throw new AppError({ statusCode: 403, code: "CLASS_CHANGE_NOT_ALLOWED", message: "Không được đề xuất thay đổi lớp này." });
       const startsAt = input.startsAt ? new Date(input.startsAt) : null; const endsAt = input.endsAt ? new Date(input.endsAt) : null;
       if (input.type === "reschedule") { if (!startsAt || !endsAt || endsAt <= startsAt) throw invalidTime(); if (await repository.hasScheduleConflict(session.room_id, session.coach_user_id, startsAt, endsAt, classId)) throw scheduleConflict(); }
-      const result = await repository.createChange({ class_session_id: classId, type: input.type, proposed_starts_at: startsAt, proposed_ends_at: endsAt, reason: input.reason, requested_by: actorUserId });
-      await auditService.record({ actorUserId, action: "class.change_requested", entityType: "class_session", entityId: classId, summary: "Coach đã đề xuất thay đổi lớp.", reason: input.reason });
+      const result = await repository.createChange({ class_session_id: classId, type: input.type, proposed_starts_at: startsAt, proposed_ends_at: endsAt, reason: input.reason, requested_by: actor.id });
+      await auditService.record({ actorUserId: actor.id, action: "class.change_requested", entityType: "class_session", entityId: classId, summary: "Đã đề xuất thay đổi lớp.", reason: input.reason });
       return result;
     },
     async reviewChange(id, approved, actorUserId) {

@@ -32,7 +32,7 @@ function toForm(profile) {
   };
 }
 
-export function ProfilePage({ onSessionRevoked }) {
+export function ProfilePage({ onSessionRevoked, onProfileSaved }) {
   const [profile, setProfile] = useState(null);
   const [form, setForm] = useState(null);
   const [error, setError] = useState("");
@@ -114,6 +114,7 @@ export function ProfilePage({ onSessionRevoked }) {
       });
       setProfile(updated);
       setForm(toForm(updated));
+      onProfileSaved?.();
       setNotice("Đã cập nhật hồ sơ cá nhân.");
     } catch (caught) {
       setError(caught.message);

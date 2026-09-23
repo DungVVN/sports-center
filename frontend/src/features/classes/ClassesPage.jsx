@@ -65,8 +65,9 @@ export function ClassesPage({ session }) {
     direction: "asc",
   });
   const role = session?.user?.role;
-  const canManage = ["admin", "manager"].includes(role);
-  const canReview = ["admin", "manager", "receptionist"].includes(role);
+  const canManage = session?.permissions?.includes("class.manage") ?? false;
+  const canReview = session?.permissions?.includes("class.change.review") ?? false;
+  const canRequest = session?.permissions?.includes("class.change.request") ?? false;
   const ownClasses = useMemo(
     () =>
       role === "coach"
@@ -292,7 +293,7 @@ export function ClassesPage({ session }) {
           {notice}
         </p>
       )}
-      {role === "receptionist" ? (
+      {!canManage && canReview && !canRequest ? (
         <ReceptionistClassesWorkspace
           classCoachFilters={classCoachFilters}
           classRoomFilters={classRoomFilters}
@@ -417,7 +418,7 @@ export function ClassesPage({ session }) {
               Tạo lớp nháp
             </Button>
           </form>
-        ) : (
+        ) : canRequest ? (
           <form className="members-form" onSubmit={submitChange}>
             <h2>Đề xuất thay đổi</h2>
             <label>
@@ -485,10 +486,10 @@ export function ClassesPage({ session }) {
               />
             </label>
             <Button loading={submitting} type="submit">
-              Gửi Lễ tân duyệt
+              Gửi yêu cầu duyệt
             </Button>
           </form>
-        )}
+        ) : null}
         <section className="members-list">
           <div className="list-heading">
             <h2>

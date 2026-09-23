@@ -23,7 +23,7 @@ describe("Membership self-service freeze routes", () => {
 
   it("shows only the authenticated member's memberships", async () => {
     const service = membershipService();
-    await request(createApp({ authService: authService(), membershipService: service })).get("/api/v1/members/me/memberships").set("Authorization", "Bearer token").expect(200);
+    await request(createApp({ authService: authService(["membership.self.read"]), membershipService: service })).get("/api/v1/members/me/memberships").set("Authorization", "Bearer token").expect(200);
     expect(service.listOwnMemberships).toHaveBeenCalledWith({ id: "member-user", role: "member" });
   });
 

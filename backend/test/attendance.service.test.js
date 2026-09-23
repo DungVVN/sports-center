@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { createAttendanceService } from "../src/modules/attendance/attendance.service.js";
 
 const coach = { id: "coach-1", role: "coach" };
+const admin = { id: "admin-1", role: "admin" };
 const activeSession = () => ({
   coach_user_id: coach.id,
   starts_at: new Date(Date.now() - 60_000),
@@ -73,6 +74,20 @@ describe("attendance time rules", () => {
     await expect(service.submit("class-1", [{ bookingId: "booking-1", status: "present" }], coach)).resolves.toMatchObject({ notificationCount: 2 });
     expect(repository.submit).toHaveBeenCalledWith("class-1", [{ bookingId: "booking-1", status: "present" }], coach.id);
     expect(auditService.record).toHaveBeenCalledWith(expect.objectContaining({ action: "attendance.submitted" }));
+  });
+
+  it("lets Admin submit attendance for another Coach's class while retaining the session window", async () => {
+    const repository = { classSession: vi.fn().mockResolvedValue(activeSession()), submit: vi.fn().mockResolvedValue({ id: "submission-1", pendingCount: 0 }) };
+    const service = createAttendanceService({ repository, auditService: { record: vi.fn() } });
+    await expect(service.submit("class-1", [{ bookingId: "booking-1", status: "present" }], admin)).resolves.toMatchObject({ id: "submission-1" });
+    expect(repository.submit).toHaveBeenCalledWith("class-1", expect.any(Array), admin.id);
+  });
+
+  it("lets an authorized Receptionist submit while retaining session-time checks", async () => {
+    const repository = { classSession: vi.fn().mockResolvedValue(activeSession()), submit: vi.fn().mockResolvedValue({ pendingCount: 0, alreadySubmitted: true }) };
+    const service = createAttendanceService({ repository, auditService: { record: vi.fn() } });
+    await expect(service.submit("class-1", [], { id: "receptionist-1", role: "receptionist" })).resolves.toMatchObject({ pendingCount: 0 });
+    expect(repository.submit).toHaveBeenCalled();
   });
 
   it("rejects a submission while a member is still unmarked", async () => {

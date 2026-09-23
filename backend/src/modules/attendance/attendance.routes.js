@@ -21,6 +21,7 @@ export function createAttendanceRouter(service, authService) {
   router.get(
     "/members/me/attendance",
     authenticate(authService),
+    requirePermission("attendance.self.read"),
     async (req, res, next) => {
       try {
         sendSuccess(res, { data: await service.ownRecords(req.auth.user) });

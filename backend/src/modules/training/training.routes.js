@@ -12,7 +12,7 @@ export function createTrainingRouter(service, authService) {
   const router = Router();
   const secure = [authenticate(authService), requirePermission("training.write")];
   const templateManage = [authenticate(authService), requirePermission("training.template.manage")];
-  router.get("/members/me/training", authenticate(authService), async (req, res, next) => { try { sendSuccess(res, { data: await service.ownProgress(req.auth.user) }); } catch (error) { next(error); } });
+  router.get("/members/me/training", authenticate(authService), requirePermission("training.self.read"), async (req, res, next) => { try { sendSuccess(res, { data: await service.ownProgress(req.auth.user) }); } catch (error) { next(error); } });
   router.get("/training-templates", ...secure, async (req, res, next) => { try { sendSuccess(res, { data: await service.templates() }); } catch (error) { next(error); } });
   router.get("/training-members", ...secure, async (req, res, next) => { try { sendSuccess(res, { data: await service.members(req.auth.user) }); } catch (error) { next(error); } });
   router.post("/training-templates", ...templateManage, validateRequest(z.object({ body: z.object({ name: z.string().min(2), targetGroup: z.string().min(2), description: z.string().max(500).optional(), exercises: z.array(exercise).min(1) }) })), async (req, res, next) => { try { sendSuccess(res, { statusCode: 201, data: await service.createTemplate(req.validated.body, req.auth.user.id) }); } catch (error) { next(error); } });

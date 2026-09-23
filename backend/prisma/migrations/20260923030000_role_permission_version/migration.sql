@@ -1,0 +1,1 @@
+ALTER TABLE "roles" ADD COLUMN "permission_version" INTEGER NOT NULL DEFAULT 0;

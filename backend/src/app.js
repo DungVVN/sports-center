@@ -50,6 +50,9 @@ import { createAuditLogService } from "./modules/audit/audit.service.js";
 import { createAssignmentRouter } from "./modules/assignments/assignment.routes.js";
 import { assignmentRepository } from "./modules/assignments/assignment.repository.js";
 import { createAssignmentService } from "./modules/assignments/assignment.service.js";
+import { rolePermissionRepository } from "./modules/role-permissions/role-permission.repository.js";
+import { createRolePermissionService } from "./modules/role-permissions/role-permission.service.js";
+import { createRolePermissionRouter } from "./modules/role-permissions/role-permission.routes.js";
 import { auditService } from "./shared/audit/audit.service.js";
 import { openApiSpec } from "./openapi/spec.js";
 import { sendSuccess } from "./shared/http/response.js";
@@ -62,7 +65,7 @@ function isAllowedOrigin(origin) {
   return !origin || env.corsOrigins.includes(origin);
 }
 
-export function createApp({ authService = createAuthService({ repository: authRepository, verificationDelivery: verificationDeliveryService, auditService }), staffService = createStaffService({ repository: staffRepository, auditService }), memberService = createMemberService({ repository: memberRepository, auditService }), membershipService = createMembershipService({ repository: membershipRepository, auditService }), classService = createClassService({ repository: classRepository, auditService }), bookingService = createBookingService({ repository: bookingRepository, auditService }), attendanceService = createAttendanceService({ repository: attendanceRepository, auditService }), paymentService = createPaymentService({ repository: paymentRepository, auditService }), supportService = createSupportService({ repository: supportRepository, auditService }), notificationPreferenceService = createNotificationPreferenceService({ repository: notificationPreferenceRepository }), aiAssistService = createAiAssistService({ repository: aiAssistRepository, auditService }), trainingService = createTrainingService({ repository: trainingRepository, auditService }), insightService = createInsightService({ repository: insightRepository }), assignmentService = createAssignmentService({ repository: assignmentRepository, auditService }), auditLogService = createAuditLogService({ repository: auditRepository }) } = {}) {
+export function createApp({ authService = createAuthService({ repository: authRepository, verificationDelivery: verificationDeliveryService, auditService }), staffService = createStaffService({ repository: staffRepository, auditService }), memberService = createMemberService({ repository: memberRepository, auditService }), membershipService = createMembershipService({ repository: membershipRepository, auditService }), classService = createClassService({ repository: classRepository, auditService }), bookingService = createBookingService({ repository: bookingRepository, auditService }), attendanceService = createAttendanceService({ repository: attendanceRepository, auditService }), paymentService = createPaymentService({ repository: paymentRepository, auditService }), supportService = createSupportService({ repository: supportRepository, auditService }), notificationPreferenceService = createNotificationPreferenceService({ repository: notificationPreferenceRepository }), aiAssistService = createAiAssistService({ repository: aiAssistRepository, auditService }), trainingService = createTrainingService({ repository: trainingRepository, auditService }), insightService = createInsightService({ repository: insightRepository }), assignmentService = createAssignmentService({ repository: assignmentRepository, auditService }), auditLogService = createAuditLogService({ repository: auditRepository }), rolePermissionService = createRolePermissionService({ repository: rolePermissionRepository }) } = {}) {
   const app = express();
 
   app.disable("x-powered-by");
@@ -98,6 +101,7 @@ export function createApp({ authService = createAuthService({ repository: authRe
   app.use(env.apiBasePath, createInsightRouter(insightService, authService));
   app.use(env.apiBasePath, createAuditRouter(auditLogService, authService));
   app.use(env.apiBasePath, createAssignmentRouter(assignmentService, authService));
+  app.use(env.apiBasePath, createRolePermissionRouter(rolePermissionService, authService));
 
   app.use(notFound);
   app.use(errorHandler);

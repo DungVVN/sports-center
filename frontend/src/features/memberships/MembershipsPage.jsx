@@ -66,13 +66,15 @@ function estimatedExpiry(startsOn, durationDays) {
 
 export function MembershipsPage({ mode = "workspace", session }) {
   const role = session?.user?.role;
-  const isMember = role === "member";
-  const isManager = ["admin", "manager"].includes(role);
-  const isReceptionist = role === "receptionist";
-  const canCreatePackages = isManager;
-  const canReviewFreeze = ["admin", "manager", "receptionist"].includes(role);
-  const showManagerCreate = isManager && mode !== "catalog";
-  const showManagerCatalog = isManager && mode !== "create";
+  const isMember = role === "member" && mode === "workspace";
+  const canCreatePackages = session?.permissions?.includes("membership.package.manage") ?? false;
+  const isManager = canCreatePackages || (mode === "catalog" && (session?.permissions?.includes("membership.package.read") ?? false));
+  const isReceptionist = !isManager && (session?.permissions?.includes("membership.assign") ?? false);
+  const canAssignMembership = session?.permissions?.includes("membership.assign") ?? false;
+  const canReviewFreeze = session?.permissions?.includes("membership.freeze.review") ?? false;
+  const showManagerCreate = canCreatePackages && ["workspace", "create"].includes(mode);
+  const showManagerCatalog = isManager && ["workspace", "catalog"].includes(mode);
+  const showAssignment = canAssignMembership && (!isManager || mode === "assign");
   const packagePageLayout = isManager && mode === "create" ? " package-page-layout package-page-layout--create" : isManager && mode === "catalog" ? " package-page-layout package-page-layout--catalog" : "";
   const [packages, setPackages] = useState([]);
   const [members, setMembers] = useState([]);
@@ -132,8 +134,8 @@ export function MembershipsPage({ mode = "workspace", session }) {
       if (isMember) setMemberships(await membershipApi.mine());
       else if (isManager) {
         setPackages(await membershipApi.packages());
-        setMembers([]);
-        setFreezeRequests([]);
+        setMembers(canAssignMembership ? await memberApi.list() : []);
+        setFreezeRequests(canReviewFreeze ? await membershipApi.freezeRequests() : []);
       }
       else {
         const base = await Promise.all([
@@ -152,7 +154,7 @@ export function MembershipsPage({ mode = "workspace", session }) {
     } finally {
       setLoading(false);
     }
-  }, [canReviewFreeze, isManager, isMember]);
+  }, [canAssignMembership, canReviewFreeze, isManager, isMember]);
   useEffect(() => {
     void Promise.resolve().then(load);
   }, [load]);
@@ -423,7 +425,7 @@ export function MembershipsPage({ mode = "workspace", session }) {
       <header>
         <p>Gói tập</p>
         <h1>
-          {isManager ? (mode === "create" ? "Tạo gói tập" : mode === "catalog" ? "Danh mục gói" : "Cấu hình gói tập") : "Quản lý gói tập hội viên"}
+          {isManager ? (mode === "create" ? "Tạo gói tập" : mode === "catalog" ? "Danh mục gói" : mode === "assign" ? "Gói tập hội viên" : "Cấu hình gói tập") : "Quản lý gói tập hội viên"}
         </h1>
       </header>
       {error && (
@@ -530,7 +532,7 @@ export function MembershipsPage({ mode = "workspace", session }) {
             </Button>
           </form>
         )}
-        {isReceptionist && (
+        {showAssignment && (
         <form className="members-form" onSubmit={createMembership}>
           <h2>Tạo gói cho hội viên</h2>
           <label>
@@ -639,9 +641,9 @@ export function MembershipsPage({ mode = "workspace", session }) {
           </Button>
         </form>
         )}
-        {isReceptionist && (
+        {(showAssignment || (isManager && canReviewFreeze && mode !== "create")) && (
           <aside className="membership-assignment-sidebar">
-            <MemberMembershipOverview
+            {showAssignment && <MemberMembershipOverview
               items={memberships}
               loading={loading}
               members={members}
@@ -649,7 +651,7 @@ export function MembershipsPage({ mode = "workspace", session }) {
               onMemberChange={loadMemberMemberships}
               selectedMemberId={selectedMemberId}
               submitting={submitting}
-            />
+            />}
             <FreezeRequestReview
               canReview={canReviewFreeze}
               items={freezeRequests}

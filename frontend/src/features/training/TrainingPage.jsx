@@ -48,7 +48,8 @@ export function TrainingPage({ session }) {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const isCoach = session?.user?.role === "coach";
+  const canViewAi = session?.permissions?.includes("ai.assist.read") ?? false;
+  const canDeliverAi = session?.permissions?.includes("ai.assist.deliver") ?? false;
   const canCreateTemplate =
     session?.permissions?.includes("training.template.manage") ?? false;
   const membersById = useMemo(
@@ -62,7 +63,7 @@ export function TrainingPage({ session }) {
         trainingApi.templates(),
         trainingApi.members(),
         trainingApi.plans(),
-        isCoach ? trainingApi.aiSuggestions() : Promise.resolve([]),
+        canViewAi ? trainingApi.aiSuggestions() : Promise.resolve([]),
       ]);
       setTemplates(nextTemplates);
       setMembers(nextMembers);
@@ -71,7 +72,7 @@ export function TrainingPage({ session }) {
     } catch (caught) {
       setError(caught.message);
     }
-  }, [isCoach]);
+  }, [canViewAi]);
   useEffect(() => {
     void Promise.resolve().then(load);
   }, [load]);
@@ -112,7 +113,7 @@ export function TrainingPage({ session }) {
       </header>
       {error && <p className="auth-alert">{error}</p>}
       {notice && <p className="auth-success">{notice}</p>}
-      {isCoach && <section className="members-list"><div className="list-heading"><h2>Gợi ý AI cần Coach duyệt</h2><Button onClick={load} size="sm" variant="ghost">Tải lại</Button></div>{aiDrafts.flatMap((group) => group.suggestions).length === 0 ? <p>Chưa có gợi ý mới.</p> : aiDrafts.flatMap((group) => group.suggestions).map((draft) => <article key={`${draft.subject}-${draft.body}`}><strong>{draft.subject}</strong><p>{draft.body}</p><small>Coach phải tự rà soát, sửa nội dung nếu cần, rồi mới gửi cho hội viên.</small><p><Button disabled={submitting} onClick={() => setDelivery({ memberId: "", subject: draft.subject, body: draft.body })} size="sm" type="button" variant="secondary">Rà soát và gửi</Button></p></article>)}{delivery && <form className="members-form training-action-form" onSubmit={(event) => { event.preventDefault(); void submit(async () => { await trainingApi.deliverAiSuggestion(delivery); setDelivery(null); }, "Coach đã duyệt và gửi hướng dẫn cho hội viên."); }}><h3>Duyệt hướng dẫn trước khi gửi</h3><label>Hội viên<select onChange={(event) => setDelivery({ ...delivery, memberId: event.target.value })} required value={delivery.memberId}><option value="">Chọn hội viên trong phạm vi</option>{members.map((member) => <option key={member.id} value={member.id}>{member.full_name} — {member.member_code}</option>)}</select></label><label>Tiêu đề<input maxLength="160" onChange={(event) => setDelivery({ ...delivery, subject: event.target.value })} required value={delivery.subject} /></label><label>Nội dung<textarea maxLength="1000" onChange={(event) => setDelivery({ ...delivery, body: event.target.value })} required value={delivery.body} /></label><Button loading={submitting} type="submit">Xác nhận gửi cho hội viên</Button> <Button disabled={submitting} onClick={() => setDelivery(null)} type="button" variant="ghost">Hủy</Button></form>}</section>}
+      {canViewAi && <section className="members-list"><div className="list-heading"><h2>Gợi ý AI cần duyệt</h2><Button onClick={load} size="sm" variant="ghost">Tải lại</Button></div>{aiDrafts.flatMap((group) => group.suggestions).length === 0 ? <p>Chưa có gợi ý mới.</p> : aiDrafts.flatMap((group) => group.suggestions).map((draft) => <article key={`${draft.subject}-${draft.body}`}><strong>{draft.subject}</strong><p>{draft.body}</p><small>Nội dung cần được rà soát trước khi gửi cho hội viên.</small>{canDeliverAi && <p><Button disabled={submitting} onClick={() => setDelivery({ memberId: "", subject: draft.subject, body: draft.body })} size="sm" type="button" variant="secondary">Rà soát và gửi</Button></p>}</article>)}{canDeliverAi && delivery && <form className="members-form training-action-form" onSubmit={(event) => { event.preventDefault(); void submit(async () => { await trainingApi.deliverAiSuggestion(delivery); setDelivery(null); }, "Đã duyệt và gửi hướng dẫn cho hội viên."); }}><h3>Duyệt hướng dẫn trước khi gửi</h3><label>Hội viên<select onChange={(event) => setDelivery({ ...delivery, memberId: event.target.value })} required value={delivery.memberId}><option value="">Chọn hội viên trong phạm vi</option>{members.map((member) => <option key={member.id} value={member.id}>{member.full_name} — {member.member_code}</option>)}</select></label><label>Tiêu đề<input maxLength="160" onChange={(event) => setDelivery({ ...delivery, subject: event.target.value })} required value={delivery.subject} /></label><label>Nội dung<textarea maxLength="1000" onChange={(event) => setDelivery({ ...delivery, body: event.target.value })} required value={delivery.body} /></label><Button loading={submitting} type="submit">Xác nhận gửi cho hội viên</Button> <Button disabled={submitting} onClick={() => setDelivery(null)} type="button" variant="ghost">Hủy</Button></form>}</section>}
       {canCreateTemplate && (
         <form
           className="members-form training-template-form"

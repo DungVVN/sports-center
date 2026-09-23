@@ -46,8 +46,8 @@ export function BookingsPage({ session }) {
   const [isClassMenuOpen, setIsClassMenuOpen] = useState(false);
   const role = session?.user.role;
   const isMember = role === "member";
-  const canCreateBooking = isMember || role === "receptionist";
-  const canCancelBooking = isMember || role === "receptionist";
+  const canCreateBooking = session?.permissions?.includes("booking.write") ?? false;
+  const canCancelBooking = canCreateBooking;
   const visibleClasses = useMemo(
     () =>
       classes.filter(

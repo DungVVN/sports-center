@@ -8,11 +8,19 @@ node_modules/
 dist/
 coverage/
 .vite/
+.pnpm-store/
+.npm/
+.cache/
+test-results/
+playwright-report/
+backup-restore-results/
+.vercel/
 
 # Local tooling
 *.log
 *.pid
 .DS_Store
+vite.config.*.timestamp-*
 
 # Disposable Figma reference; it is not product source.
 project/

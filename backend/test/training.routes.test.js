@@ -8,9 +8,9 @@ function authService(permissions, role = "coach") { return { getAuthentication: 
 function trainingService() { return { ownProgress: vi.fn().mockResolvedValue({ plans: [], results: [], sessions: [] }), members: vi.fn().mockResolvedValue([]), templates: vi.fn().mockResolvedValue([]), plans: vi.fn().mockResolvedValue([]), createPlan: vi.fn().mockResolvedValue({ id: "plan-1" }), sessions: vi.fn().mockResolvedValue([]), createSession: vi.fn().mockResolvedValue({ id: "session-1" }), updateSession: vi.fn().mockResolvedValue({ id: "session-1" }) }; }
 
 describe("Training routes", () => {
-  it("lets a Member read their own plans and results without training.write", async () => {
+  it("lets a Member read their own plans and results with training.self.read", async () => {
     const service = trainingService();
-    await request(createApp({ authService: authService([], "member"), trainingService: service })).get("/api/v1/members/me/training").set("Authorization", "Bearer token").expect(200);
+    await request(createApp({ authService: authService(["training.self.read"], "member"), trainingService: service })).get("/api/v1/members/me/training").set("Authorization", "Bearer token").expect(200);
     expect(service.ownProgress).toHaveBeenCalledWith({ id: "coach-1", role: "member" });
   });
   it("creates a shared template with its first exercise", async () => {

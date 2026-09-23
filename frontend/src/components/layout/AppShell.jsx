@@ -28,6 +28,7 @@ const icons = {
   packages: Package,
   packageCreate: Package,
   packageCatalog: Package,
+  "my-memberships": Package,
   classes: CalendarDays,
   bookings: ReceiptText,
   attendance: ClipboardCheck,
@@ -37,6 +38,7 @@ const icons = {
   staff: UserRoundCog,
   reports: LayoutDashboard,
   audit: ClipboardCheck,
+  rolePermissions: UserRoundCog,
   support: ReceiptText,
 };
 

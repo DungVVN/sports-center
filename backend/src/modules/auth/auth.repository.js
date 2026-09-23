@@ -29,7 +29,7 @@ export const authRepository = {
     return prisma.$transaction(async (transaction) => {
       const user = await transaction.users.update({
         where: { id: userId },
-        data: { display_name: input.fullName, avatar_url: input.avatarUrl ?? null },
+        data: { display_name: input.fullName, avatar_url: input.avatarUrl ?? null, profile_setup_required: false },
       });
       if (user.role === "member") {
         const member = await transaction.members.update({
@@ -79,6 +79,7 @@ export const authRepository = {
           display_name: fullName,
           role: "member",
           status: "pending_verification",
+          profile_setup_required: true,
         },
       });
       const member = await transaction.members.create({
@@ -200,6 +201,10 @@ export const authRepository = {
   },
 
   getPermissions(role) {
+    if (role === "admin") {
+      return prisma.permissions.findMany({ select: { code: true } })
+        .then((permissions) => permissions.map(({ code }) => ({ permission_code: code })));
+    }
     return prisma.role_permissions.findMany({
       where: { role_code: role },
       select: { permission_code: true },

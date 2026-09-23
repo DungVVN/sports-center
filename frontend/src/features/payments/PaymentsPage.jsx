@@ -35,7 +35,7 @@ export function PaymentsPage({ session }) {
   const [paymentPackageFilters, setPaymentPackageFilters] = useState([]);
   const [isPaymentFilterOpen, setIsPaymentFilterOpen] = useState(false);
   const [paymentSort, setPaymentSort] = useState({ key: "amountVnd", direction: "desc" });
-  const isCashier = ["admin", "manager", "receptionist"].includes(session?.user?.role);
+  const isCashier = session?.permissions?.includes("payment.record") ?? false;
   const paymentPackages = useMemo(
     () =>
       [...new Set(items.map((item) => item.membership?.packageName).filter(Boolean))]

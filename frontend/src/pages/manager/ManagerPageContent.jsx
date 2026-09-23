@@ -12,8 +12,14 @@ import { StaffPage } from "../../features/staff/StaffPage.jsx";
 import { TrainingPage } from "../../features/training/TrainingPage.jsx";
 import { ProfilePage } from "../../features/auth/ProfilePage.jsx";
 import { SupportStaffPage } from "../../features/support/SupportStaffPage.jsx";
+import { SupportPage } from "../../features/support/SupportPage.jsx";
+import { MemberAttendancePage } from "../../features/attendance/MemberAttendancePage.jsx";
+import { MemberPaymentsPage } from "../../features/payments/MemberPaymentsPage.jsx";
+import { MemberTrainingPage } from "../../features/training/MemberTrainingPage.jsx";
+import { NotificationPreferencesPage } from "../../features/notifications/NotificationPreferencesPage.jsx";
+import { RolePermissionPage } from "../../features/role-permissions/RolePermissionPage.jsx";
 
-export function ManagerPageContent({ onNavigate, onSessionRevoked, session, view, dashboardRole = "manager" }) {
+export function ManagerPageContent({ onNavigate, onProfileSaved, onSessionRevoked, session, view, dashboardRole = "manager" }) {
   const pages = {
     attendance: <AttendancePage session={session} />,
     audit: <AuditLogsPage />,
@@ -22,15 +28,22 @@ export function ManagerPageContent({ onNavigate, onSessionRevoked, session, view
     dashboard: <DashboardHome onNavigate={onNavigate} role={dashboardRole} />,
     packageCatalog: <MembershipsPage mode="catalog" session={session} />,
     packageCreate: <MembershipsPage mode="create" session={session} />,
-    members: <MembersPage readOnly={dashboardRole === "manager"} />,
+    members: <MembersPage readOnly={!session.permissions?.includes("member.write")} />,
+    memberMemberships: <MembershipsPage mode="assign" session={session} />,
+    "my-memberships": <MembershipsPage session={session} />,
     packages: <MembershipsPage session={session} />,
     payments: <PaymentsPage session={session} />,
-    profile: <ProfilePage onSessionRevoked={onSessionRevoked} />,
+    profile: <ProfilePage onProfileSaved={onProfileSaved} onSessionRevoked={onSessionRevoked} />,
     registrations: <RegistrationApprovalPage />,
     reports: <ReportsPage />,
+    rolePermissions: dashboardRole === "admin" ? <RolePermissionPage /> : null,
     staff: <StaffPage />,
-    support: <SupportStaffPage />,
+    support: dashboardRole === "member" ? <SupportPage session={session} /> : <SupportStaffPage session={session} />,
     training: <TrainingPage session={session} />,
+    "my-attendance": <MemberAttendancePage />,
+    "my-payments": <MemberPaymentsPage />,
+    "my-training": <MemberTrainingPage />,
+    "notification-preferences": <NotificationPreferencesPage />,
   };
 
   return pages[view] ?? pages.dashboard;

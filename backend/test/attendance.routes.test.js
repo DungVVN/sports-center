@@ -26,11 +26,11 @@ function attendanceService() {
 }
 
 describe("Attendance routes", () => {
-  it("lets a Member read only their own attendance history without attendance.write", async () => {
+  it("lets a Member read only their own attendance history with attendance.self.read", async () => {
     const service = attendanceService();
     await request(
       createApp({
-        authService: authService([], "member"),
+        authService: authService(["attendance.self.read"], "member"),
         attendanceService: service,
       }),
     )
