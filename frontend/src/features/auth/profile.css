@@ -102,6 +102,7 @@
   display: grid;
   gap: var(--space-20);
 }
+.profile-page__mfa > .button { justify-self: start; }
 .profile-page__mfa .list-heading p { color: var(--color-text-secondary); font-size: 12px; font-weight: 400; margin: var(--space-4) 0 0; }
 .profile-page__mfa-form { display: grid; gap: var(--space-12); }
 .profile-page__mfa-form > p { color: var(--color-text-secondary); font-size: 13px; line-height: 1.5; margin: 0; }

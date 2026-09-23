@@ -88,15 +88,6 @@ export function NotificationPreferencesPanel({ className = "" }) {
               Lưu cài đặt
             </Button>
           </form>
-          <aside className="notification-preferences__summary">
-            <p>PHẠM VI NHẬN TIN</p>
-            <h2>Email được dùng cho các cập nhật quan trọng</h2>
-            <dl>
-              <div><dt>Kênh hiện có</dt><dd>Email</dd></div>
-              <div><dt>Luôn được gửi</dt><dd>Xác thực bảo mật và đổi mật khẩu</dd></div>
-              <div><dt>Tùy theo cài đặt</dt><dd>Lịch tập, đặt chỗ, trạng thái hội viên và hỗ trợ</dd></div>
-            </dl>
-          </aside>
         </>
       )}
     </section>
