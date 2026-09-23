@@ -336,6 +336,14 @@ export function ClassesPage({ session }) {
               />
             </label>
             <label>
+              Mô tả
+              <textarea
+                name="description"
+                onChange={updateClass}
+                value={classForm.description}
+              />
+            </label>
+            <label>
               Loại lớp
               <input
                 name="type"
@@ -405,14 +413,6 @@ export function ClassesPage({ session }) {
                 required
                 type="number"
                 value={classForm.capacity}
-              />
-            </label>
-            <label>
-              Mô tả
-              <textarea
-                name="description"
-                onChange={updateClass}
-                value={classForm.description}
               />
             </label>
             <Button loading={submitting} type="submit">
