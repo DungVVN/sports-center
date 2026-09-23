@@ -173,8 +173,17 @@ export function MembersPage({ readOnly = false }) {
     setNotice("");
     try {
       await memberApi.assignCoach(selectedMember.id, assignment);
+      const assignedCoachName = coaches.find((coach) => coach.id === assignment.coachUserId)?.display_name;
+      setMembers((items) => items.map((member) => member.id === selectedMember.id
+        ? { ...member, coachName: assignedCoachName ?? member.coachName }
+        : member));
       setNotice(`Đã cập nhật Coach chính cho ${selectedMember.fullName}.`);
       setSelectedMember(null);
+      void memberApi.list()
+        .then(setMembers)
+        .catch(() => {
+          // The assignment has already succeeded; retain the immediate update if the background refresh fails.
+        });
     } catch (caught) {
       setError(displayError(caught, "Không thể phân công Coach."));
     } finally {

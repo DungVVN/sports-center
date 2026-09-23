@@ -13,7 +13,7 @@ async function parseResponse(response) {
   return contentType.includes("application/json") ? response.json() : null;
 }
 
-export async function request(path, { method = "GET", body, headers, signal } = {}) {
+export async function request(path, { method = "GET", body, headers, signal, suppressAuthenticationExpiredEvent = false } = {}) {
   let response;
   try {
     response = await fetch(buildUrl(path), {
@@ -37,7 +37,7 @@ export async function request(path, { method = "GET", body, headers, signal } = 
 
   const payload = await parseResponse(response);
   if (!response.ok || !payload?.success) {
-    if (response.status === 401 && typeof window !== "undefined") {
+    if (response.status === 401 && !suppressAuthenticationExpiredEvent && typeof window !== "undefined") {
       window.dispatchEvent(new Event(authenticationExpiredEvent));
     }
     if (response.status === 403 && typeof window !== "undefined") {

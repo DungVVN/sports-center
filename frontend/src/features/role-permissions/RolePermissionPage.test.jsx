@@ -25,7 +25,7 @@ describe("Admin role permission matrix", () => {
   it("saves a checked permission with the role's current version", async () => {
     render(<RolePermissionPage />);
     fireEvent.click(await screen.findByRole("checkbox", { name: "Xem thanh toán — manager" }));
-    fireEvent.click(screen.getByRole("button", { name: "Lưu Quản lý" }));
+    fireEvent.click(screen.getByRole("button", { name: "Lưu thay đổi" }));
     await waitFor(() => expect(rolePermissionApi.replace).toHaveBeenCalledWith("manager", { version: 2, permissionCodes: ["payment.read"] }));
   });
 
@@ -33,7 +33,7 @@ describe("Admin role permission matrix", () => {
     rolePermissionApi.replace.mockRejectedValue({ status: 409, message: "Conflict" });
     render(<RolePermissionPage />);
     fireEvent.click(await screen.findByRole("checkbox", { name: "Xem thanh toán — manager" }));
-    fireEvent.click(screen.getByRole("button", { name: "Lưu Quản lý" }));
+    fireEvent.click(screen.getByRole("button", { name: "Lưu thay đổi" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("tải lại");
   });
 
@@ -47,7 +47,7 @@ describe("Admin role permission matrix", () => {
     ] });
     render(<RolePermissionPage />);
     fireEvent.click(await screen.findByRole("checkbox", { name: "Tạo booking — manager" }));
-    fireEvent.click(screen.getByRole("button", { name: "Lưu Quản lý" }));
+    fireEvent.click(screen.getByRole("button", { name: "Lưu thay đổi" }));
     await waitFor(() => expect(rolePermissionApi.replace).toHaveBeenCalledWith("manager", {
       version: 2, permissionCodes: expect.arrayContaining(["booking.write", "booking.read", "class.read", "member.read"]),
     }));

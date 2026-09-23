@@ -10,7 +10,6 @@
 .role-permissions__table thead th:first-child, .role-permissions__table tbody th { text-align: left; }
 .role-permissions__table td { text-align: center; }
 .role-permissions__table input { width: 20px; height: 20px; accent-color: var(--color-primary); cursor: pointer; }
-.role-permissions__table code { display: block; color: var(--color-text-secondary); font-size: 12px; }
 .role-permissions__group th { background: var(--color-surface-muted); text-transform: uppercase; font-size: 12px; }
 .role-permissions__actions { display: flex; gap: 12px; flex-wrap: wrap; }
 .role-permissions__error { color: var(--color-danger); }

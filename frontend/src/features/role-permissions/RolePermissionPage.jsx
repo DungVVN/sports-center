@@ -9,7 +9,7 @@ export function RolePermissionPage() {
   const [matrix, setMatrix] = useState(null);
   const [draft, setDraft] = useState({});
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(null);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
@@ -78,25 +78,28 @@ export function RolePermissionPage() {
     setMessage("");
   }
 
-  async function save(role) {
-    const current = matrix.roles.find((item) => item.code === role);
-    if (!current) return;
-    setSaving(role);
+  const changedRoles = matrix?.roles.filter((role) => JSON.stringify([...(draft[role.code] ?? [])].sort()) !== JSON.stringify([...(role.permissionCodes ?? [])].sort())) ?? [];
+
+  async function saveAll() {
+    if (!changedRoles.length) return;
+    setSaving(true);
     setError("");
     setMessage("");
+    let nextRoles = matrix.roles;
     try {
-      const updated = await rolePermissionApi.replace(role, { version: current.version, permissionCodes: draft[role] ?? [] });
-      setMatrix((previous) => ({
-        ...previous,
-        roles: previous.roles.map((item) => item.code === role
+      for (const role of changedRoles) {
+        const updated = await rolePermissionApi.replace(role.code, { version: role.version, permissionCodes: draft[role.code] ?? [] });
+        nextRoles = nextRoles.map((item) => item.code === role.code
           ? { ...item, version: updated.version, permissionCodes: updated.permissionCodes }
-          : item),
-      }));
-      setMessage(`Đã lưu quyền cho ${current.label}.`);
+          : item);
+      }
+      setMatrix((previous) => ({ ...previous, roles: nextRoles }));
+      setMessage("Đã lưu thay đổi quyền.");
     } catch (cause) {
-      setError(cause.status === 409 ? "Bảng quyền đã được thay đổi. Hãy tải lại trước khi lưu." : cause.message);
+      setMatrix((previous) => ({ ...previous, roles: nextRoles }));
+      setError(cause.status === 409 ? "Bảng quyền đã được thay đổi. Hãy tải lại trước khi lưu." : "Một phần thay đổi có thể đã được lưu. Hãy tải lại bảng trước khi thử lại.");
     } finally {
-      setSaving(null);
+      setSaving(false);
     }
   }
 
@@ -119,15 +122,11 @@ export function RolePermissionPage() {
           ))}</tbody>
         </table>
       </div>
-      <div className="role-permissions__actions">{roleOrder.map((code) => {
-        const role = matrix.roles.find((item) => item.code === code);
-        const changed = JSON.stringify([...(draft[code] ?? [])].sort()) !== JSON.stringify([...(role?.permissionCodes ?? [])].sort());
-        return <Button disabled={!changed || Boolean(saving)} key={code} onClick={() => save(code)}>{saving === code ? "Đang lưu..." : `Lưu ${role?.label ?? code}`}</Button>;
-      })}</div>
+      <div className="role-permissions__actions"><Button disabled={!changedRoles.length || saving} onClick={saveAll}>{saving ? "Đang lưu..." : "Lưu thay đổi"}</Button></div>
     </section>
   );
 }
 
 function FragmentGroup({ group, permissions, roles, draft, onToggle }) {
-  return <><tr className="role-permissions__group"><th colSpan={roles.length + 1} scope="colgroup">{group}</th></tr>{permissions.map((permission) => <tr key={permission.code}><th scope="row"><span>{permission.description}</span><code>{permission.code}</code></th>{roles.map((role) => <td key={role}><input aria-label={`${permission.description} — ${role}`} checked={(draft[role] ?? []).includes(permission.code)} disabled={Boolean(permission.availableRoles && !permission.availableRoles.includes(role))} onChange={() => onToggle(role, permission.code)} title={permission.availableRoles && !permission.availableRoles.includes(role) ? "Cần hồ sơ hội viên" : undefined} type="checkbox" /></td>)}</tr>)}</>;
+  return <><tr className="role-permissions__group"><th colSpan={roles.length + 1} scope="colgroup">{group}</th></tr>{permissions.map((permission) => <tr key={permission.code}><th scope="row"><span>{permission.description}</span></th>{roles.map((role) => <td key={role}><input aria-label={`${permission.description} — ${role}`} checked={(draft[role] ?? []).includes(permission.code)} disabled={Boolean(permission.availableRoles && !permission.availableRoles.includes(role))} onChange={() => onToggle(role, permission.code)} title={permission.availableRoles && !permission.availableRoles.includes(role) ? "Cần hồ sơ hội viên" : undefined} type="checkbox" /></td>)}</tr>)}</>;
 }

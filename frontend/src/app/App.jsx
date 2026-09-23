@@ -39,6 +39,7 @@ export function App() {
   const [registration, setRegistration] = useState(null);
   const [session, setSession] = useState(null);
   const [mfaChallenge, setMfaChallenge] = useState(null);
+  const [isRestoringSession, setIsRestoringSession] = useState(true);
 
   const navigate = useCallback((newView) => {
     setView(newView);
@@ -72,6 +73,22 @@ export function App() {
     return () => window.removeEventListener(authenticationExpiredEvent, resetToLogin);
   }, [navigate]);
   useEffect(() => {
+    let isCurrent = true;
+
+    void authApi.me({ suppressAuthenticationExpiredEvent: true })
+      .then((currentSession) => {
+        if (isCurrent && currentSession) setSession(currentSession);
+      })
+      .catch(() => {
+        // A missing or expired cookie is the normal anonymous state on a fresh load.
+      })
+      .finally(() => {
+        if (isCurrent) setIsRestoringSession(false);
+      });
+
+    return () => { isCurrent = false; };
+  }, []);
+  useEffect(() => {
     if (!session) return undefined;
     const refreshSession = () => { void authApi.me().then(setSession).catch(() => {}); };
     window.addEventListener("focus", refreshSession);
@@ -86,7 +103,9 @@ export function App() {
   const loginPage = isAdminPortal
     ? <AdminLoginPage onLoggedIn={setSession} onMfaRequired={onMfaRequired} />
     : <LoginPage onLoggedIn={setSession} onMfaRequired={onMfaRequired} onRegister={() => navigate("register")} />;
-  const content = session?.user.mustChangePassword
+  const content = isRestoringSession
+    ? <main className="app-loading-state" aria-live="polite">Đang khôi phục phiên đăng nhập...</main>
+    : session?.user.mustChangePassword
     ? <InitialPasswordChangePage onCompleted={() => { setSession((current) => ({ ...current, user: { ...current.user, mustChangePassword: false } })); }} />
     : session ? <DashboardPlaceholder initialView={session.user.profileSetupRequired ? "profile" : "dashboard"} session={session} onProfileSaved={() => setSession((current) => ({ ...current, user: { ...current.user, profileSetupRequired: false } }))} onLogout={() => { setSession(null); navigate("login"); }} /> : {
     login: loginPage,

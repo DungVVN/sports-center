@@ -139,10 +139,14 @@ export function AppShell({ children, currentView, navigation, notifications, onL
     <div className="app-shell">
       <aside className="app-sidebar">
         <div className="app-sidebar__brand"><span>SC</span><div><strong>Sports Center</strong><small>Quản lý vận hành</small></div></div>
-        <nav aria-label="Điều hướng chính">
-          <NavigationItems currentView={currentView} expandedGroups={expandedGroups} navigation={navigation} onNavigate={onNavigate} toggleGroup={toggleGroup} />
-        </nav>
-        <Button className="app-sidebar__logout" onClick={onLogout} variant="ghost"><LogOut aria-hidden="true" size={17} />Đăng xuất</Button>
+        <div className="app-sidebar__navigation">
+          <nav aria-label="Điều hướng chính">
+            <NavigationItems currentView={currentView} expandedGroups={expandedGroups} navigation={navigation} onNavigate={onNavigate} toggleGroup={toggleGroup} />
+          </nav>
+        </div>
+        <footer className="app-sidebar__footer">
+          <Button className="app-sidebar__logout" onClick={onLogout} variant="ghost"><LogOut aria-hidden="true" size={17} />Đăng xuất</Button>
+        </footer>
       </aside>
       <div className="app-shell__content">
         <header className="app-header">
@@ -156,13 +160,10 @@ export function AppShell({ children, currentView, navigation, notifications, onL
         </header>
         <main className="app-main">{children}</main>
         {notificationsOpen && (
-          <>
-            <button aria-label="Đóng thông báo" className="app-notification-backdrop" onClick={() => setNotificationsOpen(false)} type="button" />
-            <aside aria-label="Thông báo" className="app-notification-panel">
-              <div className="app-notification-panel__heading"><h2>Thông báo</h2><button onClick={() => setNotificationsOpen(false)} type="button">Đóng</button></div>
-              {notifications.length === 0 ? <p>Chưa có thông báo.</p> : notifications.map((item) => <article className={item.read_at ? "" : "app-notification-panel__unread"} key={item.id}><strong>{item.title}</strong><p>{item.body}</p>{!item.read_at && <button onClick={() => onReadNotification(item.id)} type="button">Đánh dấu đã đọc</button>}</article>)}
-            </aside>
-          </>
+          <aside aria-label="Thông báo" className="app-notification-panel">
+            <div className="app-notification-panel__heading"><h2>Thông báo</h2><button onClick={() => setNotificationsOpen(false)} type="button">Đóng</button></div>
+            {notifications.length === 0 ? <p>Chưa có thông báo.</p> : notifications.map((item) => <article className={item.read_at ? "" : "app-notification-panel__unread"} key={item.id}><strong>{item.title}</strong><p>{item.body}</p>{!item.read_at && <button onClick={() => onReadNotification(item.id)} type="button">Đánh dấu đã đọc</button>}</article>)}
+          </aside>
         )}
       </div>
       <div className="app-mobile-nav">

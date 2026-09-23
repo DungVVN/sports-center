@@ -52,13 +52,15 @@ export function FacilityCalendarPage({ session, onLoginClick }) {
     if (completed) setCancellation({ id: "", reason: "" });
   }
 
-  return <section id="facility-calendar" className="facility-calendar">
-    <header className="facility-calendar__header"><p className="facility-calendar__eyebrow">LỊCH SÂN</p><h2>Giờ trống & lịch đã đặt</h2><p>Chọn loại sân và ngày để xem các khoảng giờ còn trống hoặc đã được duyệt. Thông tin người đặt không công khai.</p></header>
-    <div className="facility-calendar__filters">
-      <label>Loại sân<select value={typeId} onChange={(event) => setTypeId(event.target.value)}><option value="">Tất cả</option>{(calendar.data?.types ?? []).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-      <label>Từ ngày<input type="date" value={from} onChange={(event) => setFrom(event.target.value)} /></label>
-      <label>Đến ngày<input type="date" value={to} onChange={(event) => setTo(event.target.value)} /></label>
-    </div>
+  return <section id="facility-calendar" className="members-page facility-calendar">
+    <header className="facility-calendar__header"><p className="facility-calendar__eyebrow">LỊCH SÂN</p><h1>Giờ trống & lịch đã đặt</h1><p>Chọn loại sân và ngày để xem các khoảng giờ còn trống hoặc đã được duyệt. Thông tin người đặt không công khai.</p></header>
+    <section className="facility-calendar__filter-panel" aria-label="Bộ lọc lịch sân">
+      <div className="facility-calendar__filters">
+        <label>Loại sân<select value={typeId} onChange={(event) => setTypeId(event.target.value)}><option value="">Tất cả</option>{(calendar.data?.types ?? []).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+        <label>Từ ngày<input type="date" value={from} onChange={(event) => setFrom(event.target.value)} /></label>
+        <label>Đến ngày<input type="date" value={to} onChange={(event) => setTo(event.target.value)} /></label>
+      </div>
+    </section>
     {!dateRangeValid && <p role="alert">Chọn khoảng ngày hợp lệ, tối đa 31 ngày.</p>}
     <div className="facility-calendar__table-wrap">
       <table className="facility-calendar__table">

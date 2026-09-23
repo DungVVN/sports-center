@@ -39,7 +39,7 @@ export const permissionRoleScopes = Object.freeze({
   "attendance.self.read": ["member"],
   "membership.self.read": ["member"],
   "payment.self.read": ["member"],
-  "training.self.read": ["member"],
+  "training.self.read": ["coach", "member"],
   "support.ticket.create": ["member"],
   "membership.freeze.request": ["member"],
   "support.ticket.respond": ["manager", "receptionist", "coach"],

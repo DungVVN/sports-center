@@ -48,12 +48,19 @@ describe("role permission configuration", () => {
     expect(repository.replace).toHaveBeenCalledWith({ role: "coach", version: 0, permissionCodes: ["facility.booking.request", "facility.booking.self.read"], actorUserId: "admin-1" });
   });
 
+  it("allows Coach and Member to select their training visibility permission", async () => {
+    const { service, repository } = setup();
+    repository.matrix.mockResolvedValueOnce({ ...matrix, permissions: [...matrix.permissions, { code: "training.self.read", description: "Xem giáo án và kết quả của bản thân" }] });
+    const result = await service.matrix();
+    expect(result.permissions.find((permission) => permission.code === "training.self.read")).toMatchObject({ availableRoles: ["coach", "member"] });
+  });
+
   it("rejects Admin modification, duplicate codes and stale edits", async () => {
     const { service, repository } = setup();
     await expect(service.replace({ role: "admin", version: 0, permissionCodes: [], actorUserId: "admin-1" })).rejects.toMatchObject({ code: "ROLE_NOT_CONFIGURABLE" });
     await expect(service.replace({ role: "coach", version: 0, permissionCodes: ["class.read", "class.read"], actorUserId: "admin-1" })).rejects.toMatchObject({ code: "DUPLICATE_PERMISSION" });
     await expect(service.replace({ role: "coach", version: 0, permissionCodes: ["attendance.write"], actorUserId: "admin-1" })).rejects.toMatchObject({ code: "PERMISSION_DEPENDENCY_MISSING" });
-    await expect(service.replace({ role: "coach", version: 0, permissionCodes: ["training.self.read"], actorUserId: "admin-1" })).rejects.toMatchObject({ code: "PERMISSION_ROLE_SCOPE_INVALID" });
+    await expect(service.replace({ role: "coach", version: 0, permissionCodes: ["training.self.read"], actorUserId: "admin-1" })).resolves.toMatchObject({ version: 3 });
     await expect(service.replace({ role: "manager", version: 0, permissionCodes: ["class.read", "booking.read", "booking.write"], actorUserId: "admin-1" })).rejects.toMatchObject({ code: "PERMISSION_DEPENDENCY_MISSING" });
     repository.replace.mockResolvedValueOnce({ kind: "stale" });
     await expect(service.replace({ role: "manager", version: 1, permissionCodes: [], actorUserId: "admin-1" })).rejects.toMatchObject({ statusCode: 409 });

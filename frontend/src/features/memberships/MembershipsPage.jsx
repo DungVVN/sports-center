@@ -440,7 +440,7 @@ export function MembershipsPage({ mode = "workspace", session }) {
       )}
       <section
         aria-label={isManager ? "Gói tập" : undefined}
-        className={`members-grid membership-workspace${isManager ? (showManagerCreate && showManagerCatalog ? " membership-workspace--manager" : mode === "catalog" ? " membership-workspace--catalog" : " membership-workspace--single") : " membership-workspace--assignment-only"}${packagePageLayout}`}
+        className={`members-grid membership-workspace${isManager ? (showManagerCreate && showManagerCatalog ? " membership-workspace--manager" : mode === "catalog" ? " membership-workspace--catalog" : " membership-workspace--single") : " membership-workspace--assignment-only"}${showAssignment ? " membership-workspace--assignment" : ""}${packagePageLayout}`}
       >
         {showManagerCreate && (
           <form className="members-form package-create-form" onSubmit={createPackage}>
