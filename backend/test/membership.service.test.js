@@ -1,6 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 import { createMembershipService } from "../src/modules/memberships/membership.service.js";
 
+describe("public membership packages", () => {
+  it("returns only display fields and converts bigint prices", async () => {
+    const repository = { publicPackages: vi.fn().mockResolvedValue([{ code: "PREMIUM", name: "Cao cấp", price_vnd: 2490000n, duration_days: 365, benefits: ["Hồ bơi"], id: "private-id", is_active: true }]) };
+    const service = createMembershipService({ repository, auditService: {} });
+    await expect(service.listPublicPackages()).resolves.toEqual([{ code: "PREMIUM", name: "Cao cấp", priceVnd: "2490000", durationDays: 365, benefits: ["Hồ bơi"] }]);
+  });
+});
+
 describe("membership freeze review", () => {
   it("extends the membership before approving a valid freeze request", async () => {
     const repository = {

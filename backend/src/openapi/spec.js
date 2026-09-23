@@ -2,6 +2,27 @@ import { env } from "../config/env.js";
 
 const uuid = { type: "string", format: "uuid" };
 const jsonBody = (schema) => ({ required: true, content: { "application/json": { schema } } });
+const publicPackageResponse = {
+  type: "object",
+  required: ["success", "data"],
+  properties: {
+    success: { type: "boolean", const: true },
+    data: {
+      type: "array",
+      items: {
+        type: "object",
+        required: ["code", "name", "priceVnd", "durationDays", "benefits"],
+        properties: {
+          code: { type: "string", enum: ["BASIC", "STANDARD", "PREMIUM"] },
+          name: { type: "string" },
+          priceVnd: { type: "string", pattern: "^[0-9]+$", example: "490000" },
+          durationDays: { type: "integer", minimum: 1 },
+          benefits: { type: "array", items: { type: "string" } },
+        },
+      },
+    },
+  },
+};
 
 export const openApiSpec = {
   openapi: "3.1.0",
@@ -12,6 +33,18 @@ export const openApiSpec = {
   },
   servers: [{ url: env.apiBasePath }],
   paths: {
+    "/public/membership-packages": {
+      get: {
+        tags: ["Memberships"],
+        summary: "Gói hội viên công khai trên landing page",
+        description: "Không cần đăng nhập. Chỉ trả các gói BASIC, STANDARD, PREMIUM đang hoạt động; không gồm gói thử nghiệm. Đăng ký tài khoản không tự mua hoặc kích hoạt gói.",
+        security: [],
+        responses: {
+          200: { description: "Danh sách gói công khai, có thể rỗng", content: { "application/json": { schema: publicPackageResponse } } },
+          500: { description: "Không thể tải danh sách gói" },
+        },
+      },
+    },
     "/members/me": { get: { tags: ["Members"], summary: "Hội viên xem hồ sơ của chính mình", security: [{ sessionCookie: [] }], responses: { 200: { description: "Hồ sơ cá nhân" } } } },
     "/auth/profile": { get: { tags: ["Authentication"], summary: "Xem hồ sơ cá nhân theo vai trò", security: [{ sessionCookie: [] }], responses: { 200: { description: "Hồ sơ cá nhân, gồm profileSetupRequired để nhận biết bước hoàn thiện lần đầu" } } }, patch: { tags: ["Authentication"], summary: "Cập nhật hồ sơ cá nhân", description: "Tất cả vai trò chỉ sửa họ tên, số điện thoại và ngày sinh của chính mình. Hội viên được sửa thêm giới tính và tối đa ba liên hệ khẩn cấp. Email, vai trò và trạng thái chỉ đọc. Lưu thành công sẽ kết thúc bước hoàn thiện hồ sơ lần đầu.", security: [{ sessionCookie: [] }], requestBody: { required: true, content: { "application/json": { schema: { type: "object", required: ["fullName", "phone", "dateOfBirth"], properties: { fullName: { type: "string", minLength: 2, maxLength: 120 }, phone: { type: "string", pattern: "^(?:\\+84|0)\\d{9,10}$" }, dateOfBirth: { type: ["string", "null"], format: "date" }, avatarUrl: { type: ["string", "null"], format: "uri", maxLength: 2048 }, gender: { type: ["string", "null"], maxLength: 30 }, contacts: { type: "array", maxItems: 3, items: { type: "object", required: ["fullName", "relationship", "phone", "isPrimary"], properties: { fullName: { type: "string", minLength: 2, maxLength: 120 }, relationship: { type: "string", minLength: 2, maxLength: 60 }, phone: { type: "string", pattern: "^(?:\\+84|0)\\d{9,10}$" }, isPrimary: { type: "boolean" } } } } } } } } }, responses: { 200: { description: "Hồ sơ đã cập nhật" }, 422: { description: "Dữ liệu không hợp lệ" } } } },
     "/members/{id}/coach-assignments": { get: { tags: ["Coach assignments"], summary: "Lịch sử coach của hội viên", security: [{ sessionCookie: [] }], parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }], responses: { 200: { description: "Lịch sử" }, 403: { description: "Thiếu quyền member.write" }, 404: { description: "Không tìm thấy hội viên" } } }, post: { tags: ["Coach assignments"], summary: "Đổi coach chính và giữ lịch sử hiệu lực", description: "Coach cũ kết thúc vào ngày trước effectiveFrom, nên không có ngày chồng quyền. Chỉ Coach đang active mới được chọn và ngày hiệu lực không nằm trong quá khứ.", security: [{ sessionCookie: [] }], requestBody: { required: true, content: { "application/json": { schema: { type: "object", required: ["coachUserId", "effectiveFrom"], properties: { coachUserId: { type: "string", format: "uuid" }, effectiveFrom: { type: "string", format: "date" }, reason: { type: "string", maxLength: 500 } } } } } }, responses: { 201: { description: "Đã phân công" }, 404: { description: "Không tìm thấy hội viên" }, 422: { description: "Coach không khả dụng hoặc ngày hiệu lực không hợp lệ" } } } },

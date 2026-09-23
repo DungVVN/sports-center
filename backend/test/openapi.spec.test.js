@@ -24,6 +24,11 @@ function backendOperations() {
 }
 
 describe("OpenAPI contract", () => {
+  it("documents the unauthenticated public package response", () => {
+    const operation = openApiSpec.paths["/public/membership-packages"].get;
+    expect(operation.security).toEqual([]);
+    expect(operation.responses[200].content["application/json"].schema.properties.data.items.required).toEqual(["code", "name", "priceVnd", "durationDays", "benefits"]);
+  });
   it("documents every mounted backend operation without advertising nonexistent operations", () => {
     const documented = Object.entries(openApiSpec.paths)
       .flatMap(([path, item]) => methods.filter((method) => item[method]).map((method) => `${method.toUpperCase()} ${path}`))

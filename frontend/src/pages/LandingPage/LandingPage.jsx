@@ -1,9 +1,16 @@
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Activity, MapPin, Phone, Mail, Star, Trophy, Users, Check, ChevronRight } from "lucide-react";
+import { publicMembershipPackages } from "../../features/memberships/membership-api.js";
 import "./LandingPage.css";
 
 export function LandingPage({ onLoginClick, onRegisterClick }) {
    const [scrolled, setScrolled] = useState(false);
+   const { data: packages = [], isPending: packagesLoading, isError: packagesError, refetch: retryPackages } = useQuery({
+      queryKey: ["public-membership-packages"],
+      queryFn: publicMembershipPackages,
+      retry: false,
+   });
 
    useEffect(() => {
       const handleScroll = () => {
@@ -230,43 +237,25 @@ export function LandingPage({ onLoginClick, onRegisterClick }) {
             <div className="section-header center">
                <span className="section-subtitle">ĐẦU TƯ CHO SỨC KHỎE</span>
                <h2>Gói Hội Viên Linh Hoạt</h2>
+               <p className="max-w-xl">Giá và quyền lợi theo từng thời hạn gói. Tạo tài khoản để bắt đầu; nhân viên sẽ hỗ trợ đăng ký và thanh toán gói sau khi tài khoản được duyệt.</p>
             </div>
-            <div className="pricing-grid">
-               <div className="price-card">
+            {packagesLoading && <p className="pricing-state" role="status">Đang tải bảng giá...</p>}
+            {packagesError && <div className="pricing-state" role="alert"><p>Chưa tải được bảng giá. Vui lòng thử lại.</p><button className="btn-secondary" onClick={() => retryPackages()}>Thử lại</button></div>}
+            {!packagesLoading && !packagesError && packages.length === 0 && <p className="pricing-state">Hiện chưa có gói hội viên được mở bán.</p>}
+            {!packagesLoading && !packagesError && packages.length > 0 && <div className="pricing-grid">
+               {packages.map((pkg) => <article className={`price-card${pkg.code === "STANDARD" ? " featured" : ""}`} key={pkg.code}>
                   <div className="price-header">
-                     <h4>Cơ Bản</h4>
-                     <div className="price">500.000đ<span>/tháng</span></div>
+                     <span className="price-duration">{pkg.durationDays} ngày sử dụng</span>
+                     <h3>{pkg.name}</h3>
+                     <div className="price">{Number(pkg.priceVnd).toLocaleString("vi-VN")}<span> ₫ / gói</span></div>
                   </div>
                   <div className="price-body">
-                     <ul>
-                        <li><Check size={16} className="text-primary" /> Giới hạn giờ tập (8h - 16h)</li>
-                        <li><Check size={16} className="text-primary" /> Miễn phí nước uống</li>
-                        <li><Check size={16} className="text-primary" /> Tủ đồ sử dụng trong ngày</li>
-                        <li className="disabled"><Check size={16} /> Lớp học Group X/Yoga</li>
-                        <li className="disabled"><Check size={16} /> Khăn tập & Xông hơi</li>
-                     </ul>
-                     <button className="btn-secondary w-full" onClick={onRegisterClick}>Đăng Ký Ngay</button>
+                     <p>Quyền lợi bao gồm</p>
+                     <ul>{pkg.benefits.map((benefit) => <li key={benefit}><Check size={18} aria-hidden="true" />{benefit}</li>)}</ul>
+                     <button className={pkg.code === "STANDARD" ? "btn-primary w-full" : "btn-secondary w-full"} onClick={onRegisterClick}>Tạo tài khoản</button>
                   </div>
-               </div>
-
-               <div className="price-card popular">
-                  <div className="popular-badge">Khuyên Dùng</div>
-                  <div className="price-header">
-                     <h4>Không Giới Hạn</h4>
-                     <div className="price">890.000đ<span>/tháng</span></div>
-                  </div>
-                  <div className="price-body">
-                     <ul>
-                        <li><Check size={16} className="text-accent" /> Tập luyện 24/7 mọi chi nhánh</li>
-                        <li><Check size={16} className="text-accent" /> Tham gia toàn bộ lớp Group X/Yoga</li>
-                        <li><Check size={16} className="text-accent" /> Miễn phí khăn tập, nước uống</li>
-                        <li><Check size={16} className="text-accent" /> Sử dụng phòng xông hơi Sauna</li>
-                        <li><Check size={16} className="text-accent" /> 2 buổi HLV cá nhân miễn phí</li>
-                     </ul>
-                     <button className="btn-primary w-full" onClick={onRegisterClick}>Đăng Ký Ngay</button>
-                  </div>
-               </div>
-            </div>
+               </article>)}
+            </div>}
          </section>
 
          {/* CTA Banner */}
@@ -274,11 +263,11 @@ export function LandingPage({ onLoginClick, onRegisterClick }) {
             <div className="cta-banner-container">
                <div className="cta-banner-content">
                   <h2>Bắt đầu hành trình của bạn ngay hôm nay!</h2>
-                  <p>Nhận ngay Voucher giảm giá 30% cho khách hàng mới đăng ký lần đầu.</p>
+                  <p>Tạo tài khoản, xác thực email và hoàn thiện hồ sơ để được hỗ trợ lựa chọn gói phù hợp.</p>
                </div>
                <div className="cta-banner-action">
                   <button className="btn-primary btn-large bg-white text-primary" onClick={onRegisterClick}>
-                     Nhận Ưu Đãi
+                     Tạo tài khoản
                   </button>
                </div>
             </div>

@@ -2,6 +2,11 @@ import { prisma } from "../../database.js";
 
 export const membershipRepository = {
   packages: () => prisma.membership_packages.findMany({ orderBy: { tier_rank: "asc" } }),
+  publicPackages: () => prisma.membership_packages.findMany({
+    where: { code: { in: ["BASIC", "STANDARD", "PREMIUM"] }, is_active: true },
+    orderBy: { tier_rank: "asc" },
+    select: { code: true, name: true, price_vnd: true, duration_days: true, benefits: true },
+  }),
   packageById: (id) => prisma.membership_packages.findUnique({ where: { id } }),
   entitlements: (packageId) => prisma.membership_package_entitlements.findMany({ where: { package_id: packageId } }),
   memberExists: (id) => prisma.members.findUnique({ where: { id } }), memberByUser: (userId) => prisma.members.findUnique({ where: { user_id: userId } }),

@@ -10,6 +10,14 @@ function authService(permissions) { return { getAuthentication: vi.fn().mockReso
 function membershipService() { return { createMemberMembership: vi.fn().mockResolvedValue({ id: membershipId, status: "pending_payment" }), createPackage: vi.fn().mockResolvedValue({ id: packageId, code: "BASIC" }), requestFreeze: vi.fn() }; }
 
 describe("Member membership routes", () => {
+  it("serves public package cards without a session", async () => {
+    const service = { ...membershipService(), listPublicPackages: vi.fn().mockResolvedValue([{ code: "BASIC", name: "Cơ bản", priceVnd: "490000", durationDays: 30, benefits: ["Phòng tập"] }]) };
+    const response = await request(createApp({ authService: authService([]), membershipService: service }))
+      .get("/api/v1/public/membership-packages").expect(200);
+    expect(response.body.data).toEqual([{ code: "BASIC", name: "Cơ bản", priceVnd: "490000", durationDays: 30, benefits: ["Phòng tập"] }]);
+    expect(service.listPublicPackages).toHaveBeenCalledOnce();
+  });
+
   it("creates a pending-payment membership with the authenticated actor", async () => {
     const service = membershipService();
     const response = await request(createApp({ authService: authService(["membership.assign"]), membershipService: service }))
