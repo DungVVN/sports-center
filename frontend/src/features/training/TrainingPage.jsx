@@ -34,6 +34,7 @@ const newResult = {
 const createSessionExercise = () => ({ name: "", sets: "3", reps: "10", restSeconds: "60" });
 const createSessionForm = () => ({ planId: "", position: "1", title: "", scheduledOn: new Date().toISOString().slice(0, 10), exercises: [createSessionExercise()] });
 const planStatusLabels = { active: "Đang áp dụng", completed: "Đã hoàn thành" };
+const formatCreatedAt = (value) => value ? new Date(value).toLocaleString("vi-VN") : "—";
 
 export function TrainingPage({ session }) {
   const [templates, setTemplates] = useState([]);
@@ -53,6 +54,7 @@ export function TrainingPage({ session }) {
   const canDeliverAi = hasSessionPermission(session, "ai.assist.deliver");
   const canCreateTemplate =
     hasSessionPermission(session, "training.template.manage");
+  const planCreatorName = session?.user?.displayName ?? session?.user?.email ?? "Tài khoản đang đăng nhập";
   const membersById = useMemo(
     () => new Map(members.map((item) => [item.id, item])),
     [members],
@@ -224,6 +226,16 @@ export function TrainingPage({ session }) {
           <div className="training-form-heading">
             <span>01 · Lập kế hoạch</span>
             <h2>Tạo giáo án cá nhân</h2>
+          </div>
+          <div className="training-creation-metadata" aria-label="Thông tin tạo giáo án">
+            <div>
+              <span>Người tạo</span>
+              <strong>{planCreatorName}</strong>
+            </div>
+            <div>
+              <span>Thời gian tạo</span>
+              <strong>Hệ thống ghi nhận khi lưu</strong>
+            </div>
           </div>
           <section className="training-field-group">
             <h3>Chọn đầu vào</h3>
@@ -415,6 +427,8 @@ export function TrainingPage({ session }) {
                 <th>Mã giáo án</th>
                 <th>Tên giáo án</th>
                 <th>Hội viên</th>
+                <th>Người tạo</th>
+                <th>Thời gian tạo</th>
                 <th>Trạng thái</th>
                 <th>Thao tác</th>
               </tr>
@@ -425,6 +439,8 @@ export function TrainingPage({ session }) {
                   <td><code>{item.id}</code></td>
                   <td>{item.name}</td>
                   <td>{memberName(item.member_id)}</td>
+                  <td>{item.creatorName ?? "—"}</td>
+                  <td>{formatCreatedAt(item.createdAt)}</td>
                   <td>{planStatusLabels[item.status] ?? item.status}</td>
                   <td>
                     {item.status === "active" && (

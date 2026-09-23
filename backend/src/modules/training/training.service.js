@@ -17,6 +17,16 @@ export function createTrainingService({ repository, auditService }) {
   };
   const sessionsWithExercises = async (planId) => Promise.all((await repository.sessions(planId)).map(async (item) => ({ ...item, exercises: await repository.sessionExercises(item.id) })));
   const sameIds = (actual, requested) => actual.length === requested.length && actual.every((item) => requested.includes(item.id));
+  const withCreatorMetadata = async (plans) => {
+    if (!plans.length) return plans;
+    const creators = await repository.usersByIds([...new Set(plans.map((plan) => plan.coach_user_id))]);
+    const creatorById = new Map(creators.map((creator) => [creator.id, creator.display_name]));
+    return plans.map((plan) => ({
+      ...plan,
+      ...(plan.created_at ? { createdAt: plan.created_at } : {}),
+      ...(creatorById.has(plan.coach_user_id) ? { creatorName: creatorById.get(plan.coach_user_id) } : {}),
+    }));
+  };
 
   return {
     async templates() { const templates = await repository.templates(); return Promise.all(templates.map(async (template) => ({ ...template, exercises: await repository.templateExercises(template.id) }))); },
@@ -34,9 +44,9 @@ export function createTrainingService({ repository, auditService }) {
       return { plans, results, sessions };
     },
     async plans(memberId, actor) {
-      if (memberId) { await ensureCoachAssignment(memberId, actor); return repository.plans(memberId); }
-      if (actor.role === "coach") { const members = await repository.membersForCoach(actor.id); return repository.plansForMembers(members.map((member) => member.id)); }
-      return repository.plans();
+      if (memberId) { await ensureCoachAssignment(memberId, actor); return withCreatorMetadata(await repository.plans(memberId)); }
+      if (actor.role === "coach") { const members = await repository.membersForCoach(actor.id); return withCreatorMetadata(await repository.plansForMembers(members.map((member) => member.id))); }
+      return withCreatorMetadata(await repository.plans());
     },
     async createPlan(input, actor) {
       if (!await repository.member(input.memberId)) throw new AppError({ statusCode: 404, code: "MEMBER_NOT_FOUND", message: "Không tìm thấy hội viên." });
@@ -47,7 +57,7 @@ export function createTrainingService({ repository, auditService }) {
       const exercises = input.exercises?.length ? input.exercises : source.map(({ name, sets, reps, duration_seconds, rest_seconds, instructions }) => ({ name, sets, reps, duration_seconds, rest_seconds, instructions }));
       await repository.replaceExercises(plan.id, exercises);
       await auditService.record({ actorUserId: actor.id, action: "training_plan.created", entityType: "training_plan", entityId: plan.id, summary: "Đã tạo giáo án cá nhân hóa." });
-      return plan;
+      return (await withCreatorMetadata([plan]))[0];
     },
     async sessions(planId, actor) { await planForActor(planId, actor); return sessionsWithExercises(planId); },
     async createSession(planId, input, actor) {

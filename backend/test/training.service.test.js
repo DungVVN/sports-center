@@ -3,7 +3,7 @@ import { createTrainingService } from "../src/modules/training/training.service.
 
 function dependencies() {
   return {
-    repository: { membersForCoach: vi.fn().mockResolvedValue([{ id: "member-1" }]), plansForMembers: vi.fn().mockResolvedValue([{ id: "plan-1" }]), plans: vi.fn().mockResolvedValue([{ id: "manager-plan" }]), member: vi.fn(), assigned: vi.fn().mockResolvedValue(true), template: vi.fn(), templateExercises: vi.fn(), createPlan: vi.fn(), replaceExercises: vi.fn(), plan: vi.fn().mockResolvedValue({ id: "plan-1", member_id: "member-1" }), session: vi.fn(), createSession: vi.fn().mockResolvedValue({ id: "session-1" }), updateSession: vi.fn().mockResolvedValue({ id: "session-1" }), sessions: vi.fn().mockResolvedValue([{ id: "session-1" }, { id: "session-2" }]), sessionExercises: vi.fn().mockResolvedValue([]), reorderSessions: vi.fn().mockResolvedValue([]) },
+    repository: { membersForCoach: vi.fn().mockResolvedValue([{ id: "member-1" }]), plansForMembers: vi.fn().mockResolvedValue([{ id: "plan-1" }]), plans: vi.fn().mockResolvedValue([{ id: "manager-plan" }]), usersByIds: vi.fn().mockResolvedValue([]), member: vi.fn(), assigned: vi.fn().mockResolvedValue(true), template: vi.fn(), templateExercises: vi.fn(), createPlan: vi.fn(), replaceExercises: vi.fn(), plan: vi.fn().mockResolvedValue({ id: "plan-1", member_id: "member-1" }), session: vi.fn(), createSession: vi.fn().mockResolvedValue({ id: "session-1" }), updateSession: vi.fn().mockResolvedValue({ id: "session-1" }), sessions: vi.fn().mockResolvedValue([{ id: "session-1" }, { id: "session-2" }]), sessionExercises: vi.fn().mockResolvedValue([]), reorderSessions: vi.fn().mockResolvedValue([]) },
     auditService: { record: vi.fn() },
   };
 }
@@ -28,6 +28,17 @@ describe("Training service scope", () => {
     const { repository, auditService } = dependencies();
     await createTrainingService({ repository, auditService }).plans(undefined, { id: "manager-1", role: "manager" });
     expect(repository.plans).toHaveBeenCalledWith();
+  });
+
+  it("adds the creator name and database creation time to plans", async () => {
+    const { repository, auditService } = dependencies();
+    const createdAt = new Date("2026-09-24T08:30:00.000Z");
+    repository.plans.mockResolvedValue([{ id: "plan-1", coach_user_id: "coach-1", created_at: createdAt }]);
+    repository.usersByIds.mockResolvedValue([{ id: "coach-1", display_name: "Coach An" }]);
+
+    await expect(createTrainingService({ repository, auditService }).plans(undefined, { id: "manager-1", role: "manager" })).resolves.toEqual([
+      expect.objectContaining({ creatorName: "Coach An", createdAt }),
+    ]);
   });
 
   it("records a completed session only after confirming the Coach scope", async () => {

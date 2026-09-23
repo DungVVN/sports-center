@@ -5,7 +5,7 @@ import { apiClient } from "../../api/client.js";
 import "../members/members.css";
 import "./notification-preferences.css";
 
-export function NotificationPreferencesPage() {
+export function NotificationPreferencesPanel({ className = "" }) {
   const [value, setValue] = useState({ emailEnabled: true });
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
@@ -45,17 +45,13 @@ export function NotificationPreferencesPage() {
   }
 
   return (
-    <main className="members-page">
-      <header>
-        <p>Thông báo</p>
-        <h1>Tùy chọn thông báo</h1>
-      </header>
+    <section className={`notification-preferences ${className}`.trim()}>
       {notice && <p className="profile-notice" role="status">{notice}</p>}
       {error && <p className="auth-alert" role="alert">{error}</p>}
       {loading ? (
-        <p>Đang tải tùy chọn thông báo…</p>
+        <p className="notification-preferences__loading">Đang tải tùy chọn thông báo…</p>
       ) : (
-        <section className="notification-preferences">
+        <>
           <form className="members-form notification-preferences__form" onSubmit={save}>
             <div className="notification-preferences__heading">
               <div className="notification-preferences__icon">
@@ -101,8 +97,20 @@ export function NotificationPreferencesPage() {
               <div><dt>Tùy theo cài đặt</dt><dd>Lịch tập, đặt chỗ, trạng thái hội viên và hỗ trợ</dd></div>
             </dl>
           </aside>
-        </section>
+        </>
       )}
+    </section>
+  );
+}
+
+export function NotificationPreferencesPage() {
+  return (
+    <main className="members-page">
+      <header>
+        <p>Thông báo</p>
+        <h1>Tùy chọn thông báo</h1>
+      </header>
+      <NotificationPreferencesPanel />
     </main>
   );
 }

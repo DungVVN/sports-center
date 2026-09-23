@@ -225,7 +225,11 @@ export function PaymentsPage({ session }) {
               onChange={(event) => selectMembership(event.target.value)}
               value={form.membershipId}
             >
-              <option value="">Không gắn gói tập</option>
+              <option value="">
+                {form.memberId
+                  ? "Không gắn gói tập"
+                  : "Chọn hội viên để xem gói chờ thanh toán"}
+              </option>
               {memberships.map((membership) => (
                 <option key={membership.id} value={membership.id}>
                   {membership.package_name_snapshot} —{" "}

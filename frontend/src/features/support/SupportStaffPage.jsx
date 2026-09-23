@@ -77,7 +77,7 @@ export function SupportStaffPage({ session }) {
         <h1>Yêu cầu cần xử lý</h1>
       </header>
       {error && <p className="auth-alert" role="alert">{error}</p>}
-      <section className="members-grid">
+      <section className="members-grid support-staff-workspace">
         <section className="members-list">
           <div className="list-heading">
             <h2>Danh sách ticket</h2>
@@ -106,47 +106,12 @@ export function SupportStaffPage({ session }) {
           )}
         </section>
         {!selected ? (
-          <section
-            className="members-list support-empty-panel"
-            style={{
-              alignItems: "center",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              minHeight: "360px",
-              padding: "48px 24px",
-              textAlign: "center",
-            }}
-          >
-            <div
-              style={{
-                alignItems: "center",
-                background: "var(--color-surface-muted)",
-                borderRadius: "999px",
-                color: "var(--color-primary)",
-                display: "flex",
-                height: "56px",
-                justifyContent: "center",
-                marginBottom: "16px",
-                width: "56px",
-              }}
-            >
+          <section className="members-list support-empty-panel">
+            <div className="support-empty-panel__icon">
               <MessageSquare aria-hidden="true" size={26} />
             </div>
-            <h3 style={{ color: "var(--color-text)", fontSize: "16px", margin: "0 0 6px" }}>
-              Chưa chọn yêu cầu hỗ trợ
-            </h3>
-            <p
-              style={{
-                color: "var(--color-text-secondary)",
-                fontSize: "13px",
-                lineHeight: 1.5,
-                margin: 0,
-                maxWidth: "340px",
-              }}
-            >
-              Chọn một ticket từ danh sách bên trái để xem nội dung chi tiết, nhận phụ trách và phản hồi hội viên.
-            </p>
+            <h3>Chưa chọn yêu cầu hỗ trợ</h3>
+            <p>Chọn một ticket từ danh sách phía trên để xem nội dung chi tiết, nhận phụ trách và phản hồi hội viên.</p>
           </section>
         ) : (
           <section className="members-list">

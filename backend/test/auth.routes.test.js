@@ -41,6 +41,7 @@ describe("Auth routes", () => {
     const response = await request(createApp({ authService: service })).post("/api/v1/auth/login").send({ email: "anh@example.com", password: "Strongpass1" }).expect(200);
     expect(response.headers["set-cookie"][0]).toContain("sports_center_session=signed-token");
     expect(response.headers["set-cookie"][0]).toContain("HttpOnly");
+    expect(response.headers["set-cookie"][0]).not.toMatch(/Expires=|Max-Age=/i);
     expect(response.body.data).not.toHaveProperty("token");
     expect(response.body.data.permissions).toEqual(["class.read"]);
   });

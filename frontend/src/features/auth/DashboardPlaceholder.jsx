@@ -17,7 +17,6 @@ const navigationItems = [
   { id: "dashboard", label: "Tổng quan" },
   { id: "profile", label: "Hồ sơ" },
   { id: "rolePermissions", label: "Phân quyền chức năng" },
-  { id: "notification-preferences", label: "Tùy chọn thông báo" },
   { id: "members", label: "Hội viên" },
   { id: "registrations", label: "Duyệt đăng ký" },
   { id: "packages", label: "Gói tập", children: [
@@ -55,7 +54,6 @@ export function DashboardPlaceholder({ initialView = "dashboard", session, onLog
     staff: ["staff.manage"],
     training: ["training.write", "training.template.manage", "ai.assist.read", "ai.assist.deliver"], reports: ["report.read"], audit: ["audit.read"],
     support: ["support.ticket.read", "support.ticket.respond", "support.ticket.create"],
-    "notification-preferences": ["notification.preference.manage"],
   };
   const allowed = (id) => session.user.role === "admin" || !access[id] || access[id].some((permission) => granted.has(permission));
   const navigation = navigationItems.flatMap((item) => {

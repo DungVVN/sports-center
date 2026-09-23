@@ -30,14 +30,13 @@ const ownProfileSchema = z.object({ body: z.object({
   contacts: z.array(z.object({ fullName: z.string().trim().min(2).max(120), relationship: z.string().trim().min(2).max(60), phone: z.string().trim().regex(/^(?:\+84|0)\d{9,10}$/, "Số điện thoại Việt Nam chưa hợp lệ."), isPrimary: z.boolean() })).max(3).optional(),
 }).refine((input) => !input.contacts || input.contacts.filter((contact) => contact.isPrimary).length <= 1, { message: "Chỉ được chọn một liên hệ khẩn cấp chính.", path: ["contacts"] }) });
 
-function sessionCookie(response, token, expiresAt) {
+function sessionCookie(response, token) {
   response.cookie("sports_center_session", token, {
     httpOnly: true,
     // Vercel and Render have different sites. Browsers only attach this
     // cross-site session cookie to fetch requests when it is SameSite=None.
     sameSite: env.nodeEnv === "production" ? "none" : "lax",
     secure: env.nodeEnv === "production",
-    expires: expiresAt,
     path: env.apiBasePath,
   });
 }
@@ -61,7 +60,7 @@ export function createAuthRouter(authService) {
       if (session.mfaRequired) {
         return sendSuccess(response, { data: { mfaRequired: true, challengeId: session.mfaChallengeId, expiresAt: session.expiresAt } });
       }
-      sessionCookie(response, session.token, session.expiresAt);
+      sessionCookie(response, session.token);
       sendSuccess(response, { data: { user: session.user, permissions: session.permissions, expiresAt: session.expiresAt } });
     } catch (error) { next(error); }
   });
@@ -71,7 +70,7 @@ export function createAuthRouter(authService) {
       if (session.mfaRequired) {
         return sendSuccess(response, { data: { mfaRequired: true, challengeId: session.mfaChallengeId, expiresAt: session.expiresAt } });
       }
-      sessionCookie(response, session.token, session.expiresAt);
+      sessionCookie(response, session.token);
       sendSuccess(response, { data: { user: session.user, permissions: session.permissions, expiresAt: session.expiresAt } });
     } catch (error) { next(error); }
   });
@@ -84,21 +83,21 @@ export function createAuthRouter(authService) {
   router.post("/mfa/totp/verify", validateRequest(mfaLoginSchema), async (request, response, next) => {
     try {
       const session = await authService.verifyMfaLogin({ ...request.validated.body, loginSurface: "main" });
-      sessionCookie(response, session.token, session.expiresAt);
+      sessionCookie(response, session.token);
       sendSuccess(response, { data: { user: session.user, permissions: session.permissions, expiresAt: session.expiresAt } });
     } catch (error) { next(error); }
   });
   router.post("/admin/mfa/totp/verify", validateRequest(mfaLoginSchema), async (request, response, next) => {
     try {
       const session = await authService.verifyMfaLogin({ ...request.validated.body, loginSurface: "admin" });
-      sessionCookie(response, session.token, session.expiresAt);
+      sessionCookie(response, session.token);
       sendSuccess(response, { data: { user: session.user, permissions: session.permissions, expiresAt: session.expiresAt } });
     } catch (error) { next(error); }
   });
   router.post("/mfa/email/verify", validateRequest(mfaLoginSchema), async (request, response, next) => {
     try {
       const session = await authService.verifyStaffEmailOtp(request.validated.body);
-      sessionCookie(response, session.token, session.expiresAt);
+      sessionCookie(response, session.token);
       sendSuccess(response, { data: { user: session.user, permissions: session.permissions, expiresAt: session.expiresAt } });
     } catch (error) { next(error); }
   });

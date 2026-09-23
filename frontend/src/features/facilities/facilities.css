@@ -18,7 +18,7 @@
 .facility-calendar__table { width: 100%; min-width: 760px; border-collapse: collapse; text-align: left; font-size: 14px; }
 .facility-calendar__table caption { padding: 16px 20px; text-align: left; font-size: 16px; font-weight: 700; }
 .facility-calendar__table th, .facility-calendar__table td { padding: 16px 20px; border-top: 1px solid var(--color-border); vertical-align: top; }
-.facility-calendar__table thead { background: var(--color-surface-muted); }
+.facility-calendar__table thead { background: var(--color-surface); }
 .facility-calendar__table thead th { font-weight: 700; white-space: nowrap; }
 .facility-calendar__table tbody th { white-space: nowrap; }
 .facility-calendar__table tbody tr:hover { background: var(--color-surface-muted); }

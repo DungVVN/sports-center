@@ -3,6 +3,8 @@ import { Eye, EyeOff } from "lucide-react";
 import { Button } from "../../components/ui/Button.jsx";
 import { authApi } from "./auth-api.js";
 import { TotpEnrollmentPanel } from "./TotpEnrollmentPanel.jsx";
+import { NotificationPreferencesPanel } from "../notifications/NotificationPreferencesPage.jsx";
+import { hasSessionPermission } from "../../utils/session-permissions.js";
 import "../members/members.css";
 import "./profile.css";
 
@@ -37,7 +39,7 @@ export function ProfileAvatar({ src, alt, fallback }) {
   return !src || failed ? fallback : <img alt={alt} onError={() => setFailed(true)} src={src} />;
 }
 
-export function ProfilePage({ onSessionRevoked, onProfileSaved }) {
+export function ProfilePage({ onSessionRevoked, onProfileSaved, session }) {
   const [profile, setProfile] = useState(null);
   const [form, setForm] = useState(null);
   const [error, setError] = useState("");
@@ -389,6 +391,10 @@ export function ProfilePage({ onSessionRevoked, onProfileSaved }) {
               <span>Mọi phiên đăng nhập hiện có sẽ được thu hồi.</span>
             </div>
           </form>
+
+          {hasSessionPermission(session, "notification.preference.manage") && (
+            <NotificationPreferencesPanel className="profile-page__notifications" />
+          )}
         </div>
 
         <div className="profile-page__side-col">

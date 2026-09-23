@@ -322,9 +322,9 @@ export function ClassesPage({ session }) {
           visibleClassRows={visibleClassRows}
         />
       ) : (
-      <div className="members-grid">
+      <div className="members-grid classes-workspace">
         {canManage ? (
-          <form className="members-form" onSubmit={createClass}>
+          <form className="members-form classes-create-form" onSubmit={createClass}>
             <h2>Tạo lớp học</h2>
             <label>
               Tên lớp

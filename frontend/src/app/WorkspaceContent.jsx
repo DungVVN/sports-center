@@ -16,7 +16,6 @@ import { SupportPage } from "../features/support/SupportPage.jsx";
 import { MemberAttendancePage } from "../features/attendance/MemberAttendancePage.jsx";
 import { MemberPaymentsPage } from "../features/payments/MemberPaymentsPage.jsx";
 import { MemberTrainingPage } from "../features/training/MemberTrainingPage.jsx";
-import { NotificationPreferencesPage } from "../features/notifications/NotificationPreferencesPage.jsx";
 import { RolePermissionPage } from "../features/role-permissions/RolePermissionPage.jsx";
 import { FacilityCalendarPage } from "../features/facilities/FacilityCalendarPage.jsx";
 import { hasSessionPermission } from "../utils/session-permissions.js";
@@ -36,7 +35,7 @@ export function WorkspaceContent({ onNavigate, onProfileSaved, onSessionRevoked,
     "my-memberships": <MembershipsPage session={session} />,
     packages: <MembershipsPage session={session} />,
     payments: <PaymentsPage session={session} />,
-    profile: <ProfilePage onProfileSaved={onProfileSaved} onSessionRevoked={onSessionRevoked} />,
+    profile: <ProfilePage onProfileSaved={onProfileSaved} onSessionRevoked={onSessionRevoked} session={session} />,
     registrations: <RegistrationApprovalPage />,
     reports: <ReportsPage />,
     rolePermissions: dashboardRole === "admin" ? <RolePermissionPage /> : null,
@@ -46,7 +45,6 @@ export function WorkspaceContent({ onNavigate, onProfileSaved, onSessionRevoked,
     "my-attendance": <MemberAttendancePage />,
     "my-payments": <MemberPaymentsPage />,
     "my-training": <MemberTrainingPage />,
-    "notification-preferences": <NotificationPreferencesPage />,
   };
 
   return pages[view] ?? pages.dashboard;

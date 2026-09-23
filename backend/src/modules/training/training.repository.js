@@ -27,6 +27,7 @@ export const trainingRepository = {
   plan: (id) => prisma.training_plans.findUnique({ where: { id } }),
   plans: (memberId) => prisma.training_plans.findMany({ where: memberId ? { member_id: memberId } : undefined, orderBy: { starts_on: "desc" } }),
   plansForMembers: (memberIds) => prisma.training_plans.findMany({ where: { member_id: { in: memberIds } }, orderBy: { starts_on: "desc" } }),
+  usersByIds: (ids) => prisma.users.findMany({ where: { id: { in: ids } }, select: { id: true, display_name: true } }),
   createPlan: (data) => prisma.training_plans.create({ data }),
   updatePlan: (id, data) => prisma.training_plans.update({ where: { id }, data }),
   sessions: (planId) => prisma.training_sessions.findMany({ where: { plan_id: planId }, orderBy: { position: "asc" } }),

@@ -114,7 +114,8 @@
 }
 
 .training-form-heading,
-.training-field-group {
+.training-field-group,
+.training-creation-metadata {
   grid-column: 1 / -1;
 }
 
@@ -134,6 +135,31 @@
 .training-form-heading h2 {
   font-size: 18px;
   margin: 0;
+}
+
+.training-creation-metadata {
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  display: grid;
+  gap: var(--space-16);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: var(--space-12) var(--space-16);
+}
+
+.training-creation-metadata div {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.training-creation-metadata span {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+}
+
+.training-creation-metadata strong {
+  font-size: 13px;
 }
 
 .training-field-group {
@@ -232,9 +258,14 @@
 }
 
 .members-form--payment-create h2,
-.members-form--payment-create > label:has(textarea),
 .members-form--payment-create > button {
   grid-column: 1 / -1;
+}
+
+@media (min-width: 1024px) {
+  .members-form--payment-create > label:has(textarea) {
+    grid-column: span 2;
+  }
 }
 
 .members-form--attendance-checkin {
@@ -417,6 +448,61 @@
   gap: var(--space-24);
 }
 
+/* Class management follows the workflow order: create first, then review. */
+.classes-workspace {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.classes-create-form {
+  align-items: end;
+}
+
+.classes-create-form > button {
+  justify-self: start;
+  min-width: 12rem;
+}
+
+/* Support is reviewed in sequence: queue first, then the selected detail. */
+.support-staff-workspace {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.support-empty-panel {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 22.5rem;
+  padding: var(--space-24);
+  text-align: center;
+}
+
+.support-empty-panel__icon {
+  align-items: center;
+  background: var(--color-surface-muted);
+  border-radius: 999px;
+  color: var(--color-primary);
+  display: flex;
+  height: 3.5rem;
+  justify-content: center;
+  margin-bottom: var(--space-16);
+  width: 3.5rem;
+}
+
+.support-empty-panel h3 {
+  color: var(--color-text);
+  font-size: 16px;
+  margin: 0 0 var(--space-4);
+}
+
+.support-empty-panel p {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+  max-width: 42ch;
+}
+
 .classes-reception-schedule {
   min-width: 0;
 }
@@ -471,6 +557,17 @@
 
 /* Manager configures a package at left and reviews its catalogue at right. */
 @media (min-width: 1024px) {
+  .classes-create-form {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .classes-create-form > h2,
+  .classes-create-form > label:first-of-type,
+  .classes-create-form > label:has(textarea),
+  .classes-create-form > button {
+    grid-column: 1 / -1;
+  }
+
   .membership-workspace--manager .members-form {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1093,6 +1190,10 @@
   }
 
   .training-field-group {
+    grid-template-columns: 1fr;
+  }
+
+  .training-creation-metadata {
     grid-template-columns: 1fr;
   }
 

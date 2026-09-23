@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { CalendarDays, CircleAlert, ClipboardCheck, CreditCard, UsersRound } from "lucide-react";
+import { ArrowRight, CalendarDays, CircleAlert, ClipboardCheck, CreditCard, ReceiptText, UsersRound } from "lucide-react";
 import { dashboardApi } from "./dashboard-api.js";
 import "./dashboard-home.css";
 import "./dashboard-typography.css";
@@ -77,6 +77,9 @@ function MetricCard({ change, icon: Icon, label, onClick, value }) {
 
 function ManagerDashboard({ onNavigate, summary }) {
   const metrics = summary?.metrics;
+  const occupancyRate = metrics?.occupancyRate ?? 0;
+  const attendanceRate = metrics?.attendanceRate ?? 0;
+  const availableSlots = metrics ? Math.max(metrics.capacity - metrics.bookings, 0) : null;
   const chartData = (summary?.revenueTrend ?? []).map((item) => ({
     ...item,
     label: new Date(`${item.date}T00:00:00`).toLocaleDateString("vi-VN", {
@@ -197,6 +200,56 @@ function ManagerDashboard({ onNavigate, summary }) {
             </div>
           </dl>
         </article>
+      </section>
+
+      <section className="dashboard-operations" aria-label="Tình hình vận hành">
+        <article className="dashboard-panel dashboard-operations__health">
+          <div className="dashboard-panel__heading">
+            <div>
+              <h2>Tình hình vận hành</h2>
+              <p>Sức chứa, đặt chỗ và điểm danh trong kỳ đã chọn.</p>
+            </div>
+          </div>
+          <div className="dashboard-capacity">
+            <section>
+              <div className="dashboard-capacity__heading">
+                <span>Tỷ lệ lấp đầy</span>
+                <strong>{formatPercent(metrics?.occupancyRate)}</strong>
+              </div>
+              <progress aria-label="Tỷ lệ lấp đầy" max="100" value={occupancyRate} />
+              <p>{metrics ? `${metrics.bookings} lượt đặt chỗ trên ${metrics.capacity} chỗ đã mở` : "—"}</p>
+            </section>
+            <section>
+              <div className="dashboard-capacity__heading">
+                <span>Tỷ lệ điểm danh</span>
+                <strong>{formatPercent(metrics?.attendanceRate)}</strong>
+              </div>
+              <progress aria-label="Tỷ lệ điểm danh" max="100" value={attendanceRate} />
+              <p>{metrics ? `${metrics.attendance.marked} lượt đã được ghi nhận` : "—"}</p>
+            </section>
+          </div>
+          <dl className="dashboard-detail-metrics">
+            <div><dt>Lớp đã mở</dt><dd>{metrics?.classes ?? "—"}</dd></div>
+            <div><dt>Chỗ còn trống</dt><dd>{availableSlots ?? "—"}</dd></div>
+            <div><dt>Có mặt</dt><dd>{metrics?.attendance.present ?? "—"}</dd></div>
+            <div><dt>Đi trễ / vắng</dt><dd>{metrics ? `${metrics.attendance.late} / ${metrics.attendance.absent}` : "—"}</dd></div>
+          </dl>
+        </article>
+
+        <nav className="dashboard-panel dashboard-operations__actions" aria-label="Thao tác nhanh">
+          <div className="dashboard-panel__heading">
+            <div>
+              <h2>Thao tác nhanh</h2>
+              <p>Đi tới các công việc điều hành thường dùng.</p>
+            </div>
+          </div>
+          <div className="dashboard-action-list">
+            <button onClick={() => onNavigate?.("members")} type="button"><UsersRound aria-hidden="true" size={17} /><span>Quản lý hội viên</span><ArrowRight aria-hidden="true" size={16} /></button>
+            <button onClick={() => onNavigate?.("classes")} type="button"><CalendarDays aria-hidden="true" size={17} /><span>Quản lý lớp học</span><ArrowRight aria-hidden="true" size={16} /></button>
+            <button onClick={() => onNavigate?.("payments")} type="button"><ReceiptText aria-hidden="true" size={17} /><span>Xử lý thanh toán</span><ArrowRight aria-hidden="true" size={16} /></button>
+            <button onClick={() => onNavigate?.("reports")} type="button"><ClipboardCheck aria-hidden="true" size={17} /><span>Xem báo cáo chi tiết</span><ArrowRight aria-hidden="true" size={16} /></button>
+          </div>
+        </nav>
       </section>
     </>
   );

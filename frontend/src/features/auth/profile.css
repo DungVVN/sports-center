@@ -16,6 +16,7 @@
 .profile-page__contacts { order: 2; }
 .profile-page__password-form { order: 3; }
 .profile-page__mfa { order: 4; }
+.profile-page__notifications { grid-column: 1 / -1; order: 5; }
 .profile-page__identity {
   display: grid;
   gap: var(--space-12);
@@ -107,7 +108,7 @@
 .profile-page__mfa-form label { display: grid; font-size: 12px; font-weight: 600; gap: var(--space-6); }
 .profile-page__mfa-form input { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-control); color: var(--color-text); min-height: var(--control-height); padding: 0 var(--space-12); width: 100%; }
 .profile-page__mfa-form input[readonly] { background: var(--color-surface-muted); font-family: var(--font-mono); }
-.profile-page__mfa-enrollment { align-items: center; background: var(--color-surface-muted); border: 1px solid var(--color-border); border-radius: var(--radius-control); display: grid; gap: var(--space-16); grid-template-columns: minmax(10.5rem, 0.7fr) minmax(0, 1fr); padding: var(--space-16); }
+.profile-page__mfa-enrollment { align-items: center; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-control); display: grid; gap: var(--space-16); grid-template-columns: minmax(10.5rem, 0.7fr) minmax(0, 1fr); padding: var(--space-16); }
 .profile-page__mfa-enrollment--manual { grid-template-columns: 1fr; }
 .profile-page__mfa-qr { align-items: center; display: grid; gap: var(--space-8); justify-items: center; text-align: center; }
 .profile-page__mfa-qr h3 { font-size: 13px; margin: 0; }
