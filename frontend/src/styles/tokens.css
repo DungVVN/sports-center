@@ -1,7 +1,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700&family=JetBrains+Mono:wght@400;500&display=swap");
 
 :root {
-  --color-bg: #F5F8FC; --color-surface: #FFFFFF; --color-surface-muted: #EEF3F9; --color-surface-hover: #F8FAFD; --color-border: #E4EBF5; --color-border-strong: #CBD8E8; --color-text: #102A43; --color-text-secondary: #64748B; --color-text-muted: #94A3B8;
+  --color-bg: #FFFFFF; --color-surface: #FFFFFF; --color-surface-muted: #F8FAFC; --color-surface-hover: #F8FAFD; --color-border: #E4EBF5; --color-border-strong: #CBD8E8; --color-text: #102A43; --color-text-secondary: #64748B; --color-text-muted: #94A3B8;
   --color-primary: #2563EB; --color-primary-hover: #1D4ED8; --color-accent: #F97316; --color-accent-hover: #EA6C0A; --color-teal: #0F766E; --color-success: #16A34A; --color-warning: #D97706; --color-danger: #DC2626; --color-danger-hover: #B91C1C; --color-info: #0284C7; --color-sidebar: #0B1F33;
   --font-sans: "Be Vietnam Pro", system-ui, -apple-system, sans-serif; --font-mono: "JetBrains Mono", "Courier New", monospace;
   --font-weight-regular: 400; --font-weight-medium: 500; --font-weight-semibold: 600; --font-weight-bold: 700;

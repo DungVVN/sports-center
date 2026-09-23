@@ -16,7 +16,7 @@
 .profile-page__contacts { order: 2; }
 .profile-page__password-form { order: 3; }
 .profile-page__mfa { order: 4; }
-.profile-page__notifications { grid-column: 1 / -1; order: 5; }
+.profile-page__notifications { order: 5; }
 .profile-page__identity {
   display: grid;
   gap: var(--space-12);
@@ -99,6 +99,7 @@
 }
 .profile-page__mfa {
   align-content: space-between;
+  align-self: start;
   display: grid;
   gap: var(--space-20);
 }

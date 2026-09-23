@@ -26,7 +26,7 @@
 }
 
 .attendance-monitor { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-card); display: grid; overflow: hidden; }
-.attendance-monitor__picker { align-items: end; display: grid; gap: var(--space-20); grid-template-columns: minmax(15rem, .7fr) minmax(20rem, 1.3fr); padding: var(--space-20) var(--space-24); }
+.attendance-monitor__picker { align-items: start; display: grid; gap: var(--space-20); grid-template-columns: minmax(15rem, .7fr) minmax(20rem, 1.3fr); padding: var(--space-20) var(--space-24); }
 .attendance-monitor__label { align-items: center; color: var(--color-primary); display: flex; gap: var(--space-12); }
 .attendance-monitor__label div { display: grid; gap: 2px; }
 .attendance-monitor__label span { color: var(--color-text-secondary); font-size: 12px; }
@@ -61,7 +61,7 @@
 }
 
 .staff-form--create {
-  align-items: end;
+  align-items: start;
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
@@ -218,7 +218,7 @@
 }
 
 .members-form--member-create {
-  align-items: end;
+  align-items: start;
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
@@ -233,7 +233,7 @@
 }
 
 .members-form--booking-create {
-  align-items: end;
+  align-items: start;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
@@ -243,7 +243,7 @@
 }
 
 .members-form--booking-create-member {
-  align-items: end;
+  align-items: start;
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
@@ -253,7 +253,7 @@
 }
 
 .members-form--payment-create {
-  align-items: end;
+  align-items: start;
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
@@ -269,7 +269,7 @@
 }
 
 .members-form--attendance-checkin {
-  align-items: end;
+  align-items: start;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
@@ -455,7 +455,7 @@
 }
 
 .classes-create-form {
-  align-items: end;
+  align-items: start;
 }
 
 .classes-create-form > button {
@@ -564,10 +564,16 @@
   }
 
   .classes-create-form > h2,
-  .classes-create-form > label:first-of-type,
-  .classes-create-form > label:has(textarea),
   .classes-create-form > button {
     grid-column: 1 / -1;
+  }
+
+  .classes-create-form > label:first-of-type {
+    grid-column: 1 / 2;
+  }
+
+  .classes-create-form > label:has(textarea) {
+    grid-column: 2 / -1;
   }
 
   .membership-workspace--manager .members-form {
