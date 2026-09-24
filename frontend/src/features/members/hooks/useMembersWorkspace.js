@@ -50,6 +50,15 @@ export function useMembersWorkspace({ assignmentMemberId, editingMemberId }) {
       : "Đã tạo hồ sơ hội viên.",
     errorMessage: "Không thể tạo hội viên.",
   });
+  const issueAccountCredentials = useSubmitMutation({
+    feedback,
+    mutationFn: (memberId) => memberApi.issueAccountCredentials(memberId),
+    onSuccess: invalidateMembers,
+    successMessage: (result) => result.credentialEmailDelivered
+      ? result.accountCreated ? "Đã tạo tài khoản và gửi mật khẩu tạm qua email." : "Đã gửi mật khẩu tạm mới qua email."
+      : "Đã tạo mật khẩu tạm nhưng chưa gửi được email.",
+    errorMessage: "Không thể tạo hoặc gửi lại tài khoản hội viên.",
+  });
   const assignCoach = useSubmitMutation({
     feedback,
     mutationFn: ({ memberId, input }) => memberApi.assignCoach(memberId, input),
@@ -91,6 +100,7 @@ export function useMembersWorkspace({ assignmentMemberId, editingMemberId }) {
     detail: detailQuery.data ?? null,
     detailLoading: detailQuery.isFetching || saveMember.isPending,
     error: feedback.error || queryError,
+    issueAccountCredentials,
     loading: membersQuery.isLoading,
     members: membersQuery.data ?? [],
     notice: feedback.notice,

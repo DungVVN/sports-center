@@ -7,7 +7,7 @@ import { memberApi } from "./member-api.js";
 import { MembersPage } from "./MembersPage.jsx";
 
 vi.mock("../classes/class-api.js", () => ({ classApi: { coaches: vi.fn() } }));
-vi.mock("./member-api.js", () => ({ memberApi: { list: vi.fn(), create: vi.fn(), get: vi.fn(), update: vi.fn(), replaceContacts: vi.fn(), coachAssignments: vi.fn(), assignCoach: vi.fn() } }));
+vi.mock("./member-api.js", () => ({ memberApi: { list: vi.fn(), create: vi.fn(), issueAccountCredentials: vi.fn(), get: vi.fn(), update: vi.fn(), replaceContacts: vi.fn(), coachAssignments: vi.fn(), assignCoach: vi.fn() } }));
 
 function renderPage(props) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -57,5 +57,18 @@ describe("MembersPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Tạo hội viên" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Email đã tồn tại.");
     expect(screen.getByLabelText("Họ tên")).toHaveValue("Bình");
+  });
+
+  it("offers account creation for an existing member and sends the selected member id", async () => {
+    vi.stubGlobal("confirm", vi.fn().mockReturnValue(true));
+    memberApi.list.mockResolvedValue([{ id: "member-1", memberCode: "MBR-1", fullName: "An", email: "an@example.com", phone: "0900", hasAccount: false }]);
+    memberApi.issueAccountCredentials.mockResolvedValue({ accountCreated: true, credentialEmailDelivered: true });
+    renderPage();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Tạo tài khoản" }));
+
+    await waitFor(() => expect(memberApi.issueAccountCredentials).toHaveBeenCalledWith("member-1"));
+    expect(await screen.findByRole("status")).toHaveTextContent("Đã tạo tài khoản và gửi mật khẩu tạm qua email.");
+    vi.unstubAllGlobals();
   });
 });

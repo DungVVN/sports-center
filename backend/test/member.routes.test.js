@@ -31,4 +31,16 @@ describe("Member create route", () => {
 
     expect(memberService.create).toHaveBeenCalledWith({ ...body, contacts: [] }, "receptionist-1");
   });
+
+  it("issues credentials for an existing member profile", async () => {
+    const memberService = { issueAccountCredentials: vi.fn().mockResolvedValue({ accountCreated: true, credentialEmailDelivered: true }) };
+    const memberId = "11111111-1111-4111-8111-111111111111";
+
+    await request(createApp({ authService: authService(), memberService }))
+      .post(`/api/v1/members/${memberId}/account-credentials`)
+      .set("Authorization", "Bearer token")
+      .expect(200);
+
+    expect(memberService.issueAccountCredentials).toHaveBeenCalledWith(memberId, "receptionist-1");
+  });
 });

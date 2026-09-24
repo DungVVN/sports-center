@@ -48,6 +48,21 @@ describe("Member service contacts", () => {
     expect(result).toMatchObject({ accountCreated: true, credentialEmailDelivered: false, temporaryPassword: expect.any(String) });
   });
 
+  it("creates an account for an existing member and emails its credentials", async () => {
+    const member = { id: "member-1", member_code: "MBR-1", full_name: "An", email: "an@example.com", phone: "0900000000", date_of_birth: null, gender: null, joined_at: new Date() };
+    const repository = {
+      find: vi.fn().mockResolvedValue(member),
+      issueAccountCredentials: vi.fn().mockResolvedValue({ member: { ...member, user_id: "user-1" }, user: { id: "user-1", email: "an@example.com", display_name: "An" }, accountCreated: true }),
+    };
+    const credentialsDelivery = { deliver: vi.fn().mockResolvedValue({ delivered: true }) };
+
+    const result = await createMemberService({ repository, auditService: { record: vi.fn() }, credentialsDelivery }).issueAccountCredentials("member-1", "receptionist-1");
+
+    expect(repository.issueAccountCredentials).toHaveBeenCalledWith("member-1", expect.any(String));
+    expect(credentialsDelivery.deliver).toHaveBeenCalledWith(expect.objectContaining({ recipient: "an@example.com", accountLabel: "hội viên", temporaryPassword: expect.any(String) }));
+    expect(result).toMatchObject({ accountCreated: true, credentialEmailDelivered: true });
+  });
+
   it("returns the current Coach and membership fields for the management list", async () => {
     const member = { id: "member-1", member_code: "MBR-1", full_name: "An", email: "an@example.test", phone: "0900000000", date_of_birth: null, gender: null, joined_at: new Date() };
     const repository = {

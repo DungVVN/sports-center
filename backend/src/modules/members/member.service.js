@@ -11,6 +11,7 @@ const view = ({ member, contacts, overview }) => ({
   dateOfBirth: member.date_of_birth, gender: member.gender, joinedAt: member.joined_at, contacts: (contacts ?? []).map(viewContact),
   coachName: overview?.coachName ?? null, registeredPackageName: overview?.membership?.package_name_snapshot ?? null,
   membershipStatus: overview?.membership?.status ?? null, membershipExpiresOn: overview?.membership?.expires_on ?? null,
+  hasAccount: Boolean(member.user_id),
 });
 
 function memberConflict(error) {
@@ -68,6 +69,38 @@ export function createMemberService({ repository, auditService, credentialsDeliv
           accountCreated: createAccount,
           credentialEmailDelivered: credentialEmail.delivered,
           ...(createAccount && !credentialEmail.delivered ? { temporaryPassword } : {}),
+        };
+      } catch (error) {
+        throw memberConflict(error) ?? error;
+      }
+    },
+    async issueAccountCredentials(id, actorUserId) {
+      const member = await repository.find(id);
+      if (!member) throw new AppError({ statusCode: 404, code: "MEMBER_NOT_FOUND", message: "Không tìm thấy hội viên." });
+      if (!member.email) throw new AppError({ statusCode: 422, code: "MEMBER_EMAIL_REQUIRED", message: "Hội viên cần có email trước khi tạo hoặc gửi lại tài khoản." });
+
+      const temporaryPassword = randomBytes(12).toString("base64url");
+      try {
+        const issued = await repository.issueAccountCredentials(id, await hashPassword(temporaryPassword));
+        const credentialEmail = await credentialsDelivery.deliver({
+          recipient: issued.user.email,
+          fullName: issued.user.display_name,
+          temporaryPassword,
+          accountLabel: "hội viên",
+        });
+        await auditService.record({
+          actorUserId,
+          action: issued.accountCreated ? "member.account.created" : "member.credentials.reissued",
+          entityType: "member",
+          entityId: id,
+          summary: issued.accountCreated ? "Đã tạo tài khoản hội viên và gửi mật khẩu tạm." : "Đã gửi lại mật khẩu tạm cho hội viên.",
+          newValue: { accountCreated: issued.accountCreated, credentialEmailDelivered: credentialEmail.delivered },
+        });
+        return {
+          member: view({ member: issued.member, contacts: [] }),
+          accountCreated: issued.accountCreated,
+          credentialEmailDelivered: credentialEmail.delivered,
+          ...(credentialEmail.delivered ? {} : { temporaryPassword }),
         };
       } catch (error) {
         throw memberConflict(error) ?? error;

@@ -4,7 +4,7 @@ import { Pagination } from "../../../components/ui/Pagination.jsx";
 
 const labels = { pending_payment: "Chờ thanh toán", active: "Đang hoạt động", expiring_soon: "Sắp hết hạn", expired: "Đã hết hạn", frozen: "Đang đóng băng", cancelled: "Đã hủy" };
 
-export function MembersTable({ filters, loading, members, onClearFilters, onEdit, onFilterToggle, onOpenAssignment, onReload, onSearchChange, onToggleFilterValue, pagination, readOnly, visibleMembers }) {
+export function MembersTable({ filters, loading, members, onClearFilters, onEdit, onFilterToggle, onIssueAccountCredentials, onOpenAssignment, onReload, onSearchChange, onToggleFilterValue, pagination, readOnly, visibleMembers }) {
   const { coach, isOpen, package: packageFilters, search, status } = filters;
   const coachOptions = [...new Set(members.map((member) => member.coachName ?? "__unassigned"))].sort((a, b) => a.localeCompare(b, "vi-VN"));
   const packageOptions = [...new Set(members.map((member) => member.registeredPackageName ?? "__unregistered"))].sort((a, b) => a.localeCompare(b, "vi-VN"));
@@ -18,7 +18,7 @@ export function MembersTable({ filters, loading, members, onClearFilters, onEdit
         </FilterMenu>
       </DataTableToolbar>
       {visibleMembers.length === 0 ? <p>Không tìm thấy hội viên phù hợp.</p> : <div className="table-scroll"><table><thead><tr><th>Mã hội viên</th><th>Hội viên</th><th>Thông tin liên hệ</th><th>Gói đăng ký</th><th>Tình trạng gói</th><th>Ngày đăng ký</th><th>Coach phụ trách</th>{!readOnly && <th>Thao tác</th>}</tr></thead><tbody>
-        {pagination.pageItems.map((item) => <tr key={item.id}><td><code>{item.memberCode}</code></td><td><strong>{item.fullName}</strong><small>{item.email ?? "Chưa có email"}</small></td><td>{item.phone}</td><td>{item.registeredPackageName ? <><strong>{item.registeredPackageName}</strong>{item.membershipExpiresOn && <small>Hết hạn {new Date(item.membershipExpiresOn).toLocaleDateString("vi-VN")}</small>}</> : "Chưa đăng ký"}</td><td>{item.membershipStatus ? labels[item.membershipStatus] ?? item.membershipStatus : "Chưa có gói"}</td><td>{item.joinedAt ? new Date(item.joinedAt).toLocaleDateString("vi-VN") : "—"}</td><td>{item.coachName ?? "Chưa phân công"}</td>{!readOnly && <td><Button onClick={() => onEdit(item)} size="sm">Sửa</Button>{" "}<Button onClick={() => onOpenAssignment(item)} size="sm" variant="outline">Coach</Button></td>}</tr>)}
+        {pagination.pageItems.map((item) => <tr key={item.id}><td><code>{item.memberCode}</code></td><td><strong>{item.fullName}</strong><small>{item.email ?? "Chưa có email"}</small></td><td>{item.phone}</td><td>{item.registeredPackageName ? <><strong>{item.registeredPackageName}</strong>{item.membershipExpiresOn && <small>Hết hạn {new Date(item.membershipExpiresOn).toLocaleDateString("vi-VN")}</small>}</> : "Chưa đăng ký"}</td><td>{item.membershipStatus ? labels[item.membershipStatus] ?? item.membershipStatus : "Chưa có gói"}</td><td>{item.joinedAt ? new Date(item.joinedAt).toLocaleDateString("vi-VN") : "—"}</td><td>{item.coachName ?? "Chưa phân công"}</td>{!readOnly && <td><Button disabled={!item.email} onClick={() => onIssueAccountCredentials(item)} size="sm" variant="outline">{item.hasAccount ? "Gửi lại MK" : "Tạo tài khoản"}</Button>{" "}<Button onClick={() => onEdit(item)} size="sm">Sửa</Button>{" "}<Button onClick={() => onOpenAssignment(item)} size="sm" variant="outline">Coach</Button></td>}</tr>)}
       </tbody></table></div>}
       <Pagination {...pagination} />
     </>}

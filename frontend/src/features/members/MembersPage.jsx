@@ -47,6 +47,14 @@ export function MembersPage({ readOnly = false }) {
     setCopiedPassword(true);
     setTimeout(() => setCopiedPassword(false), 2000);
   };
+  const issueAccountCredentials = (member) => {
+    const action = member.hasAccount ? "gửi mật khẩu tạm mới" : "tạo tài khoản và gửi mật khẩu tạm";
+    if (!window.confirm(`Bạn có chắc muốn ${action} cho ${member.fullName}?`)) return;
+    setCredentials(null);
+    workspace.issueAccountCredentials.mutate(member.id, { onSuccess: (result) => {
+      setCredentials(result.temporaryPassword ? { email: member.email, password: result.temporaryPassword } : null);
+    } });
+  };
   const assign = async (input) => {
     if (!assignmentMember) return;
     try {
@@ -68,7 +76,7 @@ export function MembersPage({ readOnly = false }) {
   return <main className="members-page"><header><p>Hội viên</p><h1>Quản lý hội viên</h1></header>
     {workspace.error && <p className="auth-alert" role="alert">{workspace.error}</p>}{workspace.notice && <p className="auth-success" role="status">{workspace.notice}</p>}
     {credentials && <section className="member-credentials"><strong>Mật khẩu tạm thời — chỉ hiển thị lần này</strong><div><code>{credentials.password}</code><Button onClick={copyPassword} size="sm" type="button" variant="outline">{copiedPassword ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}{copiedPassword ? "Đã sao chép!" : "Sao chép"}</Button></div><p>Email chưa gửi được. Hãy gửi riêng thông tin đăng nhập đến {credentials.email}; mật khẩu này không được lưu hoặc hiển thị lại.</p><Button onClick={() => setCredentials(null)} type="button" variant="secondary">Đã lưu an toàn</Button></section>}
-    <section className="members-workspace-stacked">{!readOnly && <MemberCreateForm form={memberForm} onChange={updateMemberForm} onSubmit={create} submitting={workspace.createMember.isPending} />}<MembersTable filters={{ coach: coachFilters, isOpen: isFilterOpen, package: packageFilters, search, status: statusFilters }} loading={workspace.loading} members={workspace.members} onEdit={(member) => setEditingMemberId(member.id)} onFilterToggle={() => setIsFilterOpen((value) => !value)} onOpenAssignment={setAssignmentMember} onReload={workspace.reload} onSearchChange={setSearch} onToggleFilterValue={toggleFilterValue} onClearFilters={clearFilters} pagination={pagination} readOnly={readOnly} visibleMembers={visibleMembers} /></section>
+    <section className="members-workspace-stacked">{!readOnly && <MemberCreateForm form={memberForm} onChange={updateMemberForm} onSubmit={create} submitting={workspace.createMember.isPending} />}<MembersTable filters={{ coach: coachFilters, isOpen: isFilterOpen, package: packageFilters, search, status: statusFilters }} loading={workspace.loading} members={workspace.members} onEdit={(member) => setEditingMemberId(member.id)} onFilterToggle={() => setIsFilterOpen((value) => !value)} onIssueAccountCredentials={issueAccountCredentials} onOpenAssignment={setAssignmentMember} onReload={workspace.reload} onSearchChange={setSearch} onToggleFilterValue={toggleFilterValue} onClearFilters={clearFilters} pagination={pagination} readOnly={readOnly} visibleMembers={visibleMembers} /></section>
     <CoachAssignmentDialog coaches={workspace.coaches} history={workspace.assignmentHistory} loading={workspace.assignmentLoading} member={assignmentMember} onClose={() => setAssignmentMember(null)} onSubmit={assign} />
     <MemberEditorDialog detail={workspace.detail} loading={workspace.detailLoading} memberId={editingMemberId} onClose={() => setEditingMemberId(null)} onSubmit={save} />
   </main>;
