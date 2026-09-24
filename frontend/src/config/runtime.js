@@ -1,7 +1,8 @@
 const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+const fallbackApiBaseUrl = import.meta.env.DEV
+  ? "/api/v1"
+  : "https://api.kineticsports.io.vn/api/v1";
 
-if (!configuredApiBaseUrl) {
-  throw new Error("Thiếu VITE_API_BASE_URL. Hãy tạo frontend/.env từ frontend/.env.example.");
-}
-
-export const apiBaseUrl = configuredApiBaseUrl.replace(/\/$/, "");
+// A missing hosting environment variable must not prevent React from mounting.
+// Local Vite uses its API proxy; production keeps a safe public default.
+export const apiBaseUrl = (configuredApiBaseUrl || fallbackApiBaseUrl).replace(/\/$/, "");
