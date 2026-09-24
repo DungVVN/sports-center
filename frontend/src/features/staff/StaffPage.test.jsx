@@ -31,6 +31,7 @@ describe("StaffPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Tạo nhân viên" }));
     await waitFor(() => expect(staffApi.create).toHaveBeenCalledWith(expect.objectContaining({ fullName: "Lan", email: "lan@example.test", phone: "0901", role: "receptionist" })));
     expect(await screen.findByText("Temp-123")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveClass("auth-success");
   });
 
   it("shows an API 409 conflict without clearing the staff form", async () => {

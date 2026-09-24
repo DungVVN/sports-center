@@ -40,7 +40,7 @@ export function SupportPage({ session }) {
         <h1>Yêu cầu hỗ trợ</h1>
       </header>
       {workspace.error && <p className="auth-alert" role="alert">{workspace.error}</p>}
-      {workspace.notice && <p className="auth-notice" role="status">{workspace.notice}</p>}
+      {workspace.notice && <p className="auth-success" role="status">{workspace.notice}</p>}
       <section className="members-grid">
         {canCreate && <form className="members-form" onSubmit={submit}>
           <label>

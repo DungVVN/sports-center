@@ -45,7 +45,7 @@ export function SupportStaffPage({ session }) {
         <h1>Yêu cầu cần xử lý</h1>
       </header>
       {workspace.error && <p className="auth-alert" role="alert">{workspace.error}</p>}
-      {workspace.notice && <p className="auth-notice" role="status">{workspace.notice}</p>}
+      {workspace.notice && <p className="auth-success" role="status">{workspace.notice}</p>}
       <section className="members-workspace-stacked support-staff-workspace">
         <section className="members-list">
           <div className="list-heading">

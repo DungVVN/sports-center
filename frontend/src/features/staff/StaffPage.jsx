@@ -124,7 +124,7 @@ export function StaffPage() {
         </section>
       )}
       {credentialEmailDelivered && (
-        <p className="auth-alert auth-alert--success" role="status">
+        <p className="auth-success" role="status">
           Đã gửi email chứa tài khoản và mật khẩu tạm thời cho nhân viên.
         </p>
       )}
