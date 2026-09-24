@@ -15,7 +15,7 @@ export function useMembershipWorkspace({ canAssignMembership, canReviewFreeze, i
   const queryClient = useQueryClient();
   const packagesQuery = useQuery({ queryKey: keys.packages, queryFn: membershipApi.packages, enabled: !isMember });
   const membersQuery = useQuery({ queryKey: keys.members, queryFn: memberApi.list, enabled: !isMember && (!isManager || canAssignMembership) });
-  const freezeRequestsQuery = useQuery({ queryKey: keys.freezeRequests, queryFn: membershipApi.freezeRequests, enabled: !isMember && canReviewFreeze });
+  const freezeRequestsQuery = useQuery({ queryKey: keys.freezeRequests, queryFn: () => membershipApi.freezeRequests("pending"), enabled: !isMember && canReviewFreeze });
   const mineQuery = useQuery({ queryKey: keys.mine, queryFn: membershipApi.mine, enabled: isMember });
   const memberMembershipsQuery = useQuery({ queryKey: keys.byMember(selectedMemberId), queryFn: () => membershipApi.byMember(selectedMemberId), enabled: !isMember && Boolean(selectedMemberId) });
 

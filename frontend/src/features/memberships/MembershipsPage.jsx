@@ -64,6 +64,41 @@ function estimatedExpiry(startsOn, durationDays) {
   return expiresOn.toISOString().slice(0, 10);
 }
 
+function validatePackageForm(form) {
+  const code = form.code.trim().toUpperCase();
+  const name = form.name.trim();
+  const priceText = form.priceVnd.trim();
+  const durationText = form.durationDays.trim();
+  const tierText = form.tierRank.trim();
+  const priceVnd = Number(priceText);
+  const durationDays = Number(durationText);
+  const tierRank = Number(tierText);
+
+  if (!/^[A-Z0-9_-]{2,30}$/.test(code)) return { error: "Mã gói gồm 2–30 ký tự in hoa, số, dấu gạch dưới hoặc gạch ngang." };
+  if (name.length < 2 || name.length > 100) return { error: "Tên gói phải từ 2 đến 100 ký tự." };
+  if (!/^\d+$/.test(priceText) || !Number.isSafeInteger(priceVnd) || priceVnd < 0) return { error: "Giá phải là số nguyên không âm." };
+  if (!/^\d+$/.test(durationText) || !Number.isSafeInteger(durationDays) || durationDays < 1 || durationDays > 730) return { error: "Số ngày phải là số nguyên từ 1 đến 730." };
+  if (!/^\d+$/.test(tierText) || !Number.isSafeInteger(tierRank) || tierRank < 1) return { error: "Thứ hạng quyền phải là số nguyên lớn hơn hoặc bằng 1." };
+
+  return {
+    input: {
+      ...form,
+      code,
+      name,
+      priceVnd,
+      durationDays,
+      tierRank,
+      benefits: form.benefits.split("\n").map((value) => value.trim()).filter(Boolean),
+      entitlements: form.entitlements.map((codeValue) => ({ code: codeValue })),
+    },
+  };
+}
+
+function validationErrorMessage(error) {
+  if (error?.code !== "VALIDATION_ERROR" || !Array.isArray(error.details) || !error.details.length) return error?.message ?? "Không thể tạo gói tập.";
+  return error.details.map((issue) => `${issue.path?.replace(/^body\./, "") ?? "Dữ liệu"}: ${issue.message}`).join(" ");
+}
+
 export function MembershipsPage({ mode = "workspace", session }) {
   const role = session?.user?.role;
   const isMember = role === "member" && mode === "workspace";
@@ -150,24 +185,18 @@ export function MembershipsPage({ mode = "workspace", session }) {
     event.preventDefault();
     setError("");
     setNotice("");
-    setSubmitting(true);
+    const validation = validatePackageForm(packageForm);
+    if (validation.error) {
+      setError(validation.error);
+      return;
+    }
     try {
-      await createPackageMutation.mutateAsync({
-        ...packageForm,
-        priceVnd: Number(packageForm.priceVnd),
-        durationDays: Number(packageForm.durationDays),
-        tierRank: Number(packageForm.tierRank),
-        benefits: packageForm.benefits
-          .split("\n")
-          .map((value) => value.trim())
-          .filter(Boolean),
-        entitlements: packageForm.entitlements.map((code) => ({ code })),
-      });
+      await createPackageMutation.mutateAsync(validation.input);
       setPackageForm(emptyPackage);
       setNotice("Đã tạo gói tập.");
       await load();
     } catch (caught) {
-      setError(caught.message);
+      setError(validationErrorMessage(caught));
     } finally {
       setSubmitting(false);
     }
@@ -431,10 +460,12 @@ export function MembershipsPage({ mode = "workspace", session }) {
               <input
                 list="package-code-options"
                 onChange={(event) =>
-                  setPackageForm({ ...packageForm, code: event.target.value })
+                  setPackageForm({ ...packageForm, code: event.target.value.toUpperCase() })
                 }
                 placeholder="Ví dụ: STANDARD"
+                pattern="[A-Z0-9_-]{2,30}"
                 required
+                title="Mã gói gồm 2–30 ký tự in hoa, số, dấu gạch dưới hoặc gạch ngang."
                 value={packageForm.code}
               />
               <datalist id="package-code-options">
@@ -454,6 +485,8 @@ export function MembershipsPage({ mode = "workspace", session }) {
                 }
                 placeholder="Ví dụ: Gói Tiêu chuẩn"
                 required
+                minLength={2}
+                maxLength={100}
                 value={packageForm.name}
               />
               <datalist id="package-name-options">
@@ -465,13 +498,15 @@ export function MembershipsPage({ mode = "workspace", session }) {
               </datalist>
             </label>
             {[
-              ["priceVnd", "Giá (VNĐ)"],
-              ["durationDays", "Số ngày"],
-              ["tierRank", "Thứ hạng quyền"],
+              ["priceVnd", "Giá (VNĐ)", 0, undefined],
+              ["durationDays", "Số ngày", 1, 730],
+              ["tierRank", "Thứ hạng quyền", 1, undefined],
             ].map(([key, label]) => (
               <label className="package-create-form__metric" key={key}>
                 {label}
                 <input
+                  min={key === "priceVnd" ? 0 : 1}
+                  max={key === "durationDays" ? 730 : undefined}
                   onChange={(event) =>
                     setPackageForm({
                       ...packageForm,
@@ -479,6 +514,8 @@ export function MembershipsPage({ mode = "workspace", session }) {
                     })
                   }
                   required
+                  step="1"
+                  type="number"
                   value={packageForm[key]}
                 />
               </label>

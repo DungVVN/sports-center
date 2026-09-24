@@ -1,7 +1,5 @@
 /* Shared application frame: every protected page starts on the same content grid. */
 .app-main > :is(.members-page, .staff-page) {
-/* Shared application frame: every protected page starts on the same content grid. */
-.app-main > :is(.members-page, .staff-page) {
   min-height: auto;
   padding: 0;
 }

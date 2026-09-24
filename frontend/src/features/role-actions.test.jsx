@@ -53,7 +53,13 @@ describe("permission-backed role actions", () => {
   it("loads and shows the freeze-review queue for authorized Admin", async () => {
     renderWorkspace(<MembershipsPage mode="catalog" session={{ user: { role: "admin" }, permissions: ["membership.freeze.review", "membership.package.manage"] }} />);
     await waitFor(() => expect(membershipApi.freezeRequests).toHaveBeenCalled());
+    expect(membershipApi.freezeRequests).toHaveBeenCalledWith("pending");
     expect(screen.getByText("Yêu cầu đóng băng chờ duyệt")).toBeInTheDocument();
+  });
+
+  it("loads the class-review queue with the pending status", async () => {
+    renderWorkspace(<ClassesPage session={{ user: { role: "admin" }, permissions: ["class.read", "class.change.review"] }} />);
+    await waitFor(() => expect(classApi.changeRequests).toHaveBeenCalledWith("pending"));
   });
 
   it("lets Admin reach membership assignment", async () => {

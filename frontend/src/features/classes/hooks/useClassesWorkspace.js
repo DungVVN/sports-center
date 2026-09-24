@@ -16,7 +16,7 @@ export function useClassesWorkspace({ canReview }) {
   const coachesQuery = useQuery({ queryKey: queryKeys.coaches, queryFn: classApi.coaches });
   const requestsQuery = useQuery({
     queryKey: queryKeys.requests,
-    queryFn: classApi.changeRequests,
+    queryFn: () => classApi.changeRequests("pending"),
     enabled: canReview,
   });
 
