@@ -1,5 +1,6 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { AppShell } from "../../components/layout/AppShell.jsx";
+import { dashboardPath, dashboardView } from "../../app/dashboard-routes.js";
 import { dashboardApi } from "../dashboard/dashboard-api.js";
 import { authApi } from "./auth-api.js";
 import "./auth.css";
@@ -41,33 +42,49 @@ const memberSelfItems = [
   { id: "my-training", label: "Giáo án của tôi", permission: "training.self.read" },
   { id: "my-payments", label: "Thanh toán của tôi", permission: "payment.self.read" },
 ];
+const accessByView = {
+  members: ["member.read", "member.write"], registrations: ["registration.approve"],
+  packageCreate: ["membership.package.manage"], packageCatalog: ["membership.package.read", "membership.package.manage"], memberMemberships: ["membership.assign"],
+  classes: ["class.read", "class.manage", "class.change.review", "class.change.request"], bookings: ["booking.read", "booking.write"],
+  attendance: ["attendance.read", "attendance.write"], payments: ["payment.read", "payment.record"],
+  staff: ["staff.manage"], training: ["training.write", "training.template.manage", "ai.assist.read", "ai.assist.deliver"], reports: ["report.read"], audit: ["audit.read"],
+  support: ["support.ticket.read", "support.ticket.respond", "support.ticket.create"],
+};
 
 export function DashboardPlaceholder({ initialView = "dashboard", session, onLogout, onProfileSaved }) {
-  const [view, setView] = useState(initialView);
+  const [view, setView] = useState(() => dashboardView(window.location.pathname) ?? initialView);
   const [notifications, setNotifications] = useState([]);
-  const granted = new Set(session.permissions ?? []);
-  const access = {
-    members: ["member.read", "member.write"], registrations: ["registration.approve"],
-    packageCreate: ["membership.package.manage"], packageCatalog: ["membership.package.read", "membership.package.manage"], memberMemberships: ["membership.assign"],
-    classes: ["class.read", "class.manage", "class.change.review", "class.change.request"], bookings: ["booking.read", "booking.write"],
-    attendance: ["attendance.read", "attendance.write"], payments: ["payment.read", "payment.record"],
-    staff: ["staff.manage"],
-    training: ["training.write", "training.template.manage", "ai.assist.read", "ai.assist.deliver"], reports: ["report.read"], audit: ["audit.read"],
-    support: ["support.ticket.read", "support.ticket.respond", "support.ticket.create"],
-  };
-  const allowed = (id) => session.user.role === "admin" || !access[id] || access[id].some((permission) => granted.has(permission));
-  const navigation = navigationItems.flatMap((item) => {
-    if (item.id === "rolePermissions" && session.user.role !== "admin") return [];
-    if (item.children) {
-      const children = item.children.filter((child) => allowed(child.id));
-      return children.length ? [{ ...item, children }] : [];
-    }
-    return allowed(item.id) ? [item] : [];
-  });
-  if (session.user.role === "member") {
-    navigation.push(...memberSelfItems.filter((item) => granted.has(item.permission)));
-  }
-  const allowedViews = new Set(navigation.flatMap((item) => [item.id, ...(item.children ?? []).map((child) => child.id)]));
+  const granted = useMemo(() => new Set(session.permissions ?? []), [session.permissions]);
+  const navigation = useMemo(() => {
+    const allowed = (id) => session.user.role === "admin" || !accessByView[id] || accessByView[id].some((permission) => granted.has(permission));
+    const items = navigationItems.flatMap((item) => {
+      if (item.id === "rolePermissions" && session.user.role !== "admin") return [];
+      if (item.children) {
+        const children = item.children.filter((child) => allowed(child.id));
+        return children.length ? [{ ...item, children }] : [];
+      }
+      return allowed(item.id) ? [item] : [];
+    });
+    if (session.user.role === "member") items.push(...memberSelfItems.filter((item) => granted.has(item.permission)));
+    return items;
+  }, [granted, session.user.role]);
+  const allowedViews = useMemo(() => new Set(navigation.flatMap((item) => [item.id, ...(item.children ?? []).map((child) => child.id)])), [navigation]);
+  const navigate = useCallback((next) => {
+    if (!allowedViews.has(next)) return;
+    setView(next);
+    const path = dashboardPath(next);
+    if (window.location.pathname !== path) window.history.pushState({}, "", path);
+  }, [allowedViews]);
+  useEffect(() => {
+    const syncViewFromUrl = () => {
+      const next = dashboardView(window.location.pathname);
+      setView(next && allowedViews.has(next) ? next : "dashboard");
+    };
+    const current = dashboardView(window.location.pathname);
+    if (!current || !allowedViews.has(current)) window.history.replaceState({}, "", dashboardPath(allowedViews.has(initialView) ? initialView : "dashboard"));
+    window.addEventListener("popstate", syncViewFromUrl);
+    return () => window.removeEventListener("popstate", syncViewFromUrl);
+  }, [allowedViews, initialView]);
   async function loadNotifications() {
     try {
       setNotifications(await dashboardApi.notifications());
@@ -97,7 +114,7 @@ export function DashboardPlaceholder({ initialView = "dashboard", session, onLog
   }
   const content = (
     <Suspense fallback={<p className="app-shell__loading" role="status">Đang tải không gian làm việc...</p>}>
-      <WorkspaceContent dashboardRole={session.user.role} onNavigate={(next) => { if (allowedViews.has(next)) setView(next); }} onProfileSaved={onProfileSaved} onSessionRevoked={onLogout} session={session} view={allowedViews.has(view) ? view : "dashboard"} />
+      <WorkspaceContent dashboardRole={session.user.role} onNavigate={navigate} onProfileSaved={onProfileSaved} onSessionRevoked={onLogout} session={session} view={allowedViews.has(view) ? view : "dashboard"} />
     </Suspense>
   );
   return (
@@ -106,7 +123,7 @@ export function DashboardPlaceholder({ initialView = "dashboard", session, onLog
       navigation={navigation}
       notifications={notifications}
       onLogout={logout}
-      onNavigate={setView}
+      onNavigate={navigate}
       onReadNotification={read}
       roleLabel={labels[session.user.role] ?? "Tổng quan"}
     >

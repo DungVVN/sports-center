@@ -13,6 +13,7 @@ import { authApi } from "../features/auth/auth-api.js";
 import { LandingPage } from "../pages/LandingPage/LandingPage.jsx";
 import { GalleryPage } from "../pages/GalleryPage/GalleryPage.jsx";
 import { CalendarPage } from "../pages/CalendarPage/CalendarPage.jsx";
+import { dashboardPath, dashboardView, isDashboardView } from "./dashboard-routes.js";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -32,6 +33,7 @@ export function App() {
     if (path === "/pending") return "pending";
     if (path === "/gallery") return "gallery";
     if (path === "/calendar") return "calendar";
+    if (dashboardView(path)) return "login";
     return "landing";
   };
 
@@ -44,7 +46,7 @@ export function App() {
   const navigate = useCallback((newView) => {
     setView(newView);
     if (!isAdminPortal) {
-      const path = newView === "landing" ? "/" : `/${newView}`;
+      const path = isDashboardView(newView) ? dashboardPath(newView) : newView === "landing" ? "/" : `/${newView}`;
       window.history.pushState({}, "", path);
     }
   }, [isAdminPortal]);
@@ -58,7 +60,7 @@ export function App() {
       else if (path === "/pending") setView("pending");
       else if (path === "/gallery") setView("gallery");
       else if (path === "/calendar") setView("calendar");
-      else setView("landing");
+      else setView(dashboardView(path) ? "dashboard" : "landing");
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
@@ -100,14 +102,18 @@ export function App() {
   }, [session]);
   useEffect(() => { document.title = isAdminPortal ? "Kinetic Admin" : "Kinetic Sports Center"; }, [isAdminPortal]);
   const onMfaRequired = (challenge) => { setMfaChallenge(challenge); navigate("mfa"); };
+  const onLoggedIn = (currentSession) => {
+    setSession(currentSession);
+    navigate(currentSession.user.profileSetupRequired ? "profile" : "dashboard");
+  };
   const loginPage = isAdminPortal
-    ? <AdminLoginPage onLoggedIn={setSession} onMfaRequired={onMfaRequired} />
-    : <LoginPage onLoggedIn={setSession} onMfaRequired={onMfaRequired} onRegister={() => navigate("register")} />;
+    ? <AdminLoginPage onLoggedIn={onLoggedIn} onMfaRequired={onMfaRequired} />
+    : <LoginPage onLoggedIn={onLoggedIn} onMfaRequired={onMfaRequired} onRegister={() => navigate("register")} />;
   const content = isRestoringSession
     ? <main className="app-loading-state" aria-live="polite">Đang khôi phục phiên đăng nhập...</main>
     : session?.user.mustChangePassword
     ? <InitialPasswordChangePage onCompleted={() => { setSession((current) => ({ ...current, user: { ...current.user, mustChangePassword: false } })); }} />
-    : session ? <DashboardPlaceholder initialView={session.user.profileSetupRequired ? "profile" : "dashboard"} session={session} onProfileSaved={() => setSession((current) => ({ ...current, user: { ...current.user, profileSetupRequired: false } }))} onLogout={() => { setSession(null); navigate("login"); }} /> : {
+    : session ? <DashboardPlaceholder initialView={dashboardView(window.location.pathname) ?? (session.user.profileSetupRequired ? "profile" : "dashboard")} session={session} onProfileSaved={() => setSession((current) => ({ ...current, user: { ...current.user, profileSetupRequired: false } }))} onLogout={() => { setSession(null); navigate("login"); }} /> : {
     login: loginPage,
     landing: <LandingPage onLoginClick={() => navigate("login")} onRegisterClick={() => navigate("register")} onGalleryClick={() => navigate("gallery")} onCalendarClick={() => navigate("calendar")} />,
     gallery: <GalleryPage onLoginClick={() => navigate("login")} onHomeClick={() => navigate("landing")} />,
