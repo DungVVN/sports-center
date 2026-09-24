@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { MessageSquare } from "lucide-react";
 import { Button } from "../../components/ui/Button.jsx";
-import { supportApi } from "./support-api.js";
 import { hasSessionPermission } from "../../utils/session-permissions.js";
-import "../members/members.css";
+import { useSupportWorkspace } from "./hooks/useSupportWorkspace.js";
 
 const statusLabels = {
   open: "Đang mở",
@@ -19,55 +18,24 @@ const priorityLabels = {
 
 export function SupportStaffPage({ session }) {
   const canRespond = hasSessionPermission(session, "support.ticket.respond");
-  const [tickets, setTickets] = useState([]);
-  const [selected, setSelected] = useState(null);
+  const [selectedId, setSelectedId] = useState(null);
   const [reply, setReply] = useState("");
   const [status, setStatus] = useState("in_progress");
-  const [error, setError] = useState("");
-
-  const load = useCallback(async () => {
-    try {
-      setTickets(await supportApi.list());
-    } catch (caught) {
-      setError(caught.message);
-    }
-  }, []);
-
-  useEffect(() => {
-    void Promise.resolve().then(load);
-  }, [load]);
-
-  async function open(id) {
-    setError("");
-    try {
-      setSelected(await supportApi.detail(id));
-    } catch (caught) {
-      setError(caught.message);
-    }
-  }
+  const workspace = useSupportWorkspace({ selectedId });
+  const selected = workspace.detail;
 
   async function assign(id) {
-    setError("");
     try {
-      await supportApi.assignSelf(id);
-      await load();
-      await open(id);
-    } catch (caught) {
-      setError(caught.message);
-    }
+      await workspace.assignSelf.mutateAsync(id);
+    } catch { /* feedback is rendered below */ }
   }
 
   async function submit(event) {
     event.preventDefault();
-    setError("");
     try {
-      await supportApi.respond(selected.ticket.id, { body: reply, status });
+      await workspace.respond.mutateAsync({ id: selected.ticket.id, input: { body: reply, status } });
       setReply("");
-      await load();
-      await open(selected.ticket.id);
-    } catch (caught) {
-      setError(caught.message);
-    }
+    } catch { /* feedback is rendered below */ }
   }
 
   return (
@@ -76,19 +44,20 @@ export function SupportStaffPage({ session }) {
         <p>Hỗ trợ</p>
         <h1>Yêu cầu cần xử lý</h1>
       </header>
-      {error && <p className="auth-alert" role="alert">{error}</p>}
+      {workspace.error && <p className="auth-alert" role="alert">{workspace.error}</p>}
+      {workspace.notice && <p className="auth-notice" role="status">{workspace.notice}</p>}
       <section className="members-workspace-stacked support-staff-workspace">
         <section className="members-list">
           <div className="list-heading">
             <h2>Danh sách ticket</h2>
-            <Button onClick={load} size="sm" type="button" variant="ghost">
+            <Button onClick={workspace.reload} size="sm" type="button" variant="ghost">
               Tải lại
             </Button>
           </div>
-          {tickets.length === 0 ? (
+          {workspace.tickets.length === 0 ? (
             <p>Không có ticket.</p>
           ) : (
-            tickets.map((ticket) => (
+            workspace.tickets.map((ticket) => (
               <article key={ticket.id}>
                 <strong>
                   {ticket.ticket_code} · {ticket.subject}
@@ -98,7 +67,7 @@ export function SupportStaffPage({ session }) {
                   <strong>{priorityLabels[ticket.priority] ?? ticket.priority}</strong> ·{" "}
                   {ticket.assigned_to ? "Đã có người phụ trách" : "Chưa phân công"}
                 </p>
-                <Button onClick={() => open(ticket.id)} size="sm" type="button" variant="secondary">
+                <Button onClick={() => setSelectedId(ticket.id)} size="sm" type="button" variant="secondary">
                   Xử lý
                 </Button>
               </article>
@@ -117,7 +86,7 @@ export function SupportStaffPage({ session }) {
           <section className="members-list">
             <div className="list-heading">
               <h2>{selected.ticket.ticket_code} · {selected.ticket.subject}</h2>
-              <Button onClick={() => setSelected(null)} size="sm" type="button" variant="ghost">
+              <Button onClick={() => setSelectedId(null)} size="sm" type="button" variant="ghost">
                 Đóng
               </Button>
             </div>

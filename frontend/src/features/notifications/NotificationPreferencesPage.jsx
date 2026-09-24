@@ -1,54 +1,28 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useMutationFeedback, useSubmitMutation } from "../../hooks/useMutationFeedback.js";
 import { Bell, Mail } from "lucide-react";
 import { Button } from "../../components/ui/Button.jsx";
 import { apiClient } from "../../api/client.js";
-import "../members/members.css";
 import "./notification-preferences.css";
 
 export function NotificationPreferencesPanel({ className = "" }) {
-  const [value, setValue] = useState({ emailEnabled: true });
-  const [notice, setNotice] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    void Promise.resolve().then(async () => {
-      try {
-        const data = await apiClient.get("/notification-preferences");
-        if (active) setValue({ emailEnabled: data.email_enabled });
-      } catch (caught) {
-        if (active) setError(caught.message ?? "Không thể tải tùy chọn thông báo.");
-      } finally {
-        if (active) setLoading(false);
-      }
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
+  const preferencesQuery = useQuery({ queryKey: ["notification-preferences"], queryFn: () => apiClient.get("/notification-preferences") });
+  const feedback = useMutationFeedback();
+  const [draft, setDraft] = useState(null);
+  const value = draft ?? { emailEnabled: preferencesQuery.data?.email_enabled ?? true };
+  const savePreferences = useSubmitMutation({ feedback, mutationFn: (input) => apiClient.put("/notification-preferences", input), onSuccess: async () => { setDraft(null); await preferencesQuery.refetch(); }, successMessage: "Đã lưu tùy chọn thông báo thành công.", errorMessage: "Không thể lưu cài đặt." });
 
   async function save(e) {
     e.preventDefault();
-    setError("");
-    setNotice("");
-    setSubmitting(true);
-    try {
-      await apiClient.put("/notification-preferences", value);
-      setNotice("Đã lưu tùy chọn thông báo thành công.");
-    } catch (caught) {
-      setError(caught.message ?? "Không thể lưu cài đặt.");
-    } finally {
-      setSubmitting(false);
-    }
+    await savePreferences.mutateAsync(value).catch(() => {});
   }
 
   return (
     <section className={`notification-preferences ${className}`.trim()}>
-      {notice && <p className="profile-notice" role="status">{notice}</p>}
-      {error && <p className="auth-alert" role="alert">{error}</p>}
-      {loading ? (
+      {feedback.notice && <p className="profile-notice" role="status">{feedback.notice}</p>}
+      {(feedback.error || preferencesQuery.isError) && <p className="auth-alert" role="alert">{feedback.error || preferencesQuery.error.message}</p>}
+      {preferencesQuery.isLoading ? (
         <p className="notification-preferences__loading">Đang tải tùy chọn thông báo…</p>
       ) : (
         <>
@@ -67,7 +41,7 @@ export function NotificationPreferencesPanel({ className = "" }) {
               <input
                 id="email-notif-toggle"
                 checked={value.emailEnabled}
-                onChange={(e) => setValue({ ...value, emailEnabled: e.target.checked })}
+                onChange={(e) => setDraft({ ...value, emailEnabled: e.target.checked })}
                 type="checkbox"
               />
               <label htmlFor="email-notif-toggle">
@@ -84,7 +58,7 @@ export function NotificationPreferencesPanel({ className = "" }) {
               * Email xác thực bảo mật và đổi mật khẩu vẫn được gửi tự động khi cần thiết.
             </p>
 
-            <Button loading={submitting} type="submit">
+            <Button loading={savePreferences.isPending} type="submit">
               Lưu cài đặt
             </Button>
           </form>

@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "../../components/ui/Button.jsx";
 import { Dialog } from "../../components/ui/Dialog.jsx";
 import { Pagination } from "../../components/ui/Pagination.jsx";
 import { usePagination } from "../../components/ui/usePagination.js";
 import { paymentApi } from "./payment-api.js";
-import "../members/members.css";
 
 const statusLabels = {
   pending: "Chờ xác nhận",
@@ -23,36 +23,13 @@ const eventTypeLabels = {
 };
 
 export function MemberPaymentsPage() {
-  const [payments, setPayments] = useState([]);
-  const [receipt, setReceipt] = useState(null);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
+  const paymentsQuery = useQuery({ queryKey: ["member", "payments"], queryFn: paymentApi.mine });
+  const [receiptId, setReceiptId] = useState(null);
+  const receiptQuery = useQuery({ queryKey: ["member", "payments", receiptId], queryFn: () => paymentApi.ownReceipt(receiptId), enabled: Boolean(receiptId) });
+  const payments = paymentsQuery.data ?? [];
+  const receipt = receiptQuery.data ?? null;
   const paymentsPagination = usePagination(payments);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      setPayments(await paymentApi.mine());
-    } catch (caught) {
-      setError(caught.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void Promise.resolve().then(load);
-  }, [load]);
-
-  async function openReceipt(id) {
-    setError("");
-    try {
-      setReceipt(await paymentApi.ownReceipt(id));
-    } catch (caught) {
-      setError(caught.message);
-    }
-  }
 
   return (
     <main className="members-page">
@@ -60,15 +37,15 @@ export function MemberPaymentsPage() {
         <p>Thanh toán</p>
         <h1>Phiếu thu của tôi</h1>
       </header>
-      {error && <p className="auth-alert" role="alert">{error}</p>}
+      {(paymentsQuery.isError || receiptQuery.isError) && <p className="auth-alert" role="alert">{paymentsQuery.error?.message ?? receiptQuery.error?.message}</p>}
       <section className="members-list">
         <div className="list-heading">
           <h2>Lịch sử phiếu thu</h2>
-          <Button onClick={load} size="sm" variant="ghost">
+          <Button onClick={paymentsQuery.refetch} size="sm" variant="ghost">
             Tải lại
           </Button>
         </div>
-        {loading ? (
+        {paymentsQuery.isLoading ? (
           <p>Đang tải giao dịch…</p>
         ) : payments.length === 0 ? (
           <p>Chưa có phiếu thu nào.</p>
@@ -113,7 +90,7 @@ export function MemberPaymentsPage() {
                       </td>
                       <td>{payment.paid_at ? new Date(payment.paid_at).toLocaleString("vi-VN") : "—"}</td>
                       <td>
-                        <Button onClick={() => openReceipt(payment.id)} size="sm" type="button" variant="secondary">
+                        <Button onClick={() => setReceiptId(payment.id)} size="sm" type="button" variant="secondary">
                           Xem chi tiết
                         </Button>
                       </td>
@@ -128,7 +105,7 @@ export function MemberPaymentsPage() {
       </section>
       <Dialog
         isOpen={Boolean(receipt)}
-        onClose={() => setReceipt(null)}
+        onClose={() => setReceiptId(null)}
         title={`Biên nhận ${receipt?.transaction_code ?? ""}`}
       >
         {receipt && (
@@ -178,7 +155,7 @@ export function MemberPaymentsPage() {
               )}
             </div>
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "4px" }}>
-              <Button onClick={() => setReceipt(null)} size="sm" type="button" variant="secondary">
+              <Button onClick={() => setReceiptId(null)} size="sm" type="button" variant="secondary">
                 Đóng
               </Button>
             </div>

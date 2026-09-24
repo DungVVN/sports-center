@@ -1,13 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Check, Copy } from "lucide-react";
-import { ApiError } from "../../api/api-error.js";
 import { Button } from "../../components/ui/Button.jsx";
 import { DataTableToolbar, FilterMenu, SortableHeader } from "../../components/ui/DataTable.jsx";
 import { Dialog } from "../../components/ui/Dialog.jsx";
 import { Pagination } from "../../components/ui/Pagination.jsx";
 import { usePagination } from "../../components/ui/usePagination.js";
 import { sortTable } from "../../lib/table.js";
-import { staffApi } from "./staff-api.js";
+import { useStaffWorkspace } from "./hooks/useStaffWorkspace.js";
 import "./staff.css";
 
 const empty = {
@@ -32,21 +31,19 @@ const staffRoleLabels = Object.fromEntries(staffRoleOptions);
 const staffStatusLabels = Object.fromEntries(staffStatusOptions);
 
 export function StaffPage() {
-  const [staff, setStaff] = useState([]);
   const [form, setForm] = useState(empty);
-  const [editing, setEditing] = useState(null);
-  const [editForm, setEditForm] = useState(empty);
+  const [editingId, setEditingId] = useState(null);
   const [password, setPassword] = useState(null);
   const [credentialEmailDelivered, setCredentialEmailDelivered] = useState(null);
   const [copiedPassword, setCopiedPassword] = useState(false);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
   const [staffSearch, setStaffSearch] = useState("");
   const [staffRoleFilters, setStaffRoleFilters] = useState([]);
   const [staffStatusFilters, setStaffStatusFilters] = useState([]);
   const [isStaffFilterOpen, setIsStaffFilterOpen] = useState(false);
   const [staffSort, setStaffSort] = useState({ key: "fullName", direction: "asc" });
+  const workspace = useStaffWorkspace({ editingId });
+  const { staff } = workspace;
+  const submitting = workspace.createStaff.isPending || workspace.updateStaff.isPending || workspace.updateStatus.isPending || workspace.detailLoading;
   const visibleStaff = useMemo(() => {
     const query = staffSearch.trim().toLocaleLowerCase("vi");
     const filtered = staff.filter((item) =>
@@ -68,45 +65,16 @@ export function StaffPage() {
   function toggleStaffSort(key) {
     setStaffSort((value) => ({ key, direction: value.key === key && value.direction === "asc" ? "desc" : "asc" }));
   }
-  const load = async () => {
-    setLoading(true);
-    try {
-      setStaff(await staffApi.list());
-    } catch (caught) {
-      setError(
-        caught instanceof ApiError
-          ? caught.message
-          : "Không tải được nhân viên.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-  useEffect(() => {
-    void Promise.resolve().then(load);
-  }, []);
   const update = (event) =>
     setForm((value) => ({ ...value, [event.target.name]: event.target.value }));
-  async function create(event) {
+  function create(event) {
     event.preventDefault();
-    setError("");
     setCredentialEmailDelivered(null);
-    setSubmitting(true);
-    try {
-      const result = await staffApi.create(form);
+    workspace.createStaff.mutate(form, { onSuccess: (result) => {
       setPassword(result.temporaryPassword ?? null);
       setCredentialEmailDelivered(result.credentialEmailDelivered === true);
-      setStaff((items) => [result.staff, ...items]);
       setForm(empty);
-    } catch (caught) {
-      setError(
-        caught instanceof ApiError
-          ? caught.message
-          : "Không thể tạo nhân viên.",
-      );
-    } finally {
-      setSubmitting(false);
-    }
+    } });
   }
   function copyPassword() {
     if (!password) return;
@@ -114,62 +82,15 @@ export function StaffPage() {
     setCopiedPassword(true);
     setTimeout(() => setCopiedPassword(false), 2000);
   }
-  async function status(id, value) {
-    setError("");
-    setSubmitting(true);
-    try {
-      const changed = await staffApi.setStatus(id, value);
-      setStaff((items) =>
-        items.map((item) => (item.id === id ? changed : item)),
-      );
-    } catch (caught) {
-      setError(
-        caught instanceof ApiError
-          ? caught.message
-          : "Không thể cập nhật trạng thái.",
-      );
-    } finally {
-      setSubmitting(false);
-    }
+  function status(id, value) {
+    workspace.updateStatus.mutate({ id, status: value });
   }
-  async function openEdit(item) {
-    setError("");
-    setSubmitting(true);
-    try {
-      const detail = await staffApi.get(item.id);
-      setEditing(detail);
-      setEditForm({
-        fullName: detail.fullName,
-        email: detail.email,
-        phone: detail.phone ?? "",
-        role: detail.role,
-        specialties: detail.specialties ?? [],
-      });
-    } catch (caught) {
-      setError(caught.message);
-    } finally {
-      setSubmitting(false);
-    }
+  function openEdit(item) {
+    setEditingId(item.id);
   }
-  async function save(event) {
-    event.preventDefault();
-    if (!editing) return;
-    setError("");
-    setSubmitting(true);
-    try {
-      const updated = await staffApi.update(editing.id, {
-        ...editForm,
-        specialties: editForm.specialties.filter(Boolean),
-      });
-      setStaff((items) =>
-        items.map((item) => (item.id === updated.id ? updated : item)),
-      );
-      setEditing(null);
-    } catch (caught) {
-      setError(caught.message);
-    } finally {
-      setSubmitting(false);
-    }
+  function save(input) {
+    if (!editingId) return;
+    workspace.updateStaff.mutate({ id: editingId, input: { ...input, specialties: input.specialties.filter(Boolean) } }, { onSuccess: () => setEditingId(null) });
   }
   return (
     <main className="staff-page">
@@ -177,9 +98,9 @@ export function StaffPage() {
         <p>Quản trị</p>
         <h1>Quản lý nhân viên</h1>
       </header>
-      {error && (
+      {workspace.error && (
         <p className="auth-alert" role="alert">
-          {error}
+          {workspace.error}
         </p>
       )}
       {password && (
@@ -246,8 +167,8 @@ export function StaffPage() {
           </Button>
         </form>
         <section className="staff-list">
-          <div className="list-heading"><h2>Danh sách nhân viên</h2><Button onClick={load} size="sm" variant="ghost">Tải lại</Button></div>
-          {loading ? (
+          <div className="list-heading"><h2>Danh sách nhân viên</h2><Button onClick={workspace.reload} size="sm" variant="ghost">Tải lại</Button></div>
+          {workspace.loading ? (
             <p>Đang tải…</p>
           ) : staff.length === 0 ? (
             <p>Chưa có nhân viên.</p>
@@ -338,79 +259,18 @@ export function StaffPage() {
           )}
         </section>
       </section>
-      <Dialog
-        isOpen={Boolean(editing)}
-        onClose={() => !submitting && setEditing(null)}
-        title="Cập nhật nhân viên"
-      >
-        <form onSubmit={save}>
-          <div className="dialog__body">
-            <label>
-              Họ tên
-              <input
-                onChange={(event) =>
-                  setEditForm({ ...editForm, fullName: event.target.value })
-                }
-                required
-                value={editForm.fullName}
-              />
-            </label>
-            <label>
-              Email
-              <input disabled type="email" value={editForm.email} />
-            </label>
-            <label>
-              Số điện thoại
-              <input
-                onChange={(event) =>
-                  setEditForm({ ...editForm, phone: event.target.value })
-                }
-                required
-                value={editForm.phone}
-              />
-            </label>
-            <label>
-              Vai trò
-              <select
-                onChange={(event) =>
-                  setEditForm({ ...editForm, role: event.target.value })
-                }
-                value={editForm.role}
-              >
-                <option value="receptionist">Lễ tân</option>
-                <option value="coach">Huấn luyện viên</option>
-                <option value="manager">Quản lý</option>
-              </select>
-            </label>
-            <label>
-              Chuyên môn (cách nhau bởi dấu phẩy)
-              <input
-                onChange={(event) =>
-                  setEditForm({
-                    ...editForm,
-                    specialties: event.target.value
-                      .split(",")
-                      .map((value) => value.trim()),
-                  })
-                }
-                value={editForm.specialties.join(", ")}
-              />
-            </label>
-          </div>
-          <div className="dialog__actions">
-            <Button
-              onClick={() => setEditing(null)}
-              type="button"
-              variant="secondary"
-            >
-              Hủy
-            </Button>
-            <Button loading={submitting} type="submit">
-              Lưu thay đổi
-            </Button>
-          </div>
-        </form>
-      </Dialog>
+      <StaffEditDialog detail={workspace.detail} editingId={editingId} loading={workspace.detailLoading} onClose={() => setEditingId(null)} onSubmit={save} />
     </main>
   );
+}
+
+function StaffEditDialog({ detail, editingId, loading, onClose, onSubmit }) {
+  if (!editingId) return null;
+  const close = () => { if (!loading) onClose(); };
+  return <Dialog isOpen onClose={close} title="Cập nhật nhân viên">{loading && !detail ? <p className="dialog__body">Đang tải hồ sơ…</p> : detail && <StaffEditForm detail={detail} loading={loading} onClose={close} onSubmit={onSubmit} />}</Dialog>;
+}
+
+function StaffEditForm({ detail, loading, onClose, onSubmit }) {
+  const [form, setForm] = useState({ fullName: detail.fullName, email: detail.email, phone: detail.phone ?? "", role: detail.role, specialties: detail.specialties ?? [] });
+  return <form onSubmit={(event) => { event.preventDefault(); onSubmit(form); }}><div className="dialog__body"><label>Họ tên<input disabled={loading} onChange={(event) => setForm((current) => ({ ...current, fullName: event.target.value }))} required value={form.fullName} /></label><label>Email<input disabled type="email" value={form.email} /></label><label>Số điện thoại<input disabled={loading} onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))} required value={form.phone} /></label><label>Vai trò<select disabled={loading} onChange={(event) => setForm((current) => ({ ...current, role: event.target.value }))} value={form.role}><option value="receptionist">Lễ tân</option><option value="coach">Huấn luyện viên</option><option value="manager">Quản lý</option></select></label><label>Chuyên môn (cách nhau bởi dấu phẩy)<input disabled={loading} onChange={(event) => setForm((current) => ({ ...current, specialties: event.target.value.split(",").map((value) => value.trim()) }))} value={form.specialties.join(", ")} /></label></div><div className="dialog__actions"><Button disabled={loading} onClick={onClose} type="button" variant="secondary">Hủy</Button><Button loading={loading} type="submit">Lưu thay đổi</Button></div></form>;
 }

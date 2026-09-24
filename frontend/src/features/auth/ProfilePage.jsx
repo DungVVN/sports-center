@@ -1,11 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { Button } from "../../components/ui/Button.jsx";
-import { authApi } from "./auth-api.js";
 import { TotpEnrollmentPanel } from "./TotpEnrollmentPanel.jsx";
 import { NotificationPreferencesPanel } from "../notifications/NotificationPreferencesPage.jsx";
 import { hasSessionPermission } from "../../utils/session-permissions.js";
-import "../members/members.css";
+import { useProfileWorkspace } from "./hooks/useProfileWorkspace.js";
 import "./profile.css";
 
 const roleLabels = {
@@ -40,53 +39,33 @@ export function ProfileAvatar({ src, alt, fallback }) {
 }
 
 export function ProfilePage({ onSessionRevoked, onProfileSaved, session }) {
-  const [profile, setProfile] = useState(null);
-  const [form, setForm] = useState(null);
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  const workspace = useProfileWorkspace({ onProfileSaved });
+  const profile = workspace.profile;
+  const [formDraft, setFormDraft] = useState(null);
   const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
-  const [passwordSubmitting, setPasswordSubmitting] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const data = await authApi.profile();
-      setProfile(data);
-      setForm(toForm(data));
-    } catch (caught) {
-      setError(caught.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void Promise.resolve().then(load);
-  }, [load]);
+  const form = profile ? formDraft ?? toForm(profile) : null;
 
   function updateField(name, value) {
-    setForm((current) => ({ ...current, [name]: value }));
+    setFormDraft((current) => ({ ...(current ?? toForm(profile)), [name]: value }));
   }
 
   function updateContact(index, field, value) {
-    setForm((current) => ({
-      ...current,
-      contacts: current.contacts.map((contact, contactIndex) =>
+    setFormDraft((current) => ({
+      ...(current ?? toForm(profile)),
+      contacts: (current ?? toForm(profile)).contacts.map((contact, contactIndex) =>
         contactIndex === index ? { ...contact, [field]: value } : contact,
       ),
     }));
   }
 
   function choosePrimary(index) {
-    setForm((current) => ({
-      ...current,
-      contacts: current.contacts.map((contact, contactIndex) => ({
+    setFormDraft((current) => ({
+      ...(current ?? toForm(profile)),
+      contacts: (current ?? toForm(profile)).contacts.map((contact, contactIndex) => ({
         ...contact,
         isPrimary: contactIndex === index,
       })),
@@ -95,22 +74,20 @@ export function ProfilePage({ onSessionRevoked, onProfileSaved, session }) {
 
   async function submit(event) {
     event.preventDefault();
-    setError("");
-    setNotice("");
+    workspace.clearFeedback();
     if (!form.fullName.trim() || !form.phone.trim()) {
-      setError("Vui lòng nhập họ tên và số điện thoại.");
+      workspace.setError("Vui lòng nhập họ tên và số điện thoại.");
       return;
     }
     if (
       profile.role === "member" &&
       form.contacts.filter((item) => item.isPrimary).length > 1
     ) {
-      setError("Chỉ được chọn một liên hệ khẩn cấp chính.");
+      workspace.setError("Chỉ được chọn một liên hệ khẩn cấp chính.");
       return;
     }
-    setSubmitting(true);
     try {
-      const updated = await authApi.updateProfile({
+      await workspace.saveProfile.mutateAsync({
         fullName: form.fullName.trim(),
         phone: form.phone.trim(),
         dateOfBirth: form.dateOfBirth || null,
@@ -119,41 +96,27 @@ export function ProfilePage({ onSessionRevoked, onProfileSaved, session }) {
           ? { gender: form.gender || null, contacts: form.contacts }
           : {}),
       });
-      setProfile(updated);
-      setForm(toForm(updated));
-      onProfileSaved?.();
-      setNotice("Đã cập nhật hồ sơ cá nhân.");
-    } catch (caught) {
-      setError(caught.message);
-    } finally {
-      setSubmitting(false);
-    }
+      setFormDraft(null);
+    } catch { /* feedback is rendered below */ }
   }
 
   async function changePassword(event) {
     event.preventDefault();
-    setError("");
-    setNotice("");
+    workspace.clearFeedback();
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      setError("Xác nhận mật khẩu mới không khớp.");
+      workspace.setError("Xác nhận mật khẩu mới không khớp.");
       return;
     }
-    setPasswordSubmitting(true);
     try {
-      await authApi.changePassword({
+      await workspace.changePassword.mutateAsync({
         currentPassword: passwordForm.currentPassword,
         newPassword: passwordForm.newPassword,
       });
       setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
-      setNotice("Đã đổi mật khẩu. Các phiên đăng nhập khác đã được thu hồi.");
-    } catch (caught) {
-      setError(caught.message);
-    } finally {
-      setPasswordSubmitting(false);
-    }
+    } catch { /* feedback is rendered below */ }
   }
 
-  if (loading)
+  if (workspace.loading)
     return (
       <main className="members-page">
         <p>Đang tải hồ sơ cá nhân…</p>
@@ -163,9 +126,9 @@ export function ProfilePage({ onSessionRevoked, onProfileSaved, session }) {
     return (
       <main className="members-page">
         <p className="auth-alert" role="alert">
-          {error || "Không thể tải hồ sơ cá nhân."}
+          {workspace.error || "Không thể tải hồ sơ cá nhân."}
         </p>
-        <Button onClick={load}>Thử lại</Button>
+        <Button onClick={workspace.reload}>Thử lại</Button>
       </main>
     );
 
@@ -176,14 +139,14 @@ export function ProfilePage({ onSessionRevoked, onProfileSaved, session }) {
         <p>Hồ sơ</p>
         <h1>Hồ sơ cá nhân</h1>
       </header>
-      {error && (
+      {workspace.error && (
         <p className="auth-alert" role="alert">
-          {error}
+          {workspace.error}
         </p>
       )}
-      {notice && (
+      {workspace.notice && (
         <p className="profile-notice" role="status">
-          {notice}
+          {workspace.notice}
         </p>
       )}
       <section className="profile-page__grid">
@@ -191,7 +154,7 @@ export function ProfilePage({ onSessionRevoked, onProfileSaved, session }) {
           <form className="members-form profile-page__form" onSubmit={submit}>
             <div className="list-heading">
               <h2>Thông tin cá nhân</h2>
-              <Button onClick={load} size="sm" type="button" variant="ghost">
+              <Button onClick={workspace.reload} size="sm" type="button" variant="ghost">
                 Tải lại
               </Button>
             </div>
@@ -292,7 +255,7 @@ export function ProfilePage({ onSessionRevoked, onProfileSaved, session }) {
               )}
             </div>
             <div className="profile-page__actions">
-              <Button loading={submitting} type="submit">
+              <Button loading={workspace.saveProfile.isPending} type="submit">
                 Lưu thay đổi
               </Button>
               <span>Email, vai trò và trạng thái chỉ có thể xem.</span>
@@ -309,6 +272,7 @@ export function ProfilePage({ onSessionRevoked, onProfileSaved, session }) {
                 Mật khẩu hiện tại
                 <div className="password-input-wrapper">
                   <input
+                    aria-label="Mật khẩu hiện tại"
                     autoComplete="current-password"
                     minLength="8"
                     onChange={(event) =>
@@ -335,6 +299,7 @@ export function ProfilePage({ onSessionRevoked, onProfileSaved, session }) {
                 Mật khẩu mới
                 <div className="password-input-wrapper">
                   <input
+                    aria-label="Mật khẩu mới"
                     autoComplete="new-password"
                     minLength="8"
                     onChange={(event) =>
@@ -362,6 +327,7 @@ export function ProfilePage({ onSessionRevoked, onProfileSaved, session }) {
                 Xác nhận mật khẩu mới
                 <div className="password-input-wrapper">
                   <input
+                    aria-label="Xác nhận mật khẩu mới"
                     autoComplete="new-password"
                     minLength="8"
                     onChange={(event) =>
@@ -386,7 +352,7 @@ export function ProfilePage({ onSessionRevoked, onProfileSaved, session }) {
               </label>
             </div>
             <div className="profile-page__actions">
-              <Button loading={passwordSubmitting} type="submit">
+              <Button loading={workspace.changePassword.isPending} type="submit">
                 Đổi mật khẩu
               </Button>
               <span>Mọi phiên đăng nhập hiện có sẽ được thu hồi.</span>
@@ -407,13 +373,13 @@ export function ProfilePage({ onSessionRevoked, onProfileSaved, session }) {
                 <Button
                   disabled={form.contacts.length >= 3}
                   onClick={() =>
-                    setForm((current) => ({
-                      ...current,
+                    setFormDraft((current) => ({
+                      ...(current ?? toForm(profile)),
                       contacts: [
-                        ...current.contacts,
+                        ...(current ?? toForm(profile)).contacts,
                         {
                           ...emptyContact,
-                          isPrimary: current.contacts.length === 0,
+                          isPrimary: (current ?? toForm(profile)).contacts.length === 0,
                         },
                       ],
                     }))
@@ -480,15 +446,15 @@ export function ProfilePage({ onSessionRevoked, onProfileSaved, session }) {
                       </label>
                       <Button
                         onClick={() =>
-                          setForm((current) => ({
-                            ...current,
-                            contacts: current.contacts
+                          setFormDraft((current) => ({
+                            ...(current ?? toForm(profile)),
+                            contacts: (current ?? toForm(profile)).contacts
                               .filter((_, contactIndex) => contactIndex !== index)
                               .map((item, contactIndex) => ({
                                 ...item,
                                 isPrimary:
                                   contactIndex === 0 &&
-                                  !current.contacts
+                                  !(current ?? toForm(profile)).contacts
                                     .filter((_, i) => i !== index)
                                     .some((entry) => entry.isPrimary),
                               })),

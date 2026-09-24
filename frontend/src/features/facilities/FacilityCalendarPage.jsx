@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutationFeedback } from "../../hooks/useMutationFeedback.js";
 import { facilityApi } from "./facility-api.js";
 import "./facilities.css";
 
@@ -22,8 +23,7 @@ export function FacilityCalendarPage({ session, onLoginClick }) {
   const [newDay, setNewDay] = useState({ facilityId: "", date: localDate() });
   const [decision, setDecision] = useState({ id: "", start: "", end: "", reason: "" });
   const [cancellation, setCancellation] = useState({ id: "", reason: "" });
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
+  const feedback = useMutationFeedback();
   const [busy, setBusy] = useState(false);
   const granted = new Set(session?.permissions ?? []);
   const can = (code) => session?.user.role === "admin" || granted.has(code);
@@ -33,9 +33,9 @@ export function FacilityCalendarPage({ session, onLoginClick }) {
   const staff = useQuery({ queryKey: ["facility-reservations-staff"], queryFn: facilityApi.reservations, enabled: Boolean(session && can("facility.booking.read")), retry: false });
 
   async function perform(action, success) {
-    setBusy(true); setError(""); setNotice("");
-    try { await action(); setNotice(success); await client.invalidateQueries({ queryKey: ["facility-calendar"] }); await client.invalidateQueries({ queryKey: ["facility-reservations-me"] }); await client.invalidateQueries({ queryKey: ["facility-reservations-staff"] }); return true; }
-    catch (cause) { setError(cause.message); return false; }
+    setBusy(true); feedback.clear();
+    try { await action(); feedback.setNotice(success); await client.invalidateQueries({ queryKey: ["facility-calendar"] }); await client.invalidateQueries({ queryKey: ["facility-reservations-me"] }); await client.invalidateQueries({ queryKey: ["facility-reservations-staff"] }); return true; }
+    catch (cause) { feedback.setError(cause.message); return false; }
     finally { setBusy(false); }
   }
 
@@ -53,7 +53,7 @@ export function FacilityCalendarPage({ session, onLoginClick }) {
   }
 
   return <section id="facility-calendar" className="members-page facility-calendar">
-    <header className="facility-calendar__header"><p className="facility-calendar__eyebrow">LỊCH SÂN</p><h1>Giờ trống & lịch đã đặt</h1><p>Chọn loại sân và ngày để xem các khoảng giờ còn trống hoặc đã được duyệt. Thông tin người đặt không công khai.</p></header>
+    <header className="facility-calendar__header"><p className="facility-calendar__eyebrow">LỊCH SÂN</p><h1>Giờ trống & lịch đã đặt</h1></header>
     <section className="facility-calendar__filter-panel" aria-label="Bộ lọc lịch sân">
       <div className="facility-calendar__filters">
         <label>Loại sân<select value={typeId} onChange={(event) => setTypeId(event.target.value)}><option value="">Tất cả</option>{(calendar.data?.types ?? []).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
@@ -93,6 +93,6 @@ export function FacilityCalendarPage({ session, onLoginClick }) {
     {can("facility.booking.read") && <section className="facility-calendar__panel"><h3>Yêu cầu đặt sân</h3>{staff.isPending ? <p>Đang tải...</p> : staff.isError ? <p role="alert">Không tải được đơn. <button onClick={() => staff.refetch()}>Thử lại</button></p> : staff.data?.length ? <ul>{staff.data.map((item) => <li key={item.id}><strong>{item.requesterName}</strong> · {item.phone} · {item.participantCount} người · {item.facilityName} · {item.date} · {clock(item.requestedStartMinute)}–{clock(item.requestedEndMinute)} · {labels[item.status]}{item.status === "pending" && can("facility.booking.approve") && <button type="button" onClick={() => setDecision({ id: item.id, start: clock(item.requestedStartMinute), end: clock(item.requestedEndMinute), reason: "" })}>Xử lý</button>}{["pending", "approved"].includes(item.status) && can("facility.booking.cancel") && <button type="button" disabled={busy} onClick={() => setCancellation({ id: item.id, reason: "" })}>Hủy đơn</button>}</li>)}</ul> : <p>Chưa có yêu cầu đặt sân.</p>}</section>}
     {cancellation.id && <form className="facility-calendar__panel" onSubmit={(event) => { event.preventDefault(); void cancelReservation(); }}><h3>Hủy đơn đặt sân</h3><label>Lý do hủy<input required minLength="3" maxLength="500" value={cancellation.reason} onChange={(event) => setCancellation({ ...cancellation, reason: event.target.value })} /></label><button disabled={busy || cancellation.reason.trim().length < 3}>Xác nhận hủy</button><button type="button" onClick={() => setCancellation({ id: "", reason: "" })}>Đóng</button></form>}
     {decision.id && <form className="facility-calendar__panel" onSubmit={(event) => { event.preventDefault(); void reviewReservation(true); }}><h3>Chốt giờ đặt sân</h3><div className="facility-calendar__fields"><label>Từ giờ<input required type="time" value={decision.start} onChange={(event) => setDecision({ ...decision, start: event.target.value })} /></label><label>Đến giờ<input required type="time" value={decision.end} onChange={(event) => setDecision({ ...decision, end: event.target.value })} /></label><label>Lý do từ chối<input value={decision.reason} onChange={(event) => setDecision({ ...decision, reason: event.target.value })} /></label></div><button disabled={busy}>Duyệt đơn</button><button type="button" disabled={busy || decision.reason.trim().length < 3} onClick={() => void reviewReservation(false)}>Từ chối</button><button type="button" onClick={() => setDecision({ id: "", start: "", end: "", reason: "" })}>Đóng</button></form>}
-    {error && <p className="facility-calendar__error" role="alert">{error}</p>}{notice && <p className="facility-calendar__notice" role="status">{notice}</p>}
+    {feedback.error && <p className="facility-calendar__error" role="alert">{feedback.error}</p>}{feedback.notice && <p className="facility-calendar__notice" role="status">{feedback.notice}</p>}
   </section>;
 }

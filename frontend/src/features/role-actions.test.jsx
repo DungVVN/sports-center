@@ -1,5 +1,6 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ClassesPage } from "./classes/ClassesPage.jsx";
 import { BookingsPage } from "./bookings/BookingsPage.jsx";
 import { AttendancePage } from "./attendance/AttendancePage.jsx";
@@ -17,6 +18,11 @@ vi.mock("./memberships/membership-api.js", () => ({ membershipApi: { packages: v
 vi.mock("./payments/payment-api.js", () => ({ paymentApi: { list: vi.fn() } }));
 vi.mock("./members/member-api.js", () => ({ memberApi: { list: vi.fn() } }));
 
+function renderWorkspace(ui) {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+}
+
 describe("permission-backed role actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -33,38 +39,38 @@ describe("permission-backed role actions", () => {
   afterEach(cleanup);
 
   it("keeps Manager payment read-only", async () => {
-    render(<PaymentsPage session={{ user: { role: "manager" }, permissions: ["payment.read"] }} />);
+    renderWorkspace(<PaymentsPage session={{ user: { role: "manager" }, permissions: ["payment.read"] }} />);
     await waitFor(() => expect(paymentApi.list).toHaveBeenCalled());
     expect(screen.queryByText("Tạo chờ thanh toán")).not.toBeInTheDocument();
   });
 
   it("does not request the class-review queue for Manager", async () => {
-    render(<ClassesPage session={{ user: { role: "manager" }, permissions: ["class.read", "class.manage"] }} />);
+    renderWorkspace(<ClassesPage session={{ user: { role: "manager" }, permissions: ["class.read", "class.manage"] }} />);
     await waitFor(() => expect(classApi.list).toHaveBeenCalled());
     expect(classApi.changeRequests).not.toHaveBeenCalled();
   });
 
   it("loads and shows the freeze-review queue for authorized Admin", async () => {
-    render(<MembershipsPage mode="catalog" session={{ user: { role: "admin" }, permissions: ["membership.freeze.review", "membership.package.manage"] }} />);
+    renderWorkspace(<MembershipsPage mode="catalog" session={{ user: { role: "admin" }, permissions: ["membership.freeze.review", "membership.package.manage"] }} />);
     await waitFor(() => expect(membershipApi.freezeRequests).toHaveBeenCalled());
     expect(screen.getByText("Yêu cầu đóng băng chờ duyệt")).toBeInTheDocument();
   });
 
   it("lets Admin reach membership assignment", async () => {
-    render(<MembershipsPage mode="assign" session={{ user: { role: "admin" }, permissions: ["membership.assign", "membership.freeze.review"] }} />);
+    renderWorkspace(<MembershipsPage mode="assign" session={{ user: { role: "admin" }, permissions: ["membership.assign", "membership.freeze.review"] }} />);
     await waitFor(() => expect(memberApi.list).toHaveBeenCalled());
     expect(screen.getByText("Tạo gói cho hội viên")).toBeInTheDocument();
   });
 
   it("shows Admin the booking form when booking.write is granted", async () => {
-    render(<BookingsPage session={{ user: { role: "admin" }, permissions: ["booking.write", "booking.read"] }} />);
+    renderWorkspace(<BookingsPage session={{ user: { role: "admin" }, permissions: ["booking.write", "booking.read"] }} />);
     await waitFor(() => expect(bookingApi.list).toHaveBeenCalled());
     expect(screen.getByText("Đặt lớp")).toBeInTheDocument();
   });
 
   it("lets Admin inspect completed classes for attendance corrections", async () => {
     classApi.list.mockResolvedValue([{ id: "class-1", code: "CLS-1", name: "Buổi đã kết thúc", status: "completed", starts_at: new Date(Date.now() - 86_400_000).toISOString(), ends_at: new Date(Date.now() - 82_800_000).toISOString(), coach_user_id: "coach-1" }]);
-    render(<AttendancePage session={{ user: { role: "admin", id: "admin-1" }, permissions: ["attendance.read", "attendance.write"] }} />);
+    renderWorkspace(<AttendancePage session={{ user: { role: "admin", id: "admin-1" }, permissions: ["attendance.read", "attendance.write"] }} />);
     expect(await screen.findByText("Buổi đã kết thúc")).toBeInTheDocument();
   });
 });

@@ -2,6 +2,13 @@ import { describe, expect, it, vi } from "vitest";
 import { createMembershipService } from "../src/modules/memberships/membership.service.js";
 
 describe("public membership packages", () => {
+  it("identifies a duplicate package code for the form", async () => {
+    const repository = { createPackage: vi.fn().mockRejectedValue({ code: "P2002", meta: { target: ["code"] } }) };
+    const service = createMembershipService({ repository, auditService: { record: vi.fn() } });
+    await expect(service.createPackage({ code: "STANDARD", name: "Tiêu chuẩn", priceVnd: "100000", durationDays: 30, tierRank: 1 }, "manager-1"))
+      .rejects.toMatchObject({ statusCode: 409, code: "MEMBERSHIP_PACKAGE_CODE_EXISTS" });
+  });
+
   it("returns only display fields and converts bigint prices", async () => {
     const repository = { publicPackages: vi.fn().mockResolvedValue([{ code: "PREMIUM", name: "Cao cấp", price_vnd: 2490000n, duration_days: 365, benefits: ["Hồ bơi"], id: "private-id", is_active: true }]) };
     const service = createMembershipService({ repository, auditService: {} });

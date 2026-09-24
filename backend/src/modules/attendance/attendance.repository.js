@@ -63,7 +63,8 @@ export const attendanceRepository = {
   correct: (data) => prisma.attendance_corrections.create({ data }),
   submission: (classSessionId) => prisma.attendance_submissions.findUnique({ where: { class_session_id: classSessionId } }),
   async submit(classSessionId, entries, actorUserId) {
-    return prisma.$transaction(async (tx) => {
+    try {
+      return await prisma.$transaction(async (tx) => {
       const [session, bookings] = await Promise.all([
         tx.class_sessions.findUnique({ where: { id: classSessionId }, select: { id: true, name: true } }),
         tx.bookings.findMany({ where: { class_session_id: classSessionId, status: { in: ["confirmed", "attended"] } }, select: { id: true, member_id: true } }),
@@ -86,6 +87,16 @@ export const attendanceRepository = {
       });
       if (notifications.length) await tx.notifications.createMany({ data: notifications });
       return { ...submission, notificationCount: notifications.length };
-    });
+      });
+    } catch (error) {
+      // Two operators can pass the pre-check together. The unique submission
+      // record is the final guard; make the losing request idempotent instead
+      // of surfacing an unexplained database 500.
+      if (error?.code === "P2002") {
+        const existing = await this.submission(classSessionId);
+        if (existing) return { alreadySubmitted: true, ...existing };
+      }
+      throw error;
+    }
   },
 };

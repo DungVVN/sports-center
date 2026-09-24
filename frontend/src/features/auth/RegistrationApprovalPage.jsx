@@ -1,43 +1,19 @@
-import { useCallback, useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutationFeedback, useSubmitMutation } from "../../hooks/useMutationFeedback.js";
 import { Button } from "../../components/ui/Button.jsx";
 import { Pagination } from "../../components/ui/Pagination.jsx";
 import { usePagination } from "../../components/ui/usePagination.js";
 import { authApi } from "./auth-api.js";
-import "../members/members.css";
 
 export function RegistrationApprovalPage() {
-  const [items, setItems] = useState([]);
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [approvingId, setApprovingId] = useState("");
+  const client = useQueryClient();
+  const feedback = useMutationFeedback();
+  const registrationsQuery = useQuery({ queryKey: ["registrations", "pending"], queryFn: authApi.pendingRegistrations });
+  const approveRegistration = useSubmitMutation({ feedback, mutationFn: (userId) => authApi.approveRegistration(userId), onSuccess: () => client.invalidateQueries({ queryKey: ["registrations", "pending"] }), successMessage: "Đã duyệt tài khoản hội viên. Hội viên có thể đăng nhập.", errorMessage: "Không thể duyệt tài khoản hội viên." });
+  const items = registrationsQuery.data ?? [];
   const registrationsPagination = usePagination(items);
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      setItems(await authApi.pendingRegistrations());
-    } catch (caught) {
-      setError(caught.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-  useEffect(() => {
-    void Promise.resolve().then(load);
-  }, [load]);
   async function approve(userId) {
-    setError("");
-    setNotice("");
-    setApprovingId(userId);
-    try {
-      await authApi.approveRegistration(userId);
-      setNotice("Đã duyệt tài khoản hội viên. Hội viên có thể đăng nhập.");
-      await load();
-    } catch (caught) {
-      setError(caught.message);
-    } finally {
-      setApprovingId("");
-    }
+    await approveRegistration.mutateAsync(userId).catch(() => {});
   }
   return (
     <main className="members-page">
@@ -45,24 +21,24 @@ export function RegistrationApprovalPage() {
         <p>Đăng ký hội viên</p>
         <h1>Chờ Lễ tân duyệt</h1>
       </header>
-      {error && (
+      {(feedback.error || registrationsQuery.isError) && (
         <p className="auth-alert" role="alert">
-          {error}
+          {feedback.error || registrationsQuery.error.message}
         </p>
       )}
-      {notice && (
+      {feedback.notice && (
         <p className="auth-success" role="status">
-          {notice}
+          {feedback.notice}
         </p>
       )}
       <section className="members-list">
         <div className="list-heading">
           <h2>Tài khoản chờ duyệt</h2>
-          <Button onClick={load} size="sm" variant="ghost">
+          <Button onClick={registrationsQuery.refetch} size="sm" variant="ghost">
             Tải lại
           </Button>
         </div>
-        {loading ? (
+        {registrationsQuery.isLoading ? (
           <p>Đang tải…</p>
         ) : items.length === 0 ? (
           <p>Không có đăng ký chờ duyệt.</p>
@@ -98,7 +74,7 @@ export function RegistrationApprovalPage() {
                     </td>
                     <td>
                       <Button
-                        loading={approvingId === item.user.id}
+                        loading={approveRegistration.isPending && approveRegistration.variables === item.user.id}
                         onClick={() => approve(item.user.id)}
                         size="sm"
                       >

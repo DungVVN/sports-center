@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutationFeedback, useSubmitMutation } from "../../hooks/useMutationFeedback.js";
 import { Button } from "../../components/ui/Button.jsx";
 import { rolePermissionApi } from "./role-permission-api.js";
 import "./role-permissions.css";
@@ -6,40 +8,16 @@ import "./role-permissions.css";
 const roleOrder = ["manager", "receptionist", "coach", "member"];
 
 export function RolePermissionPage() {
-  const [matrix, setMatrix] = useState(null);
+  const client = useQueryClient();
+  const feedback = useMutationFeedback();
+  const matrixQuery = useQuery({ queryKey: ["role-permissions"], queryFn: rolePermissionApi.matrix });
+  const matrix = matrixQuery.data ?? null;
   const [draft, setDraft] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
-
-  async function load() {
-    setLoading(true);
-    setError("");
-    try {
-      const result = await rolePermissionApi.matrix();
-      setMatrix(result);
-      setDraft(Object.fromEntries(result.roles.map((role) => [role.code, role.permissionCodes])));
-    } catch (cause) {
-      setError(cause.message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    let active = true;
-    rolePermissionApi.matrix().then((result) => {
-      if (!active) return;
-      setMatrix(result);
-      setDraft(Object.fromEntries(result.roles.map((role) => [role.code, role.permissionCodes])));
-    }).catch((cause) => {
-      if (active) setError(cause.message);
-    }).finally(() => {
-      if (active) setLoading(false);
-    });
-    return () => { active = false; };
-  }, []);
+  const saveMatrix = useSubmitMutation({ feedback, mutationFn: async (roles) => {
+    let nextRoles = matrix.roles;
+    for (const role of roles) { const updated = await rolePermissionApi.replace(role.code, { version: role.version, permissionCodes: draft[role.code] ?? role.permissionCodes ?? [] }); nextRoles = nextRoles.map((item) => item.code === role.code ? { ...item, version: updated.version, permissionCodes: updated.permissionCodes } : item); }
+    return nextRoles;
+  }, onSuccess: (roles) => client.setQueryData(["role-permissions"], (previous) => ({ ...previous, roles })), successMessage: "Đã lưu thay đổi quyền.", errorMessage: "Một phần thay đổi có thể đã được lưu. Hãy tải lại bảng trước khi thử lại." });
 
   const groups = useMemo(() => {
     if (!matrix) return [];
@@ -51,10 +29,11 @@ export function RolePermissionPage() {
     }
     return [...grouped.entries()];
   }, [matrix]);
+  const displayedDraft = matrix ? Object.fromEntries(matrix.roles.map((role) => [role.code, draft[role.code] ?? role.permissionCodes ?? []])) : {};
 
   function toggle(role, code) {
     setDraft((current) => {
-      const selected = new Set(current[role] ?? []);
+      const selected = new Set(current[role] ?? matrix.roles.find((item) => item.code === role)?.permissionCodes ?? []);
       const requirements = Object.fromEntries(matrix.permissions.map((permission) => [permission.code, [...(permission.requires ?? []), ...(permission.requiresByRole?.[role] ?? [])]]));
       if (selected.has(code)) {
         selected.delete(code);
@@ -75,54 +54,36 @@ export function RolePermissionPage() {
       }
       return { ...current, [role]: [...selected] };
     });
-    setMessage("");
+    feedback.clear();
   }
 
-  const changedRoles = matrix?.roles.filter((role) => JSON.stringify([...(draft[role.code] ?? [])].sort()) !== JSON.stringify([...(role.permissionCodes ?? [])].sort())) ?? [];
+  const changedRoles = matrix?.roles.filter((role) => JSON.stringify([...(draft[role.code] ?? role.permissionCodes ?? [])].sort()) !== JSON.stringify([...(role.permissionCodes ?? [])].sort())) ?? [];
 
   async function saveAll() {
     if (!changedRoles.length) return;
-    setSaving(true);
-    setError("");
-    setMessage("");
-    let nextRoles = matrix.roles;
-    try {
-      for (const role of changedRoles) {
-        const updated = await rolePermissionApi.replace(role.code, { version: role.version, permissionCodes: draft[role.code] ?? [] });
-        nextRoles = nextRoles.map((item) => item.code === role.code
-          ? { ...item, version: updated.version, permissionCodes: updated.permissionCodes }
-          : item);
-      }
-      setMatrix((previous) => ({ ...previous, roles: nextRoles }));
-      setMessage("Đã lưu thay đổi quyền.");
-    } catch (cause) {
-      setMatrix((previous) => ({ ...previous, roles: nextRoles }));
-      setError(cause.status === 409 ? "Bảng quyền đã được thay đổi. Hãy tải lại trước khi lưu." : "Một phần thay đổi có thể đã được lưu. Hãy tải lại bảng trước khi thử lại.");
-    } finally {
-      setSaving(false);
-    }
+    await saveMatrix.mutateAsync(changedRoles).catch((cause) => { if (cause.status === 409) feedback.setError("Bảng quyền đã được thay đổi. Hãy tải lại trước khi lưu."); });
   }
 
-  if (loading) return <p role="status">Đang tải bảng phân quyền...</p>;
-  if (!matrix) return <section className="role-permissions"><p role="alert">{error || "Không tải được bảng phân quyền."}</p><Button onClick={load}>Thử lại</Button></section>;
+  if (matrixQuery.isLoading) return <p role="status">Đang tải bảng phân quyền...</p>;
+  if (!matrix) return <section className="role-permissions"><p role="alert">{feedback.error || matrixQuery.error?.message || "Không tải được bảng phân quyền."}</p><Button onClick={matrixQuery.refetch}>Thử lại</Button></section>;
 
   return (
     <section className="role-permissions">
       <header className="role-permissions__header">
         <div><p className="role-permissions__eyebrow">QUẢN TRỊ</p><h1>Phân quyền chức năng</h1><p>Tích chọn chức năng cho bốn vai trò. Admin luôn có toàn quyền.</p></div>
-        <Button onClick={load} variant="secondary">Tải lại</Button>
+        <Button onClick={matrixQuery.refetch} variant="secondary">Tải lại</Button>
       </header>
-      {error && <p role="alert" className="role-permissions__error">{error}</p>}
-      {message && <p role="status" className="role-permissions__success">{message}</p>}
+      {feedback.error && <p role="alert" className="role-permissions__error">{feedback.error}</p>}
+      {feedback.notice && <p role="status" className="role-permissions__success">{feedback.notice}</p>}
       <div className="role-permissions__scroll">
         <table className="role-permissions__table">
           <thead><tr><th scope="col">Chức năng</th>{roleOrder.map((code) => <th key={code} scope="col">{matrix.roles.find((role) => role.code === code)?.label ?? code}</th>)}</tr></thead>
           <tbody>{groups.map(([group, permissions]) => (
-            <FragmentGroup group={group} key={group} permissions={permissions} roles={roleOrder} draft={draft} onToggle={toggle} />
+            <FragmentGroup group={group} key={group} permissions={permissions} roles={roleOrder} draft={displayedDraft} onToggle={toggle} />
           ))}</tbody>
         </table>
       </div>
-      <div className="role-permissions__actions"><Button disabled={!changedRoles.length || saving} onClick={saveAll}>{saving ? "Đang lưu..." : "Lưu thay đổi"}</Button></div>
+      <div className="role-permissions__actions"><Button disabled={!changedRoles.length || saveMatrix.isPending} onClick={saveAll}>{saveMatrix.isPending ? "Đang lưu..." : "Lưu thay đổi"}</Button></div>
     </section>
   );
 }

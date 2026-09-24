@@ -1,9 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "../../components/ui/Button.jsx";
 import { Dialog } from "../../components/ui/Dialog.jsx";
-import { supportApi } from "./support-api.js";
 import { hasSessionPermission } from "../../utils/session-permissions.js";
-import "../members/members.css";
+import { useSupportWorkspace } from "./hooks/useSupportWorkspace.js";
 
 const formatDate = (value) => value ? new Date(value).toLocaleString("vi-VN") : "—";
 
@@ -21,39 +20,18 @@ const priorityLabels = {
 
 export function SupportPage({ session }) {
   const canCreate = hasSessionPermission(session, "support.ticket.create");
-  const [items, setItems] = useState([]);
   const [form, setForm] = useState({ subject: "", body: "", priority: "normal" });
-  const [detail, setDetail] = useState(null);
-  const [error, setError] = useState("");
-  const load = async () => {
-    try {
-      setItems(await supportApi.list());
-    } catch (caught) {
-      setError(caught.message);
-    }
-  };
-  useEffect(() => {
-    void Promise.resolve().then(load);
-  }, []);
+  const [selectedId, setSelectedId] = useState(null);
+  const workspace = useSupportWorkspace({ selectedId });
+
   async function submit(event) {
     event.preventDefault();
-    setError("");
     try {
-      await supportApi.create(form);
+      await workspace.createTicket.mutateAsync(form);
       setForm({ subject: "", body: "", priority: "normal" });
-      await load();
-    } catch (caught) {
-      setError(caught.message);
-    }
+    } catch { /* feedback is rendered below */ }
   }
-  async function showDetail(id) {
-    setError("");
-    try {
-      setDetail(await supportApi.detail(id));
-    } catch (caught) {
-      setError(caught.message);
-    }
-  }
+  const detail = workspace.detail;
 
   return (
     <main className="members-page">
@@ -61,7 +39,8 @@ export function SupportPage({ session }) {
         <p>Hỗ trợ</p>
         <h1>Yêu cầu hỗ trợ</h1>
       </header>
-      {error && <p className="auth-alert" role="alert">{error}</p>}
+      {workspace.error && <p className="auth-alert" role="alert">{workspace.error}</p>}
+      {workspace.notice && <p className="auth-notice" role="status">{workspace.notice}</p>}
       <section className="members-grid">
         {canCreate && <form className="members-form" onSubmit={submit}>
           <label>
@@ -98,14 +77,14 @@ export function SupportPage({ session }) {
         <section className="members-list">
           <div className="list-heading">
             <h2>Lịch sử yêu cầu</h2>
-            <Button onClick={load} size="sm" type="button" variant="ghost">
+            <Button onClick={workspace.reload} size="sm" type="button" variant="ghost">
               Tải lại
             </Button>
           </div>
-          {items.length === 0 ? (
+          {workspace.tickets.length === 0 ? (
             <p>Chưa có yêu cầu hỗ trợ.</p>
           ) : (
-            items.map((item) => (
+            workspace.tickets.map((item) => (
               <article key={item.id}>
                 <strong>
                   {item.ticket_code} · {item.subject}
@@ -114,7 +93,7 @@ export function SupportPage({ session }) {
                   Trạng thái: <strong>{statusLabels[item.status] ?? item.status}</strong> · Mức độ:{" "}
                   <strong>{priorityLabels[item.priority] ?? item.priority}</strong>
                 </p>
-                <Button onClick={() => showDetail(item.id)} size="sm" type="button" variant="secondary">
+                <Button onClick={() => setSelectedId(item.id)} size="sm" type="button" variant="secondary">
                   Xem trao đổi
                 </Button>
               </article>
@@ -124,7 +103,7 @@ export function SupportPage({ session }) {
       </section>
       <Dialog
         isOpen={Boolean(detail)}
-        onClose={() => setDetail(null)}
+        onClose={() => setSelectedId(null)}
         title={detail ? `${detail.ticket.ticket_code} · ${detail.ticket.subject}` : ""}
       >
         {detail && (
@@ -159,7 +138,7 @@ export function SupportPage({ session }) {
               )}
             </div>
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "4px" }}>
-              <Button onClick={() => setDetail(null)} size="sm" type="button" variant="secondary">
+              <Button onClick={() => setSelectedId(null)} size="sm" type="button" variant="secondary">
                 Đóng
               </Button>
             </div>

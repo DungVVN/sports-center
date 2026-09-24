@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "../../components/ui/Button.jsx";
 import { DataTableToolbar, SortableHeader } from "../../components/ui/DataTable.jsx";
 import { Pagination } from "../../components/ui/Pagination.jsx";
 import { sortTable } from "../../lib/table.js";
 import { dashboardApi } from "./dashboard-api.js";
-import "../members/members.css";
 import "./audit-logs.css";
 
 const actionLabels = Object.freeze({
@@ -36,14 +36,14 @@ const actionLabels = Object.freeze({
   "training_result.recorded": "Ghi nhận kết quả tập",
   "training_template.created": "Tạo mẫu giáo án",
 });
+const emptyItems = [];
 export function AuditLogsPage() {
-  const [items, setItems] = useState([]);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
   const [auditSearch, setAuditSearch] = useState("");
   const [auditSort, setAuditSort] = useState({ key: "occurred_at", direction: "desc" });
   const [page, setPage] = useState(1);
-  const [pagination, setPagination] = useState({ page: 1, pageSize: 20, total: 0, totalPages: 1 });
+  const auditQuery = useQuery({ queryKey: ["audit-logs", page, 20], queryFn: () => dashboardApi.auditLogs({ page, pageSize: 20 }) });
+  const items = auditQuery.data?.items ?? emptyItems;
+  const pagination = auditQuery.data?.pagination ?? { page: 1, pageSize: 20, total: 0, totalPages: 1 };
   const visibleItems = useMemo(() => {
     const query = auditSearch.trim().toLocaleLowerCase("vi");
     const filtered = items.filter((item) => !query || [actionLabels[item.action], item.summary, item.entity?.label, item.entity?.value, item.actor?.id, item.actor?.name].some((value) => value?.toLocaleLowerCase("vi").includes(query)));
@@ -52,41 +52,25 @@ export function AuditLogsPage() {
   function toggleAuditSort(key) {
     setAuditSort((value) => ({ key, direction: value.key === key && value.direction === "asc" ? "desc" : "asc" }));
   }
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const response = await dashboardApi.auditLogs({ page, pageSize: 20 });
-      setItems(response.items);
-      setPagination(response.pagination);
-      setError("");
-    } catch (caught) {
-      setError(caught.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [page]);
-  useEffect(() => {
-    void Promise.resolve().then(load);
-  }, [load]);
   return (
     <main className="members-page">
       <header>
         <p>Nhật kí hoạt động</p>
         <h1>Nhật kí hoạt động</h1>
       </header>
-      {error && (
+      {auditQuery.isError && (
         <p className="auth-alert" role="alert">
-          {error}
+          {auditQuery.error.message}
         </p>
       )}
       <section className="members-list">
         <div className="list-heading">
           <h2>Hoạt động gần đây</h2>
-          <Button onClick={load} size="sm" variant="ghost">
+          <Button onClick={auditQuery.refetch} size="sm" variant="ghost">
             Tải lại
           </Button>
         </div>
-        {loading ? (
+        {auditQuery.isLoading ? (
           <p>Đang tải…</p>
         ) : items.length === 0 ? (
           <p>Chưa có nhật ký phù hợp.</p>

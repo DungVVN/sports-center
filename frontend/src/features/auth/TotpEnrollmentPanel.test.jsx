@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { authApi } from "./auth-api.js";
 import { TotpEnrollmentPanel } from "./TotpEnrollmentPanel.jsx";
@@ -17,7 +18,8 @@ describe("TotpEnrollmentPanel", () => {
     });
     authApi.confirmTotpEnrollment.mockResolvedValue({ enrolled: true });
     const onEnrollmentCompleted = vi.fn();
-    render(<TotpEnrollmentPanel onEnrollmentCompleted={onEnrollmentCompleted} />);
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<QueryClientProvider client={client}><TotpEnrollmentPanel onEnrollmentCompleted={onEnrollmentCompleted} /></QueryClientProvider>);
     fireEvent.click(screen.getByRole("button", { name: "Thiết lập Authenticator" }));
     expect(await screen.findByRole("img", { name: "Mã QR thiết lập Authenticator" })).toBeInTheDocument();
     expect(await screen.findByDisplayValue("JBSWY3DPEHPK3PXP")).toBeInTheDocument();

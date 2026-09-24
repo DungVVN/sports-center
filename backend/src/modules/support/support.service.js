@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { AppError } from "../../shared/errors/app-error.js";
+import { violatesUniqueConstraint, retryOnUniqueConstraint } from "../../shared/database/unique-constraint.js";
 
 export function createSupportService({ repository, auditService }) {
   const member = async (actor) => {
@@ -16,7 +17,14 @@ export function createSupportService({ repository, auditService }) {
   return {
     async list(actor) { return repository.tickets(actor.role === "member" ? { member_id: (await member(actor)).id } : {}); },
     async create(input, actor) {
-      const item = await repository.create({ ticket_code: `SUP-${randomBytes(4).toString("hex").toUpperCase()}`, member_id: (await member(actor)).id, subject: input.subject, body: input.body, priority: input.priority ?? "normal" });
+      const memberProfile = await member(actor);
+      let item;
+      try {
+        item = await retryOnUniqueConstraint(() => repository.create({ ticket_code: `SUP-${randomBytes(4).toString("hex").toUpperCase()}`, member_id: memberProfile.id, subject: input.subject, body: input.body, priority: input.priority ?? "normal" }), { fields: ["ticket_code"] });
+      } catch (error) {
+        if (violatesUniqueConstraint(error)) throw new AppError({ statusCode: 409, code: "SUPPORT_TICKET_CONFLICT", message: "Không thể tạo mã yêu cầu hỗ trợ. Vui lòng thử lại." });
+        throw error;
+      }
       await auditService.record({ actorUserId: actor.id, action: "support.created", entityType: "support_ticket", entityId: item.id, summary: "Đã gửi yêu cầu hỗ trợ." });
       return item;
     },

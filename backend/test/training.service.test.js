@@ -9,6 +9,13 @@ function dependencies() {
 }
 
 describe("Training service scope", () => {
+  it("returns a fixable conflict for duplicate session positions", async () => {
+    const { repository, auditService } = dependencies();
+    repository.createSession.mockRejectedValue({ code: "P2002", meta: { target: ["plan_id", "position"] } });
+    await expect(createTrainingService({ repository, auditService }).createSession("plan-1", { position: 1, title: "Buổi 1", exercises: [] }, { id: "coach-1", role: "coach" }))
+      .rejects.toMatchObject({ statusCode: 409, code: "TRAINING_SESSION_POSITION_EXISTS" });
+  });
+
   it("uses the Coach's booking and assignment scope for the member picker", async () => {
     const { repository, auditService } = dependencies();
     repository.membersForCoach.mockResolvedValue([{ id: "member-from-class" }]);

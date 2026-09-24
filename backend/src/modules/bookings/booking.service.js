@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { AppError } from "../../shared/errors/app-error.js";
+import { violatesUniqueConstraint, retryOnUniqueConstraint } from "../../shared/database/unique-constraint.js";
 
 const isMember = (actor) => actor.role === "member";
 
@@ -28,7 +29,13 @@ export function createBookingService({ repository, auditService }) {
       const membership = await repository.activeMembership(memberId, session.starts_at);
       const access = membership && await repository.entitlement(membership.package_id);
       if (!access) throw new AppError({ statusCode: 422, code: "MEMBERSHIP_BOOKING_NOT_ELIGIBLE", message: "Gói tập không còn hiệu lực vào thời điểm lớp diễn ra hoặc không có quyền đặt lớp." });
-      const result = await repository.createWithCapacity({ bookingCode: `BKG-${randomBytes(4).toString("hex").toUpperCase()}`, memberId, classId, bookedBy: actor.id });
+      let result;
+      try {
+        result = await retryOnUniqueConstraint(() => repository.createWithCapacity({ bookingCode: `BKG-${randomBytes(4).toString("hex").toUpperCase()}`, memberId, classId, bookedBy: actor.id }), { fields: ["booking_code"] });
+      } catch (error) {
+        if (violatesUniqueConstraint(error)) throw new AppError({ statusCode: 409, code: "BOOKING_CREATION_CONFLICT", message: "Không thể tạo mã đặt chỗ. Vui lòng thử lại." });
+        throw error;
+      }
       if (result.duplicate) throw new AppError({ statusCode: 409, code: "BOOKING_ALREADY_EXISTS", message: "Hội viên đã có đặt chỗ còn hiệu lực cho lớp này." });
       await auditService.record({ actorUserId: actor.id, action: "booking.created", entityType: "booking", entityId: result.booking.id, summary: result.booking.status === "waitlisted" ? "Đã vào danh sách chờ." : "Đã đặt chỗ lớp học." });
       return result.booking;

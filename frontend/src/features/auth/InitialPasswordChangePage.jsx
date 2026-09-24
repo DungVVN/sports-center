@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Eye, EyeOff, KeyRound } from "lucide-react";
-import { ApiError } from "../../api/api-error.js";
+import { useSubmitMutation, useMutationFeedback } from "../../hooks/useMutationFeedback.js";
 import { Button } from "../../components/ui/Button.jsx";
 import { authApi } from "./auth-api.js";
 import { AuthLayout } from "./AuthLayout.jsx";
@@ -8,8 +8,8 @@ import { AuthLayout } from "./AuthLayout.jsx";
 export function InitialPasswordChangePage({ onCompleted }) {
   const [form, setForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
   const [show, setShow] = useState({ current: false, next: false, confirm: false });
-  const [error, setError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const feedback = useMutationFeedback();
+  const changePassword = useSubmitMutation({ feedback, mutationFn: (input) => authApi.changePassword(input), onSuccess: onCompleted, errorMessage: "Không thể đổi mật khẩu. Vui lòng thử lại." });
 
   function update(name, value) {
     setForm((current) => ({ ...current, [name]: value }));
@@ -17,20 +17,12 @@ export function InitialPasswordChangePage({ onCompleted }) {
 
   async function submit(event) {
     event.preventDefault();
-    setError("");
+    feedback.clear();
     if (form.newPassword !== form.confirmPassword) {
-      setError("Xác nhận mật khẩu mới không khớp.");
+      feedback.setError("Xác nhận mật khẩu mới không khớp.");
       return;
     }
-    setSubmitting(true);
-    try {
-      await authApi.changePassword({ currentPassword: form.currentPassword, newPassword: form.newPassword });
-      onCompleted();
-    } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Không thể đổi mật khẩu. Vui lòng thử lại.");
-    } finally {
-      setSubmitting(false);
-    }
+    await changePassword.mutateAsync({ currentPassword: form.currentPassword, newPassword: form.newPassword }).catch(() => {});
   }
 
   const passwordField = (id, label, value, visibleKey, autoComplete) => (
@@ -56,8 +48,8 @@ export function InitialPasswordChangePage({ onCompleted }) {
           {passwordField("initial-new-password", "Mật khẩu mới", "newPassword", "next", "new-password")}
           {passwordField("initial-confirm-password", "Xác nhận mật khẩu mới", "confirmPassword", "confirm", "new-password")}
           <small>Ít nhất 8 ký tự, gồm chữ hoa, chữ thường và số.</small>
-          {error && <p className="auth-alert" role="alert">{error}</p>}
-          <Button loading={submitting} size="lg" type="submit">Lưu mật khẩu mới</Button>
+          {feedback.error && <p className="auth-alert" role="alert">{feedback.error}</p>}
+          <Button loading={changePassword.isPending} size="lg" type="submit">Lưu mật khẩu mới</Button>
         </form>
       </div>
     </AuthLayout>

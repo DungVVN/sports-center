@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { env } from "../../config/env.js";
 import { AppError } from "../../shared/errors/app-error.js";
+import { violatesUniqueConstraint, retryOnUniqueConstraint } from "../../shared/database/unique-constraint.js";
 import { createSessionToken, generateVerificationCode, hashVerificationCode, readSessionToken, verificationCodeMatches } from "../../shared/auth/session-token.js";
 import { hashPassword, verifyPassword } from "../../shared/auth/password.js";
 import { createLoginAttemptLimiter } from "../../shared/security/login-attempt-limiter.js";
@@ -83,13 +84,22 @@ export function createAuthService({
         throw new AppError({ statusCode: 409, code: "ACCOUNT_ALREADY_EXISTS", message: "Email hoặc số điện thoại đã được sử dụng." });
       }
 
-      const registration = await repository.createRegistration({
-        email,
-        fullName: input.fullName.trim(),
-        memberCode: `MBR-${randomUUID().replaceAll("-", "").slice(0, 10).toUpperCase()}`,
-        passwordHash: await hashPassword(input.password),
-        phone,
-      });
+      let registration;
+      try {
+        const passwordHash = await hashPassword(input.password);
+        registration = await retryOnUniqueConstraint(() => repository.createRegistration({
+          email,
+          fullName: input.fullName.trim(),
+          memberCode: `MBR-${randomUUID().replaceAll("-", "").slice(0, 10).toUpperCase()}`,
+          passwordHash,
+          phone,
+        }), { fields: ["member_code"] });
+      } catch (error) {
+        if (violatesUniqueConstraint(error)) {
+          throw new AppError({ statusCode: 409, code: "ACCOUNT_ALREADY_EXISTS", message: "Email hoặc số điện thoại đã được sử dụng. Vui lòng dùng thông tin khác." });
+        }
+        throw error;
+      }
       await auditService.record({ actorUserId: registration.user.id, action: "member.registration.created", entityType: "member", entityId: registration.member.id, summary: "Hội viên tự đăng ký tài khoản." });
       const verifications = [await issueVerification({ channel: "email", recipient: email, userId: registration.user.id })];
       return { user: publicUser(registration.user), memberId: registration.member.id, verifications };
@@ -277,7 +287,14 @@ export function createAuthService({
 
     async updateOwnProfile({ input, userId }) {
       const before = await this.getOwnProfile(userId);
-      await repository.updateOwnProfile(userId, input);
+      try {
+        await repository.updateOwnProfile(userId, input);
+      } catch (error) {
+        if (violatesUniqueConstraint(error, ["phone"])) {
+          throw new AppError({ statusCode: 409, code: "PROFILE_PHONE_EXISTS", message: "Số điện thoại này đã được sử dụng. Vui lòng dùng số khác.", details: { field: "phone" } });
+        }
+        throw error;
+      }
       const updated = await this.getOwnProfile(userId);
       await auditService.record({
         actorUserId: userId,

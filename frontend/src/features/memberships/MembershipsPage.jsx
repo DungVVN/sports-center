@@ -1,14 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "../../components/ui/Button.jsx";
 import { DataTableToolbar, FilterMenu, SortableHeader } from "../../components/ui/DataTable.jsx";
 import { Dialog } from "../../components/ui/Dialog.jsx";
 import { Pagination } from "../../components/ui/Pagination.jsx";
 import { usePagination } from "../../components/ui/usePagination.js";
 import { sortTable } from "../../lib/table.js";
-import { memberApi } from "../members/member-api.js";
-import { membershipApi } from "./membership-api.js";
 import { hasSessionPermission } from "../../utils/session-permissions.js";
-import "../members/members.css";
+import { useMutationFeedback } from "../../hooks/useMutationFeedback.js";
+import { useMembershipWorkspace } from "./hooks/useMembershipWorkspace.js";
 import "./membership-layout.css";
 
 const emptyPackage = {
@@ -77,11 +76,28 @@ export function MembershipsPage({ mode = "workspace", session }) {
   const showManagerCatalog = isManager && ["workspace", "catalog"].includes(mode);
   const showAssignment = canAssignMembership && (!isManager || mode === "assign");
   const packagePageLayout = isManager && mode === "create" ? " package-page-layout package-page-layout--create" : isManager && mode === "catalog" ? " package-page-layout package-page-layout--catalog" : "";
-  const [packages, setPackages] = useState([]);
-  const [members, setMembers] = useState([]);
-  const [memberships, setMemberships] = useState([]);
-  const [freezeRequests, setFreezeRequests] = useState([]);
   const [selectedMemberId, setSelectedMemberId] = useState("");
+  const {
+    cancelPendingRenewal: cancelPendingRenewalMutation,
+    createMembership: createMembershipMutation,
+    createPackage: createPackageMutation,
+    error: queryError,
+    freezeRequests,
+    loading,
+    members,
+    memberships,
+    packages,
+    reload: load,
+    requestFreeze: requestFreezeMutation,
+    reviewFreeze: reviewFreezeMutation,
+    updatePackage: updatePackageMutation,
+  } = useMembershipWorkspace({
+    canAssignMembership,
+    canReviewFreeze,
+    isManager,
+    isMember,
+    selectedMemberId,
+  });
   const [packageForm, setPackageForm] = useState(emptyPackage);
   const [freezeForm, setFreezeForm] = useState(emptyFreeze);
   const [membershipForm, setMembershipForm] = useState(emptyMembership);
@@ -124,49 +140,19 @@ export function MembershipsPage({ mode = "workspace", session }) {
   function togglePackageSort(key) {
     setPackageSort((value) => ({ key, direction: value.key === key && value.direction === "asc" ? "desc" : "asc" }));
   }
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const load = useCallback(async () => {
-    setError("");
-    setLoading(true);
-    try {
-      if (isMember) setMemberships(await membershipApi.mine());
-      else if (isManager) {
-        setPackages(await membershipApi.packages());
-        setMembers(canAssignMembership ? await memberApi.list() : []);
-        setFreezeRequests(canReviewFreeze ? await membershipApi.freezeRequests() : []);
-      }
-      else {
-        const base = await Promise.all([
-          membershipApi.packages(),
-          memberApi.list(),
-          canReviewFreeze
-            ? membershipApi.freezeRequests()
-            : Promise.resolve([]),
-        ]);
-        setPackages(base[0]);
-        setMembers(base[1]);
-        setFreezeRequests(base[2]);
-      }
-    } catch (caught) {
-      setError(caught.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [canAssignMembership, canReviewFreeze, isManager, isMember]);
-  useEffect(() => {
-    void Promise.resolve().then(load);
-  }, [load]);
-
+  const feedback = useMutationFeedback();
+  const submitting = createPackageMutation.isPending || updatePackageMutation.isPending || createMembershipMutation.isPending || requestFreezeMutation.isPending || reviewFreezeMutation.isPending || cancelPendingRenewalMutation.isPending;
+  const setError = feedback.setError;
+  const setNotice = feedback.setNotice;
+  const setSubmitting = () => {};
+  const { error, notice } = feedback;
   async function createPackage(event) {
     event.preventDefault();
     setError("");
     setNotice("");
     setSubmitting(true);
     try {
-      await membershipApi.createPackage({
+      await createPackageMutation.mutateAsync({
         ...packageForm,
         priceVnd: Number(packageForm.priceVnd),
         durationDays: Number(packageForm.durationDays),
@@ -230,7 +216,7 @@ export function MembershipsPage({ mode = "workspace", session }) {
         tierRank,
         ...input
       } = editingPackage;
-      await membershipApi.updatePackage(id, {
+      await updatePackageMutation.mutateAsync({ id, input: {
         ...input,
         priceVnd: Number(priceVnd),
         durationDays: Number(durationDays),
@@ -240,7 +226,7 @@ export function MembershipsPage({ mode = "workspace", session }) {
           .map((value) => value.trim())
           .filter(Boolean),
         entitlements: entitlements.map((code) => ({ code })),
-      });
+      } });
       setEditingPackage(null);
       setNotice("Đã cập nhật gói tập và quyền sử dụng.");
       await load();
@@ -256,10 +242,10 @@ export function MembershipsPage({ mode = "workspace", session }) {
     setNotice("");
     setSubmitting(true);
     try {
-      await membershipApi.create(membershipForm.memberId, {
+      await createMembershipMutation.mutateAsync({ memberId: membershipForm.memberId, input: {
         packageId: membershipForm.packageId,
         startsOn: membershipForm.startsOn,
-      });
+      } });
       setMembershipForm(emptyMembership);
       setNotice(
         "Đã tạo gói chờ thanh toán. Hãy chuyển sang Thanh toán để ghi nhận giao dịch.",
@@ -276,11 +262,11 @@ export function MembershipsPage({ mode = "workspace", session }) {
     setNotice("");
     setSubmitting(true);
     try {
-      await membershipApi.requestFreeze(freezeForm.membershipId, {
+      await requestFreezeMutation.mutateAsync({ id: freezeForm.membershipId, input: {
         startsOn: freezeForm.startsOn,
         endsOn: freezeForm.endsOn,
         reason: freezeForm.reason,
-      });
+      } });
       setFreezeForm(emptyFreeze);
       setNotice("Đã gửi yêu cầu đóng băng để Lễ tân duyệt.");
       await load();
@@ -295,7 +281,7 @@ export function MembershipsPage({ mode = "workspace", session }) {
     setNotice("");
     setSubmitting(true);
     try {
-      await membershipApi.reviewFreeze(id, approved);
+      await reviewFreezeMutation.mutateAsync({ id, approved });
       setNotice(
         approved
           ? "Đã duyệt đóng băng và cộng bù thời hạn gói."
@@ -310,25 +296,19 @@ export function MembershipsPage({ mode = "workspace", session }) {
   }
   async function loadMemberMemberships(memberId) {
     setSelectedMemberId(memberId);
-    setMemberships([]);
     if (!memberId) return;
     setError("");
-    try {
-      setMemberships(await membershipApi.byMember(memberId));
-    } catch (caught) {
-      setError(caught.message);
-    }
   }
   async function cancelPendingRenewal(id) {
     setError("");
     setNotice("");
     setSubmitting(true);
     try {
-      await membershipApi.cancelPendingRenewal(id);
+      await cancelPendingRenewalMutation.mutateAsync(id);
       setNotice(
         "Đã hủy yêu cầu gia hạn chờ thanh toán. Gói đang thanh toán vẫn giữ nguyên.",
       );
-      await loadMemberMemberships(selectedMemberId);
+      await load();
     } catch (caught) {
       setError(caught.message);
     } finally {
@@ -343,9 +323,9 @@ export function MembershipsPage({ mode = "workspace", session }) {
           <p>Gói tập</p>
           <h1>Gói tập của tôi</h1>
         </header>
-        {error && (
+        {(error || queryError) && (
           <p className="auth-alert" role="alert">
-            {error}
+            {error || queryError}
           </p>
         )}
         {notice && (
@@ -429,9 +409,9 @@ export function MembershipsPage({ mode = "workspace", session }) {
           {isManager ? (mode === "create" ? "Tạo gói tập" : mode === "catalog" ? "Danh mục gói" : mode === "assign" ? "Gói tập hội viên" : "Cấu hình gói tập") : "Quản lý gói tập hội viên"}
         </h1>
       </header>
-      {error && (
+      {(error || queryError) && (
         <p className="auth-alert" role="alert">
-          {error}
+          {error || queryError}
         </p>
       )}
       {notice && (

@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { Activity, ArrowLeft } from "lucide-react";
 import { PublicFooter } from "../PublicFooter/PublicFooter.jsx";
-import "../../pages/LandingPage/LandingPage.css";
 import "./PublicPageLayout.css";
 
 export function PublicPageLayout({ children, onHomeClick, onLoginClick }) {

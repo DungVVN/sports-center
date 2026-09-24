@@ -1,4 +1,5 @@
 import { AppError } from "../../shared/errors/app-error.js";
+import { violatesUniqueConstraint } from "../../shared/database/unique-constraint.js";
 
 export function createTrainingService({ repository, auditService }) {
   const ensureCoachAssignment = async (memberId, actor) => {
@@ -62,7 +63,15 @@ export function createTrainingService({ repository, auditService }) {
     async sessions(planId, actor) { await planForActor(planId, actor); return sessionsWithExercises(planId); },
     async createSession(planId, input, actor) {
       await planForActor(planId, actor);
-      const result = await repository.createSession({ plan_id: planId, position: input.position, title: input.title, scheduled_on: input.scheduledOn ? new Date(input.scheduledOn) : null });
+      let result;
+      try {
+        result = await repository.createSession({ plan_id: planId, position: input.position, title: input.title, scheduled_on: input.scheduledOn ? new Date(input.scheduledOn) : null });
+      } catch (error) {
+        if (violatesUniqueConstraint(error, ["plan_id", "position"])) {
+          throw new AppError({ statusCode: 409, code: "TRAINING_SESSION_POSITION_EXISTS", message: "Thứ tự buổi tập này đã có trong giáo án. Vui lòng chọn số thứ tự khác.", details: { field: "position" } });
+        }
+        throw error;
+      }
       await repository.replaceSessionExercises(result.id, input.exercises);
       await auditService.record({ actorUserId: actor.id, action: "training_session.created", entityType: "training_session", entityId: result.id, summary: "Đã thêm buổi tập vào lộ trình." });
       return result;

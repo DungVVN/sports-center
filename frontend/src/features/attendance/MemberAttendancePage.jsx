@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "../../components/ui/Button.jsx";
 import { Pagination } from "../../components/ui/Pagination.jsx";
 import { usePagination } from "../../components/ui/usePagination.js";
 import { classApi } from "../classes/class-api.js";
 import { attendanceApi } from "./attendance-api.js";
-import "../members/members.css";
 
 const labels = {
   present: "Có mặt",
@@ -15,38 +15,12 @@ const labels = {
 const format = (value) => (value ? new Date(value).toLocaleString("vi-VN") : "—");
 
 export function MemberAttendancePage() {
-  const [records, setRecords] = useState([]);
-  const [classesById, setClassesById] = useState({});
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
+  const attendanceQuery = useQuery({ queryKey: ["member", "attendance"], queryFn: attendanceApi.mine });
+  const classesQuery = useQuery({ queryKey: ["classes"], queryFn: classApi.list });
+  const records = attendanceQuery.data ?? [];
+  const classesById = useMemo(() => Object.fromEntries((classesQuery.data ?? []).map((item) => [item.id, item])), [classesQuery.data]);
   const recordsPagination = usePagination(records);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const [attList, classList] = await Promise.all([
-        attendanceApi.mine(),
-        classApi.list().catch(() => []),
-      ]);
-      const map = {};
-      if (Array.isArray(classList)) {
-        for (const item of classList) {
-          map[item.id] = item;
-        }
-      }
-      setClassesById(map);
-      setRecords(attList);
-    } catch (caught) {
-      setError(caught.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void Promise.resolve().then(load);
-  }, [load]);
 
   return (
     <main className="members-page">
@@ -54,15 +28,15 @@ export function MemberAttendancePage() {
         <p>Điểm danh</p>
         <h1>Lịch sử điểm danh</h1>
       </header>
-      {error && <p className="auth-alert" role="alert">{error}</p>}
+      {attendanceQuery.isError && <p className="auth-alert" role="alert">{attendanceQuery.error.message}</p>}
       <section className="members-list">
         <div className="list-heading">
           <h2>Các buổi học của tôi</h2>
-          <Button onClick={load} size="sm" variant="ghost">
+          <Button onClick={() => { attendanceQuery.refetch(); classesQuery.refetch(); }} size="sm" variant="ghost">
             Tải lại
           </Button>
         </div>
-        {loading ? (
+        {attendanceQuery.isLoading ? (
           <p>Đang tải lịch sử điểm danh…</p>
         ) : records.length === 0 ? (
           <p>Chưa có lượt điểm danh nào.</p>

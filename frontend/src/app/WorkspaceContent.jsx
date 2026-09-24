@@ -1,24 +1,28 @@
-import { AttendancePage } from "../features/attendance/AttendancePage.jsx";
-import { AuditLogsPage } from "../features/dashboard/AuditLogsPage.jsx";
-import { DashboardHome } from "../features/dashboard/DashboardHome.jsx";
-import { ReportsPage } from "../features/dashboard/ReportsPage.jsx";
-import { RegistrationApprovalPage } from "../features/auth/RegistrationApprovalPage.jsx";
-import { BookingsPage } from "../features/bookings/BookingsPage.jsx";
-import { ClassesPage } from "../features/classes/ClassesPage.jsx";
-import { MembersPage } from "../features/members/MembersPage.jsx";
-import { MembershipsPage } from "../features/memberships/MembershipsPage.jsx";
-import { PaymentsPage } from "../features/payments/PaymentsPage.jsx";
-import { StaffPage } from "../features/staff/StaffPage.jsx";
-import { TrainingPage } from "../features/training/TrainingPage.jsx";
-import { ProfilePage } from "../features/auth/ProfilePage.jsx";
-import { SupportStaffPage } from "../features/support/SupportStaffPage.jsx";
-import { SupportPage } from "../features/support/SupportPage.jsx";
-import { MemberAttendancePage } from "../features/attendance/MemberAttendancePage.jsx";
-import { MemberPaymentsPage } from "../features/payments/MemberPaymentsPage.jsx";
-import { MemberTrainingPage } from "../features/training/MemberTrainingPage.jsx";
-import { RolePermissionPage } from "../features/role-permissions/RolePermissionPage.jsx";
-import { FacilityCalendarPage } from "../features/facilities/FacilityCalendarPage.jsx";
+import { lazy, Suspense } from "react";
 import { hasSessionPermission } from "../utils/session-permissions.js";
+
+const lazyPage = (load, exportName) => lazy(() => load().then((module) => ({ default: module[exportName] })));
+
+const AttendancePage = lazyPage(() => import("../features/attendance/AttendancePage.jsx"), "AttendancePage");
+const AuditLogsPage = lazyPage(() => import("../features/dashboard/AuditLogsPage.jsx"), "AuditLogsPage");
+const BookingsPage = lazyPage(() => import("../features/bookings/BookingsPage.jsx"), "BookingsPage");
+const ClassesPage = lazyPage(() => import("../features/classes/ClassesPage.jsx"), "ClassesPage");
+const DashboardHome = lazyPage(() => import("../features/dashboard/DashboardHome.jsx"), "DashboardHome");
+const FacilityCalendarPage = lazyPage(() => import("../features/facilities/FacilityCalendarPage.jsx"), "FacilityCalendarPage");
+const MemberAttendancePage = lazyPage(() => import("../features/attendance/MemberAttendancePage.jsx"), "MemberAttendancePage");
+const MemberPaymentsPage = lazyPage(() => import("../features/payments/MemberPaymentsPage.jsx"), "MemberPaymentsPage");
+const MembersPage = lazyPage(() => import("../features/members/MembersPage.jsx"), "MembersPage");
+const MembershipsPage = lazyPage(() => import("../features/memberships/MembershipsPage.jsx"), "MembershipsPage");
+const MemberTrainingPage = lazyPage(() => import("../features/training/MemberTrainingPage.jsx"), "MemberTrainingPage");
+const PaymentsPage = lazyPage(() => import("../features/payments/PaymentsPage.jsx"), "PaymentsPage");
+const ProfilePage = lazyPage(() => import("../features/auth/ProfilePage.jsx"), "ProfilePage");
+const RegistrationApprovalPage = lazyPage(() => import("../features/auth/RegistrationApprovalPage.jsx"), "RegistrationApprovalPage");
+const ReportsPage = lazyPage(() => import("../features/dashboard/ReportsPage.jsx"), "ReportsPage");
+const RolePermissionPage = lazyPage(() => import("../features/role-permissions/RolePermissionPage.jsx"), "RolePermissionPage");
+const StaffPage = lazyPage(() => import("../features/staff/StaffPage.jsx"), "StaffPage");
+const SupportPage = lazyPage(() => import("../features/support/SupportPage.jsx"), "SupportPage");
+const SupportStaffPage = lazyPage(() => import("../features/support/SupportStaffPage.jsx"), "SupportStaffPage");
+const TrainingPage = lazyPage(() => import("../features/training/TrainingPage.jsx"), "TrainingPage");
 
 export function WorkspaceContent({ onNavigate, onProfileSaved, onSessionRevoked, session, view, dashboardRole = "manager" }) {
   const pages = {
@@ -47,5 +51,9 @@ export function WorkspaceContent({ onNavigate, onProfileSaved, onSessionRevoked,
     "my-training": <MemberTrainingPage />,
   };
 
-  return pages[view] ?? pages.dashboard;
+  return (
+    <Suspense fallback={<main className="app-shell__loading" role="status">Đang tải trang...</main>}>
+      {pages[view] ?? pages.dashboard}
+    </Suspense>
+  );
 }

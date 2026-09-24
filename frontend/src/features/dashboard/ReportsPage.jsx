@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { classApi } from "../classes/class-api.js";
 import { dashboardApi } from "./dashboard-api.js";
-import "../members/members.css";
 import "./reports.css";
 const periods = [["day","Ngày"],["week","Tuần"],["month","Tháng"],["quarter","Quý"],["year","Năm"],["custom","Tùy chọn"]];
 const paymentLabels = { pending: "Chờ xác nhận", paid: "Đã thanh toán", failed: "Thất bại", refunded: "Đã hoàn tiền" };
@@ -14,37 +14,16 @@ export function ReportsPage() {
   const [period, setPeriod] = useState("month");
   const [range, setRange] = useState({ from: "", to: "" });
   const [coachUserId, setCoachUserId] = useState("");
-  const [coaches, setCoaches] = useState([]);
-  const [report, setReport] = useState(null);
-  const [attendance, setAttendance] = useState(null);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    classApi.coaches().then(setCoaches).catch(() => {});
-  }, []);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      setError("");
-      const query = { period, ...(period === "custom" ? range : {}), ...(coachUserId ? { coachUserId } : {}) };
-      const [revenue, nextAttendance] = await Promise.all([dashboardApi.revenue(query), dashboardApi.attendance(query)]);
-      setReport(revenue);
-      setAttendance(nextAttendance);
-    } catch (caught) {
-      setError(caught.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [period, range, coachUserId]);
-
-  useEffect(() => {
-    if (period !== "custom" || (range.from && range.to)) void Promise.resolve().then(load);
-  }, [load, period, range]);
+  const query = { period, ...(period === "custom" ? range : {}), ...(coachUserId ? { coachUserId } : {}) };
+  const reportQuery = useQuery({ queryKey: ["reports", query], queryFn: async () => { const [revenue, attendance] = await Promise.all([dashboardApi.revenue(query), dashboardApi.attendance(query)]); return { attendance, revenue }; }, enabled: period !== "custom" || Boolean(range.from && range.to) });
+  const coachesQuery = useQuery({ queryKey: ["coaches"], queryFn: classApi.coaches });
+  const coaches = coachesQuery.data ?? [];
+  const report = reportQuery.data?.revenue ?? null;
+  const attendance = reportQuery.data?.attendance ?? null;
+  const loading = reportQuery.isLoading;
 
   const dateRange = report ? `${new Date(report.from).toLocaleDateString("vi-VN")} – ${new Date(report.to).toLocaleDateString("vi-VN")}` : "Đang tải…";
-  const query = { period, ...(period === "custom" ? range : {}), ...(coachUserId ? { coachUserId } : {}) };
   async function download(type) { try { setError(""); await dashboardApi.exportCsv(type, query); } catch (caught) { setError(caught.message); } }
   return (
     <main className="members-page">

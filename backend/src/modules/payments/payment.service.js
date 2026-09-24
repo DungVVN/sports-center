@@ -1,5 +1,6 @@
 import { randomBytes, randomInt } from "node:crypto";
 import { AppError } from "../../shared/errors/app-error.js";
+import { violatesUniqueConstraint, retryOnUniqueConstraint } from "../../shared/database/unique-constraint.js";
 import { createPayosPaymentLink, verifyPayosWebhook } from "./payos-gateway.js";
 const output = (payment) => ({ ...payment, provider: payment.provider ?? payment.legacy_provider ?? null, amountVnd: payment.amount_vnd.toString(), ...(payment.provider_order_code ? { providerOrderCode: payment.provider_order_code.toString() } : {}), member: payment.member ? { id: payment.member.id, fullName: payment.member.full_name, memberCode: payment.member.member_code, phone: payment.member.phone, email: payment.member.email } : null, membership: payment.membership ? { id: payment.membership.id, packageName: payment.membership.package_name_snapshot, status: payment.membership.status, expiresOn: payment.membership.expires_on } : null });
 export function createPaymentService({ repository, auditService, payosGateway = { createPaymentLink: createPayosPaymentLink, verifyWebhook: verifyPayosWebhook } }) { return {
@@ -9,9 +10,19 @@ export function createPaymentService({ repository, auditService, payosGateway = 
   async ownReceipt(id, actor) { const member = await repository.memberByUser(actor.id); if (!member) throw new AppError({ statusCode: 404, code: "MEMBER_PROFILE_NOT_FOUND", message: "Tài khoản chưa có hồ sơ hội viên." }); const [payment] = await repository.listWithDetails({ id, member_id: member.id }); if (!payment) throw new AppError({ statusCode: 404, code: "PAYMENT_NOT_FOUND", message: "Không tìm thấy phiếu thu của bạn." }); return { ...output(payment), events: await repository.paymentEvents(id) }; },
   async create(input, actorUserId) { const member = await repository.member(input.memberId); if (!member) throw new AppError({ statusCode: 404, code: "MEMBER_NOT_FOUND", message: "Không tìm thấy hội viên." }); let amountVnd = BigInt(input.amountVnd); if (input.method === "online" && !input.provider) throw new AppError({ statusCode: 422, code: "PAYMENT_PROVIDER_REQUIRED", message: "Cần chọn cổng thanh toán sandbox." }); if (input.membershipId) { const membership = await repository.membership(input.membershipId); if (!membership || membership.member_id !== input.memberId || membership.status !== "pending_payment") throw new AppError({ statusCode: 422, code: "MEMBERSHIP_PAYMENT_NOT_ELIGIBLE", message: "Gói tập không ở trạng thái chờ thanh toán." }); if (amountVnd !== membership.price_vnd_snapshot) throw new AppError({ statusCode: 422, code: "PAYMENT_AMOUNT_MISMATCH", message: "Số tiền phải khớp giá gói tập đã chốt." }); }
     const method = input.method ?? "cash"; const provider = method === "online" ? input.provider : null;
-    const transactionCode = `PAY-${randomBytes(4).toString("hex").toUpperCase()}`;
-    const providerOrderCode = provider === "payos" ? BigInt(randomInt(100_000_000, 1_000_000_000)) : null;
-    const payment = await repository.createWithEvent({ transaction_code: transactionCode, member_id: input.memberId, membership_id: input.membershipId ?? null, amount_vnd: amountVnd, method, provider, provider_order_code: providerOrderCode, status: "pending", recorded_by: actorUserId, notes: input.notes ?? null }, { event_type: "payment_created", new_status: "pending", actor_user_id: actorUserId });
+    let payment;
+    let transactionCode;
+    let providerOrderCode;
+    try {
+      payment = await retryOnUniqueConstraint(() => {
+        transactionCode = `PAY-${randomBytes(4).toString("hex").toUpperCase()}`;
+        providerOrderCode = provider === "payos" ? BigInt(randomInt(100_000_000, 1_000_000_000)) : null;
+        return repository.createWithEvent({ transaction_code: transactionCode, member_id: input.memberId, membership_id: input.membershipId ?? null, amount_vnd: amountVnd, method, provider, provider_order_code: providerOrderCode, status: "pending", recorded_by: actorUserId, notes: input.notes ?? null }, { event_type: "payment_created", new_status: "pending", actor_user_id: actorUserId });
+      }, { fields: ["transaction_code", "provider_order_code"] });
+    } catch (error) {
+      if (violatesUniqueConstraint(error)) throw new AppError({ statusCode: 409, code: "PAYMENT_CREATION_CONFLICT", message: "Không thể tạo mã phiếu thu. Vui lòng thử lại." });
+      throw error;
+    }
     await auditService.record({ actorUserId, action: "payment.created", entityType: "payment", entityId: payment.id, summary: method === "online" ? `Đã tạo thanh toán chờ xử lý qua ${provider}.` : "Đã lập phiếu thu tiền mặt chờ Lễ tân xác nhận." });
     if (provider === "payos") {
       let link;

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { BadgeCheck } from "lucide-react";
-import { ApiError } from "../../api/api-error.js";
+import { useMutationFeedback, useSubmitMutation } from "../../hooks/useMutationFeedback.js";
 import { Button } from "../../components/ui/Button.jsx";
 import { authApi } from "./auth-api.js";
 import { AuthLayout } from "./AuthLayout.jsx";
@@ -8,11 +8,10 @@ import { AuthLayout } from "./AuthLayout.jsx";
 export function VerificationPage({ registration, onCompleted }) {
   const channel = "email";
   const [code, setCode] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [resending, setResending] = useState(false);
   const [cooldown, setCooldown] = useState(0);
-  const [resendMessage, setResendMessage] = useState("");
+  const feedback = useMutationFeedback();
+  const verify = useSubmitMutation({ feedback, mutationFn: (input) => authApi.confirmVerification(input), onSuccess: (result) => { if (result.status === "pending_approval") onCompleted(); }, errorMessage: "Không thể xác thực mã." });
+  const resendMutation = useSubmitMutation({ feedback, mutationFn: (input) => authApi.resendVerification(input), successMessage: "Đã gửi lại mã xác thực.", errorMessage: "Không thể gửi lại mã." });
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -24,32 +23,18 @@ export function VerificationPage({ registration, onCompleted }) {
 
   async function submit(event) {
     event.preventDefault();
-    setError("");
-    setLoading(true);
-    try {
-      const result = await authApi.confirmVerification({ userId: registration.userId, channel, code });
+    feedback.clear();
+    try { await verify.mutateAsync({ userId: registration.userId, channel, code });
       setCode("");
-      if (result.status === "pending_approval") onCompleted();
-    } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Không thể xác thực mã.");
-    } finally {
-      setLoading(false);
-    }
+    } catch { /* feedback is rendered below */ }
   }
 
   async function resend() {
-    if (cooldown > 0 || resending) return;
-    setError("");
-    setResending(true);
-    try {
-      await authApi.resendVerification({ userId: registration.userId, channel });
-      setResendMessage("Đã gửi lại mã xác thực.");
+    if (cooldown > 0 || resendMutation.isPending) return;
+    feedback.clear();
+    try { await resendMutation.mutateAsync({ userId: registration.userId, channel });
       setCooldown(60);
-    } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Không thể gửi lại mã.");
-    } finally {
-      setResending(false);
-    }
+    } catch { /* feedback is rendered below */ }
   }
 
   return (
@@ -79,9 +64,9 @@ export function VerificationPage({ registration, onCompleted }) {
                 required
               />
             </div>
-            {error && <p className="auth-alert" role="alert">{error}</p>}
-            {resendMessage && <p className="auth-success">{resendMessage}</p>}
-            <Button type="submit" size="lg" loading={loading}>
+            {feedback.error && <p className="auth-alert" role="alert">{feedback.error}</p>}
+            {feedback.notice && <p className="auth-success">{feedback.notice}</p>}
+            <Button type="submit" size="lg" loading={verify.isPending}>
               Xác thực mã
             </Button>
           </form>
@@ -91,10 +76,10 @@ export function VerificationPage({ registration, onCompleted }) {
               type="button"
               className="auth-link"
               onClick={resend}
-              disabled={cooldown > 0 || resending}
-              style={cooldown > 0 || resending ? { opacity: 0.6, cursor: "not-allowed" } : undefined}
+              disabled={cooldown > 0 || resendMutation.isPending}
+              style={cooldown > 0 || resendMutation.isPending ? { opacity: 0.6, cursor: "not-allowed" } : undefined}
             >
-              {cooldown > 0 ? `Gửi lại sau (${cooldown}s)` : (resending ? "Đang gửi…" : "Gửi lại")}
+              {cooldown > 0 ? `Gửi lại sau (${cooldown}s)` : (resendMutation.isPending ? "Đang gửi…" : "Gửi lại")}
             </button>
           </p>
         </div>

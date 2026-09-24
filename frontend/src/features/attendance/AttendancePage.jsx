@@ -1,14 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ClipboardCheck, Users } from "lucide-react";
 import { Button } from "../../components/ui/Button.jsx";
 import { Dialog } from "../../components/ui/Dialog.jsx";
 import { Pagination } from "../../components/ui/Pagination.jsx";
 import { usePagination } from "../../components/ui/usePagination.js";
-import { bookingApi } from "../bookings/booking-api.js";
-import { classApi } from "../classes/class-api.js";
-import { attendanceApi } from "./attendance-api.js";
 import { hasSessionPermission } from "../../utils/session-permissions.js";
-import "../members/members.css";
+import { useAttendanceWorkspace } from "./hooks/useAttendanceWorkspace.js";
 
 const statusLabels = {
   present: "Có mặt",
@@ -27,21 +24,17 @@ const emptyCorrection = { record: null, status: "present", reason: defaultCorrec
 
 export function AttendancePage({ session }) {
   const [classId, setClassId] = useState("");
-  const [classes, setClasses] = useState([]);
-  const [bookings, setBookings] = useState([]);
-  const [records, setRecords] = useState([]);
   const [draftStatuses, setDraftStatuses] = useState({});
   const [correction, setCorrection] = useState(emptyCorrection);
-  const [notice, setNotice] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
   const [confirmSubmitOpen, setConfirmSubmitOpen] = useState(false);
   const [now, setNow] = useState(() => new Date());
   const role = session?.user?.role;
   const coachId = role === "coach" ? session.user.id : null;
   const canOperate = hasSessionPermission(session, "attendance.write");
   const canCorrect = canOperate;
+  const workspace = useAttendanceWorkspace({ classId });
+  const { bookings, classes, records } = workspace;
+  const submitting = workspace.submitAttendance.isPending || workspace.correctAttendance.isPending;
   const availableClasses = useMemo(() => {
     const dayStart = new Date(now);
     dayStart.setHours(0, 0, 0, 0);
@@ -111,73 +104,25 @@ export function AttendancePage({ session }) {
     selectedClass && now > new Date(selectedClass.ends_at),
   );
 
-  const loadReferences = useCallback(async () => {
-    setLoading(true);
-    try {
-      const nextClasses = await classApi.list();
-      setClasses(nextClasses);
-      setBookings([]);
-    } catch (caught) {
-      setError(caught.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void Promise.resolve().then(loadReferences);
-  }, [loadReferences]);
-
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 60_000);
     return () => window.clearInterval(timer);
   }, []);
 
-  async function refresh(nextClassId = classId) {
-    if (!nextClassId) return;
-    setRecords(await attendanceApi.byClass(nextClassId));
-  }
-
-  async function selectClass(input) {
+  function selectClass(input) {
     const selected = typeof input === "string" ? input : input.target.value;
     setClassId(selected);
-    setRecords([]);
     setDraftStatuses({});
-    setError("");
-    if (!selected) return;
-    try {
-      const [, nextBookings] = await Promise.all([
-        refresh(selected),
-        bookingApi.byClass(selected),
-      ]);
-      setBookings(nextBookings);
-    } catch (caught) {
-      setError(caught.message);
-    }
   }
 
   function checkIn(nextBookingId) {
-    setError("");
-    setNotice("");
     setDraftStatuses((current) => ({ ...current, [nextBookingId]: "present" }));
-    setNotice("Đã đánh dấu có mặt. Hãy bấm Lưu điểm danh để ghi nhận chính thức.");
+    workspace.setNotice("Đã đánh dấu có mặt. Hãy bấm Lưu điểm danh để ghi nhận chính thức.");
   }
 
-  async function submitAttendance() {
-    setError("");
-    setNotice("");
-    setSubmitting(true);
-    try {
-      const entries = attendanceRows.map((row) => ({ bookingId: row.booking.id, status: row.status === "not_marked" ? "absent" : row.status }));
-      const result = await attendanceApi.submit(classId, entries);
-      setDraftStatuses({});
-      await refresh();
-      setNotice(result.alreadySubmitted ? "Buổi học này đã được lưu trước đó." : `Đã lưu điểm danh và gửi thông báo cho ${result.notificationCount} hội viên.`);
-    } catch (caught) {
-      setError(caught.message);
-    } finally {
-      setSubmitting(false);
-    }
+  function submitAttendance() {
+    const entries = attendanceRows.map((row) => ({ bookingId: row.booking.id, status: row.status === "not_marked" ? "absent" : row.status }));
+    workspace.submitAttendance.mutate({ classId, entries }, { onSuccess: () => { setDraftStatuses({}); setConfirmSubmitOpen(false); } });
   }
 
   function openCorrection(record) {
@@ -193,27 +138,10 @@ export function AttendancePage({ session }) {
       !correction.record ||
       (correctionRequiresReason && correction.reason.trim().length < 3)
     ) {
-      setError("Cần nhập lý do sửa điểm danh sau giờ học.");
+      workspace.setError("Cần nhập lý do sửa điểm danh sau giờ học.");
       return;
     }
-    setError("");
-    setNotice("");
-    setSubmitting(true);
-    try {
-      await attendanceApi.correct(correction.record.id, {
-        status: correction.status,
-        ...(correction.reason.trim()
-          ? { reason: correction.reason.trim() }
-          : {}),
-      });
-      await refresh();
-      setCorrection(emptyCorrection);
-      setNotice("Đã sửa điểm danh và lưu audit.");
-    } catch (caught) {
-      setError(caught.message);
-    } finally {
-      setSubmitting(false);
-    }
+    workspace.correctAttendance.mutate({ id: correction.record.id, input: { status: correction.status, ...(correction.reason.trim() ? { reason: correction.reason.trim() } : {}) } }, { onSuccess: () => setCorrection(emptyCorrection) });
   }
 
   return (
@@ -222,14 +150,14 @@ export function AttendancePage({ session }) {
         <p>Điểm danh</p>
         <h1>Điểm danh theo buổi học</h1>
       </header>
-      {error && (
+      {workspace.error && (
         <p className="auth-alert" role="alert">
-          {error}
+          {workspace.error}
         </p>
       )}
-      {notice && (
+      {workspace.notice && (
         <p className="auth-success" role="status">
-          {notice}
+          {workspace.notice}
         </p>
       )}
       <div className="members-workspace-stacked">
@@ -246,7 +174,7 @@ export function AttendancePage({ session }) {
               {availableClasses.length} buổi học
             </span>
           </div>
-          {loading ? (
+          {workspace.classesLoading ? (
             <p>Đang tải buổi học…</p>
           ) : availableClasses.length === 0 ? (
             <p>{role === "admin" ? "Chưa có buổi học để xem điểm danh." : "Hôm nay chưa có buổi học để điểm danh."}</p>
@@ -286,7 +214,7 @@ export function AttendancePage({ session }) {
                       <td>{classStatusLabels[item.status] ?? item.status}</td>
                       <td>
                         <Button
-                          onClick={() => void selectClass(item.id)}
+                          onClick={() => selectClass(item.id)}
                           size="sm"
                           variant={
                             item.id === classId ? "secondary" : "outline"
@@ -337,11 +265,11 @@ export function AttendancePage({ session }) {
           <div className="list-heading">
             <h2>Danh sách điểm danh lớp</h2>
             <div className="list-heading__actions">
-              {classId && <Button disabled={submitting} onClick={() => setConfirmSubmitOpen(true)} size="sm">Lưu điểm danh</Button>}
-              {classId && <Button onClick={() => refresh()} size="sm" variant="ghost">Tải lại</Button>}
+              {classId && canOperate && <Button disabled={submitting} onClick={() => setConfirmSubmitOpen(true)} size="sm">Lưu điểm danh</Button>}
+              {classId && <Button onClick={workspace.reload} size="sm" variant="ghost">Tải lại</Button>}
             </div>
           </div>
-          {loading ? (
+          {workspace.detailsLoading ? (
             <p>Đang tải dữ liệu…</p>
           ) : !classId ? (
             <p>Chưa chọn buổi học.</p>
@@ -510,10 +438,7 @@ export function AttendancePage({ session }) {
           </Button>
           <Button
             loading={submitting}
-            onClick={async () => {
-              await submitAttendance();
-              setConfirmSubmitOpen(false);
-            }}
+            onClick={submitAttendance}
             type="button"
           >
             Xác nhận lưu

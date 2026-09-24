@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { Button } from "../../components/ui/Button.jsx";
 import {
@@ -10,11 +10,8 @@ import { Dialog } from "../../components/ui/Dialog.jsx";
 import { Pagination } from "../../components/ui/Pagination.jsx";
 import { usePagination } from "../../components/ui/usePagination.js";
 import { sortTable } from "../../lib/table.js";
-import { classApi } from "../classes/class-api.js";
-import { memberApi } from "../members/member-api.js";
 import { hasSessionPermission } from "../../utils/session-permissions.js";
-import { bookingApi } from "./booking-api.js";
-import "../members/members.css";
+import { useBookingsWorkspace } from "./hooks/useBookingsWorkspace.js";
 
 const emptyForm = { memberId: "", classId: "" };
 const labels = {
@@ -24,18 +21,12 @@ const labels = {
 };
 
 export function BookingsPage({ session }) {
-  const [items, setItems] = useState([]);
-  const [members, setMembers] = useState([]);
-  const [classes, setClasses] = useState([]);
+  const [listMemberId, setListMemberId] = useState(undefined);
   const [form, setForm] = useState(emptyForm);
   const [cancellation, setCancellation] = useState({
     booking: null,
     reason: "",
   });
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
   const [bookingSearch, setBookingSearch] = useState("");
   const [bookingStatusFilters, setBookingStatusFilters] = useState([]);
   const [bookingCoachFilters, setBookingCoachFilters] = useState([]);
@@ -49,6 +40,9 @@ export function BookingsPage({ session }) {
   const isMember = role === "member";
   const canCreateBooking = hasSessionPermission(session, "booking.write");
   const canCancelBooking = canCreateBooking;
+  const workspace = useBookingsWorkspace({ canCreateBooking, isMember, memberId: listMemberId });
+  const { bookings: items, classes, members } = workspace;
+  const submitting = workspace.createBooking.isPending || workspace.cancelBooking.isPending;
   const visibleClasses = useMemo(
     () =>
       classes.filter(
@@ -110,76 +104,17 @@ export function BookingsPage({ session }) {
     }));
   }
 
-  const loadBookings = useCallback(
-    async (memberId) => {
-      setLoading(true);
-      try {
-        setItems(
-          await bookingApi.list(isMember ? undefined : memberId || undefined),
-        );
-      } catch (caught) {
-        setError(caught.message);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [isMember],
-  );
-
-  const loadReferences = useCallback(async () => {
-    if (!canCreateBooking) {
-      setClasses([]);
-      setMembers([]);
-      return;
-    }
-    try {
-      const [nextClasses, nextMembers] = await Promise.all([
-        classApi.list(),
-        isMember ? Promise.resolve([]) : memberApi.list(),
-      ]);
-      setClasses(nextClasses);
-      setMembers(nextMembers);
-    } catch (caught) {
-      setError(caught.message);
-    }
-  }, [canCreateBooking, isMember]);
-
-  useEffect(() => {
-    void Promise.resolve().then(async () => {
-      await Promise.all([loadBookings(), loadReferences()]);
-    });
-  }, [loadBookings, loadReferences]);
-
   function updateForm(event) {
     setForm((value) => ({ ...value, [event.target.name]: event.target.value }));
   }
 
   async function create(event) {
     event.preventDefault();
-    setError("");
-    setNotice("");
     if (!form.classId) {
-      setError("Hãy chọn lớp học trước khi đặt chỗ.");
+      workspace.setError("Hãy chọn lớp học trước khi đặt chỗ.");
       return;
     }
-    setSubmitting(true);
-    try {
-      const booking = await bookingApi.create({
-        classId: form.classId,
-        ...(isMember ? {} : { memberId: form.memberId }),
-      });
-      setNotice(
-        booking.status === "waitlisted"
-          ? "Lớp đã đủ chỗ. Hội viên đã vào danh sách chờ và sẽ được thông báo khi đủ điều kiện nhận chỗ trống."
-          : "Đặt chỗ thành công.",
-      );
-      setForm(emptyForm);
-      await loadBookings(isMember ? undefined : form.memberId);
-    } catch (caught) {
-      setError(caught.message);
-    } finally {
-      setSubmitting(false);
-    }
+    workspace.createBooking.mutate({ classId: form.classId, ...(isMember ? {} : { memberId: form.memberId }) }, { onSuccess: () => { setForm(emptyForm); setListMemberId(isMember ? undefined : form.memberId); } });
   }
 
   function openCancellation(booking) {
@@ -192,27 +127,10 @@ export function BookingsPage({ session }) {
   async function cancel(event) {
     event.preventDefault();
     if (!cancellation.booking || cancellation.reason.trim().length < 3) {
-      setError("Lý do hủy cần có ít nhất 3 ký tự.");
+      workspace.setError("Lý do hủy cần có ít nhất 3 ký tự.");
       return;
     }
-    setError("");
-    setNotice("");
-    setSubmitting(true);
-    try {
-      await bookingApi.cancel(
-        cancellation.booking.id,
-        cancellation.reason.trim(),
-      );
-      setNotice(
-        "Đã hủy đặt chỗ. Hội viên đủ điều kiện đầu tiên trong danh sách chờ sẽ được xác nhận tự động.",
-      );
-      setCancellation({ booking: null, reason: "" });
-      await loadBookings(isMember ? undefined : form.memberId);
-    } catch (caught) {
-      setError(caught.message);
-    } finally {
-      setSubmitting(false);
-    }
+    workspace.cancelBooking.mutate({ id: cancellation.booking.id, reason: cancellation.reason.trim() }, { onSuccess: () => setCancellation({ booking: null, reason: "" }) });
   }
 
   return (
@@ -221,14 +139,14 @@ export function BookingsPage({ session }) {
         <p>Đặt chỗ</p>
         <h1>{role === "coach" ? "Lịch đặt lớp phụ trách" : "Quản lý đặt lớp"}</h1>
       </header>
-      {error && (
+      {workspace.error && (
         <p className="auth-alert" role="alert">
-          {error}
+          {workspace.error}
         </p>
       )}
-      {notice && (
+      {workspace.notice && (
         <p className="auth-success" role="status">
-          {notice}
+          {workspace.notice}
         </p>
       )}
       <section className="members-workspace-stacked">
@@ -310,14 +228,14 @@ export function BookingsPage({ session }) {
           <div className="list-heading">
             <h2>{isMember ? "Lịch đặt của tôi" : role === "coach" ? "Danh sách đặt chỗ" : "Lịch sử đặt chỗ"}</h2>
             <Button
-              onClick={() => loadBookings(form.memberId)}
+              onClick={workspace.reload}
               size="sm"
               variant="ghost"
             >
               Tải lại
             </Button>
           </div>
-          {loading ? (
+          {workspace.loading ? (
             <p>Đang tải…</p>
           ) : items.length === 0 ? (
             <p>Chưa có lịch đặt chỗ.</p>

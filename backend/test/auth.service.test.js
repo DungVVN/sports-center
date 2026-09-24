@@ -7,6 +7,17 @@ import { hashVerificationCode } from "../src/shared/auth/session-token.js";
 const acceptingCaptcha = { assertValid: vi.fn().mockResolvedValue(undefined) };
 
 describe("auth service login protection", () => {
+  it("returns a conflict when a concurrent registration claims the same contact", async () => {
+    const repository = {
+      findUserByEmail: vi.fn().mockResolvedValue(null),
+      findMemberByEmailOrPhone: vi.fn().mockResolvedValue(null),
+      createRegistration: vi.fn().mockRejectedValue({ code: "P2002", meta: { target: ["email"] } }),
+    };
+    const service = createAuthService({ repository, verificationDelivery: { deliver: vi.fn() }, auditService: { record: vi.fn() }, captchaVerifier: acceptingCaptcha });
+    await expect(service.register({ fullName: "Member", email: "member@example.com", phone: "0901234567", password: "Strongpass1" }))
+      .rejects.toMatchObject({ statusCode: 409, code: "ACCOUNT_ALREADY_EXISTS" });
+  });
+
   it("issues only an email code for a new member registration", async () => {
     const verificationDelivery = { deliver: vi.fn().mockResolvedValue({ delivered: true }) };
     const repository = {
@@ -107,6 +118,14 @@ describe("auth service login protection", () => {
     const service = createAuthService({ repository, verificationDelivery: { deliver: vi.fn() }, auditService: { record: vi.fn() } });
     await expect(service.updateOwnProfile({ userId: "staff-1", input: { fullName: "Coach Updated", phone: "0901234567" } })).resolves.toMatchObject({ profileSetupRequired: false });
     expect(repository.updateOwnProfile).toHaveBeenCalledWith("staff-1", { fullName: "Coach Updated", phone: "0901234567" });
+  });
+
+  it("returns a fixable conflict for a duplicate own-profile phone", async () => {
+    const profile = { user: { id: "staff-1", role: "coach", display_name: "Coach", email: "coach@example.com", status: "active" }, staffProfile: { phone: "0901234567" }, contacts: [] };
+    const repository = { findOwnProfile: vi.fn().mockResolvedValue(profile), updateOwnProfile: vi.fn().mockRejectedValue({ code: "P2002", meta: { target: ["phone"] } }) };
+    const service = createAuthService({ repository, verificationDelivery: { deliver: vi.fn() }, auditService: { record: vi.fn() } });
+    await expect(service.updateOwnProfile({ userId: "staff-1", input: { phone: "0911111111" } }))
+      .rejects.toMatchObject({ statusCode: 409, code: "PROFILE_PHONE_EXISTS" });
   });
 
   it("separates the Admin login surface from the shared operational login", async () => {

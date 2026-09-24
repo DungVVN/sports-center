@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { RolePermissionPage } from "./RolePermissionPage.jsx";
 import { rolePermissionApi } from "./role-permission-api.js";
@@ -14,6 +15,7 @@ const matrix = {
     { code: "member", label: "Hội viên", version: 0, permissionCodes: [] },
   ],
 };
+function renderPage() { const client = new QueryClient({ defaultOptions: { queries: { retry: false } } }); return render(<QueryClientProvider client={client}><RolePermissionPage /></QueryClientProvider>); }
 
 describe("Admin role permission matrix", () => {
   afterEach(cleanup);
@@ -23,7 +25,7 @@ describe("Admin role permission matrix", () => {
   });
 
   it("saves a checked permission with the role's current version", async () => {
-    render(<RolePermissionPage />);
+    renderPage();
     fireEvent.click(await screen.findByRole("checkbox", { name: "Xem thanh toán — manager" }));
     fireEvent.click(screen.getByRole("button", { name: "Lưu thay đổi" }));
     await waitFor(() => expect(rolePermissionApi.replace).toHaveBeenCalledWith("manager", { version: 2, permissionCodes: ["payment.read"] }));
@@ -31,7 +33,7 @@ describe("Admin role permission matrix", () => {
 
   it("shows a stale-edit conflict without claiming success", async () => {
     rolePermissionApi.replace.mockRejectedValue({ status: 409, message: "Conflict" });
-    render(<RolePermissionPage />);
+    renderPage();
     fireEvent.click(await screen.findByRole("checkbox", { name: "Xem thanh toán — manager" }));
     fireEvent.click(screen.getByRole("button", { name: "Lưu thay đổi" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("tải lại");
@@ -45,7 +47,7 @@ describe("Admin role permission matrix", () => {
       { code: "member.read", description: "Xem hội viên", group: "member", requires: [] },
       { code: "support.ticket.create", description: "Tạo hỗ trợ", group: "support", requires: [], availableRoles: ["member"] },
     ] });
-    render(<RolePermissionPage />);
+    renderPage();
     fireEvent.click(await screen.findByRole("checkbox", { name: "Tạo booking — manager" }));
     fireEvent.click(screen.getByRole("button", { name: "Lưu thay đổi" }));
     await waitFor(() => expect(rolePermissionApi.replace).toHaveBeenCalledWith("manager", {

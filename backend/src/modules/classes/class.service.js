@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { AppError } from "../../shared/errors/app-error.js";
+import { violatesUniqueConstraint, retryOnUniqueConstraint } from "../../shared/database/unique-constraint.js";
 
 function invalidTime() { return new AppError({ statusCode: 422, code: "INVALID_CLASS_TIME", message: "Giờ kết thúc phải sau giờ bắt đầu." }); }
 function scheduleConflict() { return new AppError({ statusCode: 422, code: "CLASS_SCHEDULE_CONFLICT", message: "Coach hoặc phòng học đã có lớp trùng thời gian." }); }
@@ -13,7 +14,13 @@ export function createClassService({ repository, auditService }) {
       const startsAt = new Date(input.startsAt); const endsAt = new Date(input.endsAt);
       if (endsAt <= startsAt) throw invalidTime();
       if (await repository.hasScheduleConflict(input.roomId, input.coachUserId, startsAt, endsAt)) throw scheduleConflict();
-      const result = await repository.create({ code: `CLS-${randomBytes(4).toString("hex").toUpperCase()}`, name: input.name, type: input.type, description: input.description ?? null, coach_user_id: input.coachUserId, room_id: input.roomId, starts_at: startsAt, ends_at: endsAt, capacity: input.capacity, created_by: actorUserId });
+      let result;
+      try {
+        result = await retryOnUniqueConstraint(() => repository.create({ code: `CLS-${randomBytes(4).toString("hex").toUpperCase()}`, name: input.name, type: input.type, description: input.description ?? null, coach_user_id: input.coachUserId, room_id: input.roomId, starts_at: startsAt, ends_at: endsAt, capacity: input.capacity, created_by: actorUserId }), { fields: ["code"] });
+      } catch (error) {
+        if (violatesUniqueConstraint(error)) throw new AppError({ statusCode: 409, code: "CLASS_CODE_CONFLICT", message: "Không thể cấp mã lớp học. Vui lòng thử lại." });
+        throw error;
+      }
       await auditService.record({ actorUserId, action: "class.created", entityType: "class_session", entityId: result.id, summary: "Đã tạo lớp học ở trạng thái nháp." });
       return result;
     },

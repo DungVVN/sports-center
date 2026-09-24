@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "../../components/ui/Button.jsx";
 import {
   DataTableToolbar,
@@ -9,9 +9,9 @@ import { Dialog } from "../../components/ui/Dialog.jsx";
 import { Pagination } from "../../components/ui/Pagination.jsx";
 import { usePagination } from "../../components/ui/usePagination.js";
 import { sortTable } from "../../lib/table.js";
-import { classApi } from "./class-api.js";
 import { hasSessionPermission } from "../../utils/session-permissions.js";
-import "../members/members.css";
+import { useMutationFeedback } from "../../hooks/useMutationFeedback.js";
+import { useClassesWorkspace } from "./hooks/useClassesWorkspace.js";
 
 const emptyChange = {
   classId: "",
@@ -45,17 +45,10 @@ function toDateTimeInput(value) {
 }
 
 export function ClassesPage({ session }) {
-  const [classes, setClasses] = useState([]);
-  const [rooms, setRooms] = useState([]);
-  const [coaches, setCoaches] = useState([]);
-  const [requests, setRequests] = useState([]);
   const [changeForm, setChangeForm] = useState(emptyChange);
   const [classForm, setClassForm] = useState(emptyClass);
   const [editingClass, setEditingClass] = useState(null);
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  const feedback = useMutationFeedback();
   const [classSearch, setClassSearch] = useState("");
   const [classStatusFilters, setClassStatusFilters] = useState([]);
   const [classCoachFilters, setClassCoachFilters] = useState([]);
@@ -69,6 +62,26 @@ export function ClassesPage({ session }) {
   const canManage = hasSessionPermission(session, "class.manage");
   const canReview = hasSessionPermission(session, "class.change.review");
   const canRequest = hasSessionPermission(session, "class.change.request");
+  const {
+    classes,
+    coaches,
+    createClass: createClassMutation,
+    error: queryError,
+    loading,
+    publishClass,
+    reload: load,
+    requests,
+    requestChange: requestChangeMutation,
+    reviewChange: reviewChangeMutation,
+    rooms,
+    updateClass: updateClassMutation,
+  } = useClassesWorkspace({ canReview });
+  const submitting = createClassMutation.isPending || publishClass.isPending || updateClassMutation.isPending || requestChangeMutation.isPending || reviewChangeMutation.isPending;
+  async function run(mutation, variables, success) {
+    feedback.clear();
+    try { await mutation.mutateAsync(variables); feedback.setNotice(success); return true; }
+    catch (caught) { feedback.setError(caught.message); return false; }
+  }
   const ownClasses = useMemo(
     () =>
       role === "coach"
@@ -122,31 +135,6 @@ export function ClassesPage({ session }) {
     }));
   }
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const base = await Promise.all([
-        classApi.list(),
-        classApi.rooms(),
-        classApi.coaches(),
-      ]);
-      setClasses(base[0]);
-      setRooms(base[1]);
-      setCoaches(base[2]);
-      if (canReview) setRequests(await classApi.changeRequests());
-      else setRequests([]);
-    } catch (caught) {
-      setError(caught.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [canReview]);
-
-  useEffect(() => {
-    void Promise.resolve().then(load);
-  }, [load]);
-
   function updateChange(event) {
     setChangeForm((value) => ({
       ...value,
@@ -162,39 +150,18 @@ export function ClassesPage({ session }) {
 
   async function createClass(event) {
     event.preventDefault();
-    setError("");
-    setNotice("");
-    setSubmitting(true);
-    try {
-      await classApi.create({
+    if (await run(createClassMutation, {
         ...classForm,
         capacity: Number(classForm.capacity),
         startsAt: new Date(classForm.startsAt).toISOString(),
         endsAt: new Date(classForm.endsAt).toISOString(),
-      });
+      }, "Đã tạo lớp nháp. Hãy rà soát rồi công bố lớp.")) {
       setClassForm(emptyClass);
-      setNotice("Đã tạo lớp nháp. Hãy rà soát rồi công bố lớp.");
-      await load();
-    } catch (caught) {
-      setError(caught.message);
-    } finally {
-      setSubmitting(false);
     }
   }
 
   async function publish(id) {
-    setError("");
-    setNotice("");
-    setSubmitting(true);
-    try {
-      await classApi.publish(id);
-      setNotice("Đã công bố lớp học.");
-      await load();
-    } catch (caught) {
-      setError(caught.message);
-    } finally {
-      setSubmitting(false);
-    }
+    await run(publishClass, id, "Đã công bố lớp học.");
   }
 
   function openEdit(item) {
@@ -213,34 +180,22 @@ export function ClassesPage({ session }) {
   async function updateClassSession(event) {
     event.preventDefault();
     if (!editingClass) return;
-    setError("");
-    setNotice("");
-    setSubmitting(true);
-    try {
+    if (await run(updateClassMutation, (() => {
       const { id, ...input } = editingClass;
-      await classApi.update(id, {
+      return { id, input: {
         ...input,
         capacity: Number(input.capacity),
         startsAt: new Date(input.startsAt).toISOString(),
         endsAt: new Date(input.endsAt).toISOString(),
-      });
+      } };
+    })(), "Đã cập nhật thông tin lớp học.")) {
       setEditingClass(null);
-      setNotice("Đã cập nhật thông tin lớp học.");
-      await load();
-    } catch (caught) {
-      setError(caught.message);
-    } finally {
-      setSubmitting(false);
     }
   }
 
   async function submitChange(event) {
     event.preventDefault();
-    setError("");
-    setNotice("");
-    setSubmitting(true);
-    try {
-      await classApi.requestChange(changeForm.classId, {
+    if (await run(requestChangeMutation, { id: changeForm.classId, input: {
         type: changeForm.type,
         reason: changeForm.reason,
         ...(changeForm.type === "reschedule"
@@ -249,33 +204,17 @@ export function ClassesPage({ session }) {
               endsAt: new Date(changeForm.endsAt).toISOString(),
             }
           : {}),
-      });
+      } }, "Đã gửi yêu cầu để Lễ tân duyệt.")) {
       setChangeForm(emptyChange);
-      setNotice("Đã gửi yêu cầu để Lễ tân duyệt.");
-    } catch (caught) {
-      setError(caught.message);
-    } finally {
-      setSubmitting(false);
     }
   }
 
   async function review(id, approved) {
-    setError("");
-    setNotice("");
-    setSubmitting(true);
-    try {
-      await classApi.reviewChange(id, approved);
-      setNotice(
+    await run(reviewChangeMutation, { id, approved },
         approved
           ? "Đã duyệt thay đổi lớp và gửi thông báo cho hội viên."
           : "Đã từ chối yêu cầu thay đổi lớp.",
       );
-      await load();
-    } catch (caught) {
-      setError(caught.message);
-    } finally {
-      setSubmitting(false);
-    }
   }
 
   return (
@@ -284,14 +223,14 @@ export function ClassesPage({ session }) {
         <p>Lớp học</p>
         <h1>Lịch lớp</h1>
       </header>
-      {error && (
-        <p className="auth-alert" role="alert">
-          {error}
+        {(feedback.error || queryError) && (
+          <p className="auth-alert" role="alert">
+            {feedback.error || queryError}
         </p>
       )}
-      {notice && (
+      {feedback.notice && (
         <p className="auth-success" role="status">
-          {notice}
+          {feedback.notice}
         </p>
       )}
       {!canManage && canReview && !canRequest ? (

@@ -1,14 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "../../components/ui/Button.jsx";
 import { DataTableToolbar, FilterMenu, SortableHeader } from "../../components/ui/DataTable.jsx";
 import { Pagination } from "../../components/ui/Pagination.jsx";
 import { usePagination } from "../../components/ui/usePagination.js";
 import { sortTable } from "../../lib/table.js";
-import { memberApi } from "../members/member-api.js";
-import { membershipApi } from "../memberships/membership-api.js";
-import { paymentApi } from "./payment-api.js";
 import { hasSessionPermission } from "../../utils/session-permissions.js";
-import "../members/members.css";
+import { usePaymentsWorkspace } from "./hooks/usePaymentsWorkspace.js";
 
 const emptyForm = { memberId: "", membershipId: "", amountVnd: "", method: "cash", provider: "payos", notes: "" };
 const paymentStatus = {
@@ -20,14 +17,8 @@ const paymentStatus = {
 const methodLabel = { cash: "Tiền mặt", bank_transfer: "Chuyển khoản", online: "Trực tuyến" };
 
 export function PaymentsPage({ session }) {
-  const [items, setItems] = useState([]);
-  const [members, setMembers] = useState([]);
-  const [memberships, setMemberships] = useState([]);
+  const [selectedMemberId, setSelectedMemberId] = useState("");
   const [form, setForm] = useState(emptyForm);
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
   const [checkoutUrl, setCheckoutUrl] = useState("");
   const [reconciliationNotes, setReconciliationNotes] = useState({});
   const [paymentSearch, setPaymentSearch] = useState("");
@@ -37,6 +28,9 @@ export function PaymentsPage({ session }) {
   const [isPaymentFilterOpen, setIsPaymentFilterOpen] = useState(false);
   const [paymentSort, setPaymentSort] = useState({ key: "amountVnd", direction: "desc" });
   const isCashier = hasSessionPermission(session, "payment.record");
+  const workspace = usePaymentsWorkspace({ isCashier, memberId: selectedMemberId || undefined });
+  const { members, memberships, payments: items } = workspace;
+  const submitting = workspace.createPayment.isPending || workspace.confirmPayment.isPending;
   const paymentPackages = useMemo(
     () =>
       [...new Set(items.map((item) => item.membership?.packageName).filter(Boolean))]
@@ -68,51 +62,14 @@ export function PaymentsPage({ session }) {
   function togglePaymentSort(key) {
     setPaymentSort((value) => ({ key, direction: value.key === key && value.direction === "asc" ? "desc" : "asc" }));
   }
-  const load = useCallback(async (memberId) => {
-    setLoading(true);
-    try {
-      setItems(await paymentApi.list(memberId));
-    } catch (caught) {
-      setError(caught.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-  useEffect(() => {
-    void Promise.resolve().then(async () => {
-      try {
-        if (isCashier) setMembers(await memberApi.list());
-      } catch (caught) {
-        setError(caught.message);
-      }
-      await load();
-    });
-  }, [isCashier, load]);
-
-  async function selectMember(memberId) {
+  function selectMember(memberId) {
     setForm((value) => ({
       ...value,
       memberId,
       membershipId: "",
       amountVnd: "",
     }));
-    setMemberships([]);
-    setError("");
-    if (!memberId) {
-      await load();
-      return;
-    }
-    try {
-      const [nextMemberships] = await Promise.all([
-        membershipApi.byMember(memberId),
-        load(memberId),
-      ]);
-      setMemberships(
-        nextMemberships.filter((item) => item.status === "pending_payment"),
-      );
-    } catch (caught) {
-      setError(caught.message);
-    }
+    setSelectedMemberId(memberId);
   }
 
   function selectMembership(membershipId) {
@@ -129,45 +86,12 @@ export function PaymentsPage({ session }) {
 
   async function create(event) {
     event.preventDefault();
-    setError("");
-    setNotice("");
     setCheckoutUrl("");
-    setSubmitting(true);
-    try {
-      const payment = await paymentApi.create({
-        ...form,
-        membershipId: form.membershipId || undefined,
-        amountVnd: Number(form.amountVnd),
-      });
-      setCheckoutUrl(payment.checkoutUrl ?? "");
-      setForm(emptyForm);
-      setMemberships([]);
-      setNotice(payment.checkoutUrl ? "Đã tạo liên kết PayOS. Mở liên kết để khách thanh toán." : form.method === "bank_transfer" ? "Đã lập phiếu chuyển khoản chờ đối soát sao kê." : "Đã lập phiếu thu tiền mặt, chờ Lễ tân xác nhận đã thu.");
-      await load();
-    } catch (caught) {
-      setError(caught.message);
-    } finally {
-      setSubmitting(false);
-    }
+    workspace.createPayment.mutate({ ...form, membershipId: form.membershipId || undefined, amountVnd: Number(form.amountVnd) }, { onSuccess: (payment) => { setCheckoutUrl(payment.checkoutUrl ?? ""); setForm(emptyForm); setSelectedMemberId(""); } });
   }
 
   async function confirm(id, status, method) {
-    setError("");
-    setNotice("");
-    setSubmitting(true);
-    try {
-      await paymentApi.confirm(id, status, method === "bank_transfer" ? reconciliationNotes[id]?.trim() : undefined);
-      setNotice(
-        status === "paid"
-          ? method === "bank_transfer" ? "Đã đối soát sao kê, xác nhận thanh toán và kích hoạt gói tập." : "Đã xác nhận thanh toán và kích hoạt gói tập."
-          : "Đã ghi nhận giao dịch không thành công.",
-      );
-      await load(form.memberId || undefined);
-    } catch (caught) {
-      setError(caught.message);
-    } finally {
-      setSubmitting(false);
-    }
+    workspace.confirmPayment.mutate({ id, status, method, reconciliationNote: method === "bank_transfer" ? reconciliationNotes[id]?.trim() : undefined });
   }
 
   return (
@@ -176,14 +100,14 @@ export function PaymentsPage({ session }) {
         <p>{isCashier ? "Thu tiền mặt" : "Thanh toán"}</p>
         <h1>{isCashier ? "Phiếu thu và kích hoạt gói" : "Theo dõi phiếu thu"}</h1>
       </header>
-      {error && (
+      {workspace.error && (
         <p className="auth-alert" role="alert">
-          {error}
+          {workspace.error}
         </p>
       )}
-      {notice && (
+      {workspace.notice && (
         <p className="auth-success" role="status">
-          {notice}
+          {workspace.notice}
         </p>
       )}
       <div className="members-workspace-stacked">
@@ -206,7 +130,7 @@ export function PaymentsPage({ session }) {
           <label>
             Hội viên
             <select
-              onChange={(event) => void selectMember(event.target.value)}
+              onChange={(event) => selectMember(event.target.value)}
               required
               value={form.memberId}
             >
@@ -262,14 +186,14 @@ export function PaymentsPage({ session }) {
           <div className="list-heading">
             <h2>{isCashier ? "Phiếu thu tại quầy" : "Danh sách phiếu thu"}</h2>
             <Button
-              onClick={() => load(form.memberId || undefined)}
+              onClick={workspace.reload}
               size="sm"
               variant="ghost"
             >
               Tải lại
             </Button>
           </div>
-          {loading ? (
+          {workspace.loading ? (
             <p>Đang tải…</p>
           ) : items.length === 0 ? (
             <p>Chưa có giao dịch.</p>

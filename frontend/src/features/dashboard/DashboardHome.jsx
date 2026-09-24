@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { ArrowRight, CalendarDays, CircleAlert, ClipboardCheck, CreditCard, ReceiptText, UsersRound } from "lucide-react";
 import { dashboardApi } from "./dashboard-api.js";
@@ -275,34 +276,11 @@ function RoleDashboard({ onNavigate, role, summary }) {
 
 export function DashboardHome({ onNavigate, role }) {
   const [period, setPeriod] = useState("month");
-  const [summary, setSummary] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const isOperationsLeader = ["admin", "manager"].includes(role);
-
-  useEffect(() => {
-    let active = true;
-    void Promise.resolve()
-      .then(() => {
-        if (active) {
-          setLoading(true);
-          setError("");
-        }
-        return dashboardApi.summary(role, isOperationsLeader ? { period } : {});
-      })
-      .then((data) => {
-        if (active) setSummary(data);
-      })
-      .catch((caught) => {
-        if (active) setError(caught.message ?? "Không thể tải số liệu tổng quan.");
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [period, role, isOperationsLeader]);
+  const summaryQuery = useQuery({ queryKey: ["dashboard-summary", role, isOperationsLeader ? period : null], queryFn: () => dashboardApi.summary(role, isOperationsLeader ? { period } : {}) });
+  const summary = summaryQuery.data ?? null;
+  const loading = summaryQuery.isLoading;
+  const error = summaryQuery.error?.message ?? "";
 
   const heading = isOperationsLeader
     ? {

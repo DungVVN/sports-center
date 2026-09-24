@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Check, Copy, ShieldCheck } from "lucide-react";
 import QRCode from "qrcode";
-import { ApiError } from "../../api/api-error.js";
+import { useMutationFeedback, useSubmitMutation } from "../../hooks/useMutationFeedback.js";
 import { Button } from "../../components/ui/Button.jsx";
 import { authApi } from "./auth-api.js";
 
@@ -9,37 +9,16 @@ export function TotpEnrollmentPanel({ onEnrollmentCompleted }) {
   const [enrollment, setEnrollment] = useState(null);
   const [code, setCode] = useState("");
   const [copiedSecret, setCopiedSecret] = useState(false);
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
-  const [loading, setLoading] = useState(false);
+  const feedback = useMutationFeedback();
+  const beginEnrollment = useSubmitMutation({ feedback, mutationFn: authApi.beginTotpEnrollment, errorMessage: "Không thể bắt đầu đăng ký Authenticator." });
+  const confirmEnrollment = useSubmitMutation({ feedback, mutationFn: (input) => authApi.confirmTotpEnrollment(input), onSuccess: () => { setEnrollment(null); setCode(""); onEnrollmentCompleted?.(); }, successMessage: "Authenticator đã được kích hoạt. Lần đăng nhập Manager tiếp theo sẽ yêu cầu mã 6 số.", errorMessage: "Không thể xác nhận Authenticator." });
   async function begin() {
-    setError("");
-    setNotice("");
-    setLoading(true);
-    try {
-      setEnrollment(await authApi.beginTotpEnrollment());
-    } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Không thể bắt đầu đăng ký Authenticator.");
-    } finally {
-      setLoading(false);
-    }
+    try { setEnrollment(await beginEnrollment.mutateAsync()); } catch { /* feedback is rendered below */ }
   }
 
   async function confirm(event) {
     event.preventDefault();
-    setError("");
-    setLoading(true);
-    try {
-      await authApi.confirmTotpEnrollment({ enrollmentId: enrollment.enrollmentId, code });
-      setEnrollment(null);
-      setCode("");
-      setNotice("Authenticator đã được kích hoạt. Lần đăng nhập Manager tiếp theo sẽ yêu cầu mã 6 số.");
-      onEnrollmentCompleted?.();
-    } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Không thể xác nhận Authenticator.");
-    } finally {
-      setLoading(false);
-    }
+    await confirmEnrollment.mutateAsync({ enrollmentId: enrollment.enrollmentId, code }).catch(() => {});
   }
 
   function copySecret() {
@@ -57,10 +36,10 @@ export function TotpEnrollmentPanel({ onEnrollmentCompleted }) {
           <p>Manager dùng mã 6 số từ ứng dụng Authenticator khi đăng nhập.</p>
         </div>
       </div>
-      {notice && <p className="profile-notice" role="status">{notice}</p>}
-      {error && <p className="auth-alert" role="alert">{error}</p>}
+      {feedback.notice && <p className="profile-notice" role="status">{feedback.notice}</p>}
+      {feedback.error && <p className="auth-alert" role="alert">{feedback.error}</p>}
       {!enrollment ? (
-        <Button loading={loading} onClick={begin} type="button">
+        <Button loading={beginEnrollment.isPending} onClick={begin} type="button">
           <ShieldCheck aria-hidden="true" size={16} />Thiết lập Authenticator
         </Button>
       ) : (
@@ -100,7 +79,7 @@ export function TotpEnrollmentPanel({ onEnrollmentCompleted }) {
             />
           </label>
           <div className="profile-page__actions">
-            <Button disabled={code.length !== 6} loading={loading} type="submit">
+            <Button disabled={code.length !== 6} loading={confirmEnrollment.isPending} type="submit">
               Xác nhận Authenticator
             </Button>
             <Button onClick={() => { setEnrollment(null); setCode(""); }} type="button" variant="ghost">
