@@ -36,6 +36,12 @@
 .members-form input:disabled,
 .members-form select:disabled,
 .members-form textarea:disabled { background: var(--color-surface-muted); color: var(--color-text-muted); cursor: not-allowed; }
+.member-create-account { align-items: center; grid-column: 1 / -1; grid-template-columns: auto 1fr; }
+.member-create-account input { height: 16px; min-height: 16px; padding: 0; width: 16px; }
+.member-credentials { background: #fffbeb; border: 1px solid #fbbf24; border-radius: var(--radius-card); box-shadow: var(--shadow-card); padding: 20px; }
+.member-credentials > div { align-items: center; display: flex; gap: 10px; margin: 10px 0; }
+.member-credentials code { font-family: var(--font-mono); font-size: 18px; }
+.member-credentials p { color: var(--color-text-secondary); font-size: 12px; }
 .members-list table { border-collapse: collapse; width: 100%; }
 .members-list th,
 .members-list td { border-bottom: 1px solid var(--color-border); padding: 13px 8px; text-align: left; vertical-align: middle; }

@@ -28,4 +28,13 @@ describe("staff credential email delivery", () => {
     const service = createStaffCredentialsDeliveryService({ config: { verificationDeliveryMode: "development" }, fetchImpl: vi.fn() });
     await expect(service.deliver({ recipient: "staff@example.com", fullName: "Nguyen Van A", temporaryPassword: "temporary-password" })).resolves.toEqual({ delivered: false, configured: false });
   });
+
+  it("uses the supplied account label for member credentials", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: true });
+    const service = createStaffCredentialsDeliveryService({ config, fetchImpl });
+
+    await service.deliver({ recipient: "member@example.com", fullName: "Nguyen Van B", temporaryPassword: "temporary-password", accountLabel: "hội viên" });
+
+    expect(JSON.parse(fetchImpl.mock.calls[0][1].body).subject).toContain("Tài khoản hội viên");
+  });
 });

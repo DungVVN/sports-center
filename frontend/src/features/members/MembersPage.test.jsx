@@ -36,14 +36,15 @@ describe("MembersPage", () => {
   });
 
   it("creates a member and shows the standardized success feedback", async () => {
-    memberApi.create.mockResolvedValue({ id: "member-2" });
+    memberApi.create.mockResolvedValue({ id: "member-2", accountCreated: true, credentialEmailDelivered: true });
     renderPage();
     await screen.findByText("Chưa có hội viên.");
     fireEvent.change(screen.getByLabelText("Họ tên"), { target: { value: "Bình" } });
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "binh@example.com" } });
     fireEvent.change(screen.getByLabelText("Số điện thoại"), { target: { value: "0901" } });
     fireEvent.click(screen.getByRole("button", { name: "Tạo hội viên" }));
-    await waitFor(() => expect(memberApi.create).toHaveBeenCalledWith({ fullName: "Bình", email: "", phone: "0901" }));
-    expect(await screen.findByRole("status")).toHaveTextContent("Đã tạo hồ sơ hội viên.");
+    await waitFor(() => expect(memberApi.create).toHaveBeenCalledWith({ fullName: "Bình", email: "binh@example.com", phone: "0901", createAccount: true }));
+    expect(await screen.findByRole("status")).toHaveTextContent("Đã tạo tài khoản hội viên và gửi mật khẩu tạm qua email.");
   });
 
   it("shows an API 409 message without discarding the form", async () => {
@@ -51,6 +52,7 @@ describe("MembersPage", () => {
     renderPage();
     await screen.findByText("Chưa có hội viên.");
     fireEvent.change(screen.getByLabelText("Họ tên"), { target: { value: "Bình" } });
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "binh@example.com" } });
     fireEvent.change(screen.getByLabelText("Số điện thoại"), { target: { value: "0901" } });
     fireEvent.click(screen.getByRole("button", { name: "Tạo hội viên" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Email đã tồn tại.");

@@ -43,7 +43,11 @@ export function useMembersWorkspace({ assignmentMemberId, editingMemberId }) {
     feedback,
     mutationFn: (input) => memberApi.create(input),
     onSuccess: invalidateMembers,
-    successMessage: "Đã tạo hồ sơ hội viên.",
+    successMessage: (member) => member.accountCreated
+      ? member.credentialEmailDelivered
+        ? "Đã tạo tài khoản hội viên và gửi mật khẩu tạm qua email."
+        : "Đã tạo tài khoản hội viên nhưng chưa gửi được email."
+      : "Đã tạo hồ sơ hội viên.",
     errorMessage: "Không thể tạo hội viên.",
   });
   const assignCoach = useSubmitMutation({

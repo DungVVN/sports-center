@@ -1,6 +1,8 @@
 import { randomBytes } from "node:crypto";
 import { AppError } from "../../shared/errors/app-error.js";
+import { hashPassword } from "../../shared/auth/password.js";
 import { violatesUniqueConstraint, retryOnUniqueConstraint } from "../../shared/database/unique-constraint.js";
+import { staffCredentialsDeliveryService } from "../staff/staff-credentials-delivery.service.js";
 
 const viewContact = (contact) => ({ id: contact.id, fullName: contact.full_name, relationship: contact.relationship, phone: contact.phone, isPrimary: contact.is_primary });
 const persistContact = (contact) => ({ full_name: contact.fullName, relationship: contact.relationship, phone: contact.phone, is_primary: contact.isPrimary });
@@ -19,7 +21,7 @@ function memberConflict(error) {
   return new AppError({ statusCode: 409, code: "MEMBER_RECORD_EXISTS", message: "Thông tin hội viên đã tồn tại. Vui lòng kiểm tra lại và thử với dữ liệu khác." });
 }
 
-export function createMemberService({ repository, auditService }) {
+export function createMemberService({ repository, auditService, credentialsDelivery = staffCredentialsDeliveryService }) {
   return {
     async list() {
       return Promise.all((await repository.listWithOverview()).map(async ({ member, overview }) => view({ member, overview, contacts: await repository.contacts(member.id) })));
@@ -35,15 +37,38 @@ export function createMemberService({ repository, auditService }) {
       return this.get(member.id);
     },
     async create(input, actorUserId) {
+      const createAccount = input.createAccount === true;
+      const email = input.email?.trim().toLowerCase() || null;
+      const temporaryPassword = createAccount ? randomBytes(12).toString("base64url") : null;
+      const passwordHash = createAccount ? await hashPassword(temporaryPassword) : null;
       try {
         const created = await retryOnUniqueConstraint(() => repository.create({
           member_code: `MBR-${randomBytes(5).toString("hex").toUpperCase()}`,
-          full_name: input.fullName, email: input.email ?? null, phone: input.phone,
+          full_name: input.fullName, email, phone: input.phone,
           date_of_birth: input.dateOfBirth ? new Date(input.dateOfBirth) : null, gender: input.gender ?? null,
-          created_by: actorUserId, contacts: input.contacts.map(persistContact),
+          created_by: actorUserId, contacts: (input.contacts ?? []).map(persistContact),
+          ...(createAccount ? { account: { email, fullName: input.fullName, passwordHash } } : {}),
         }), { fields: ["member_code"] });
-        await auditService.record({ actorUserId, action: "member.created", entityType: "member", entityId: created.member.id, summary: "Đã tạo hồ sơ hội viên." });
-        return view(created);
+        const credentialEmail = createAccount ? await credentialsDelivery.deliver({
+          recipient: email,
+          fullName: input.fullName,
+          temporaryPassword,
+          accountLabel: "hội viên",
+        }) : { delivered: false };
+        await auditService.record({
+          actorUserId,
+          action: "member.created",
+          entityType: "member",
+          entityId: created.member.id,
+          summary: createAccount ? "Đã tạo tài khoản hội viên." : "Đã tạo hồ sơ hội viên.",
+          newValue: { accountCreated: createAccount, credentialEmailDelivered: credentialEmail.delivered },
+        });
+        return {
+          ...view(created),
+          accountCreated: createAccount,
+          credentialEmailDelivered: credentialEmail.delivered,
+          ...(createAccount && !credentialEmail.delivered ? { temporaryPassword } : {}),
+        };
       } catch (error) {
         throw memberConflict(error) ?? error;
       }

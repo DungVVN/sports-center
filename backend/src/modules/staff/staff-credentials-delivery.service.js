@@ -11,7 +11,7 @@ function loginUrl(config) {
 
 export function createStaffCredentialsDeliveryService({ config = env, fetchImpl = fetch, logger = console } = {}) {
   return {
-    async deliver({ recipient, fullName, temporaryPassword }) {
+    async deliver({ recipient, fullName, temporaryPassword, accountLabel = "nhân viên" }) {
       if (config.verificationDeliveryMode !== "provider" || !config.resendApiKey || !config.resendFromEmail) {
         return { delivered: false, configured: false };
       }
@@ -30,7 +30,7 @@ export function createStaffCredentialsDeliveryService({ config = env, fetchImpl 
           body: JSON.stringify({
             from: `${config.resendFromName} <${config.resendFromEmail}>`,
             to: [recipient],
-            subject: "Tài khoản nhân viên Kinetic Sports",
+            subject: `Tài khoản ${accountLabel} Kinetic Sports`,
             text: `Chào ${fullName},\n\nTài khoản Kinetic Sports của bạn đã được tạo.\nEmail đăng nhập: ${recipient}\nMật khẩu tạm thời: ${temporaryPassword}${loginText}\n\nKhông chia sẻ email này với bất kỳ ai.`,
             html: `<p>Chào ${escapeHtml(fullName)},</p><p>Tài khoản Kinetic Sports của bạn đã được tạo.</p><p><strong>Email đăng nhập:</strong> ${escapeHtml(recipient)}<br><strong>Mật khẩu tạm thời:</strong> ${escapeHtml(temporaryPassword)}</p>${loginButton}<p>Không chia sẻ email này với bất kỳ ai.</p>`,
           }),
