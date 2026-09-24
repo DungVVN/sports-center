@@ -10,7 +10,9 @@ export function useTrainingWorkspace({ canViewAi, planId }) {
   const feedback = useMutationFeedback();
   const templatesQuery = useQuery({ queryKey: keys.templates, queryFn: trainingApi.templates });
   const membersQuery = useQuery({ queryKey: keys.members, queryFn: trainingApi.members });
-  const plansQuery = useQuery({ queryKey: keys.plans, queryFn: trainingApi.plans });
+  // React Query passes a QueryFunctionContext to queryFn.  Do not hand that
+  // object to plans(memberId), otherwise it becomes `memberId=[object Object]`.
+  const plansQuery = useQuery({ queryKey: keys.plans, queryFn: () => trainingApi.plans() });
   const aiQuery = useQuery({ queryKey: keys.ai, queryFn: trainingApi.aiSuggestions, enabled: canViewAi });
   const sessionsQuery = useQuery({ queryKey: keys.sessions(planId), queryFn: () => trainingApi.sessions(planId), enabled: Boolean(planId) });
   const invalidate = useCallback(async () => {

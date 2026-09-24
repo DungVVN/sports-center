@@ -13,6 +13,7 @@ import { authApi } from "../features/auth/auth-api.js";
 import { LandingPage } from "../pages/LandingPage/LandingPage.jsx";
 import { GalleryPage } from "../pages/GalleryPage/GalleryPage.jsx";
 import { CalendarPage } from "../pages/CalendarPage/CalendarPage.jsx";
+import { NotFoundPage } from "../pages/NotFoundPage/NotFoundPage.jsx";
 import { dashboardPath, dashboardView, isDashboardView } from "./dashboard-routes.js";
 
 const queryClient = new QueryClient({
@@ -25,8 +26,9 @@ export function App() {
   const isAdminPortal = window.location.hostname === "admin.kineticsports.io.vn" || import.meta.env.VITE_ADMIN_PORTAL === "true";
 
   const getInitialView = () => {
-    if (isAdminPortal) return "login";
     const path = window.location.pathname;
+    if (isAdminPortal) return path === "/" || path === "/login" ? "login" : "notFound";
+    if (path === "/") return "landing";
     if (path === "/login") return "login";
     if (path === "/register") return "register";
     if (path === "/verify") return "verify";
@@ -34,7 +36,7 @@ export function App() {
     if (path === "/gallery") return "gallery";
     if (path === "/calendar") return "calendar";
     if (dashboardView(path)) return "login";
-    return "landing";
+    return "notFound";
   };
 
   const [view, setView] = useState(getInitialView());
@@ -60,7 +62,9 @@ export function App() {
       else if (path === "/pending") setView("pending");
       else if (path === "/gallery") setView("gallery");
       else if (path === "/calendar") setView("calendar");
-      else setView(dashboardView(path) ? "dashboard" : "landing");
+      else if (dashboardView(path)) setView("dashboard");
+      else if (path === "/") setView("landing");
+      else setView("notFound");
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
@@ -113,11 +117,12 @@ export function App() {
     ? <main className="app-loading-state" aria-live="polite">Đang khôi phục phiên đăng nhập...</main>
     : session?.user.mustChangePassword
     ? <InitialPasswordChangePage onCompleted={() => { setSession((current) => ({ ...current, user: { ...current.user, mustChangePassword: false } })); }} />
-    : session ? <DashboardPlaceholder initialView={dashboardView(window.location.pathname) ?? (session.user.profileSetupRequired ? "profile" : "dashboard")} session={session} onProfileSaved={() => setSession((current) => ({ ...current, user: { ...current.user, profileSetupRequired: false } }))} onLogout={() => { setSession(null); navigate("login"); }} /> : {
+    : session && view !== "notFound" ? <DashboardPlaceholder initialView={dashboardView(window.location.pathname) ?? (session.user.profileSetupRequired ? "profile" : "dashboard")} session={session} onProfileSaved={() => setSession((current) => ({ ...current, user: { ...current.user, profileSetupRequired: false } }))} onLogout={() => { setSession(null); navigate("login"); }} /> : {
     login: loginPage,
     landing: <LandingPage onLoginClick={() => navigate("login")} onRegisterClick={() => navigate("register")} onGalleryClick={() => navigate("gallery")} onCalendarClick={() => navigate("calendar")} />,
     gallery: <GalleryPage onLoginClick={() => navigate("login")} onHomeClick={() => navigate("landing")} />,
     calendar: <CalendarPage onLoginClick={() => navigate("login")} onHomeClick={() => navigate("landing")} />,
+    notFound: <NotFoundPage onHome={() => navigate("landing")} onLogin={() => navigate("login")} />,
     register: isAdminPortal ? loginPage : <RegisterPage onLogin={() => navigate("login")} onRegistered={(value) => { setRegistration(value); navigate("verify"); }} />,
     verify: registration ? <VerificationPage registration={registration} onCompleted={() => navigate("pending")} /> : loginPage,
     pending: <PendingApprovalPage onLogin={() => navigate("login")} />,

@@ -32,7 +32,7 @@ describe("TrainingPage", () => {
 
   it("does not request AI suggestions without ai.assist.read", async () => {
     renderPage();
-    await waitFor(() => expect(trainingApi.plans).toHaveBeenCalled());
+    await waitFor(() => expect(trainingApi.plans).toHaveBeenCalledWith());
     expect(trainingApi.aiSuggestions).not.toHaveBeenCalled();
   });
 

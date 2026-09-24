@@ -60,4 +60,13 @@ describe("first login routing", () => {
 
     expect(await screen.findByText("Dashboard view: dashboard")).toBeInTheDocument();
   });
+
+  it("shows a 404 page for an unknown frontend route", async () => {
+    window.history.replaceState({}, "", "/khong-ton-tai");
+
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: "Không tìm thấy trang" })).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/khong-ton-tai");
+  });
 });
