@@ -10,4 +10,5 @@ export const facilityApi = Object.freeze({
   reservations: () => apiClient.get("/facility-reservations"),
   review: (id, input) => apiClient.patch(`/facility-reservations/${id}/review`, input),
   cancel: (id, reason) => apiClient.patch(`/facility-reservations/${id}/cancel`, { reason }),
+  confirmCancellation: (id) => apiClient.patch(`/facility-reservations/${id}/cancel/confirm`),
 });

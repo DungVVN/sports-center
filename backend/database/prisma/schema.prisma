@@ -467,8 +467,12 @@ model facility_reservations {
   reviewed_at            DateTime?                   @db.Timestamptz(6)
   cancelled_by           String?                     @db.Uuid
   cancelled_at           DateTime?                   @db.Timestamptz(6)
+  cancellation_requested_by String?                  @db.Uuid
+  cancellation_requested_at DateTime?                @db.Timestamptz(6)
+  cancellation_reason    String?
   decision_reason        String?
   @@index([requester_user_id, requested_at])
+  @@index([requester_user_id, cancellation_requested_at])
   @@index([day_id, status])
 }
 

@@ -45,4 +45,23 @@ describe("facility calendar service", () => {
     };
     await expect(createFacilityService({ repository, auditService }).review("res-1", { approved: true }, "receptionist-1")).rejects.toMatchObject({ code: "FACILITY_TIME_BOOKED", statusCode: 409 });
   });
+
+  it("requires the creator to confirm a cancellation requested by another permitted user", async () => {
+    const repository = {
+      reservation: vi.fn()
+        .mockResolvedValueOnce({ id: "res-1", requester_user_id: "member-1", status: "approved" })
+        .mockResolvedValueOnce({ id: "res-1", requester_user_id: "member-1", status: "approved", cancellation_reason: "Đổi lịch sân" })
+        .mockResolvedValueOnce({ id: "res-1", requester_user_id: "member-1", status: "approved", cancellation_reason: "Đổi lịch sân" }),
+      requestCancellation: vi.fn().mockResolvedValue({ kind: "requested", item: { id: "res-1", cancellation_requested_at: new Date() } }),
+      confirmCancellation: vi.fn().mockResolvedValue({ kind: "updated", item: { id: "res-1", status: "cancelled" } }),
+      cancel: vi.fn(),
+    };
+    const service = createFacilityService({ repository, auditService: { record: vi.fn() } });
+
+    await expect(service.cancel("res-1", "Đổi lịch sân", "receptionist-1")).resolves.toMatchObject({ cancellationPending: true });
+    expect(repository.requestCancellation).toHaveBeenCalledWith({ id: "res-1", reason: "Đổi lịch sân", actorUserId: "receptionist-1" });
+    await expect(service.confirmCancellation("res-1", "member-1")).resolves.toMatchObject({ status: "cancelled" });
+    await expect(service.confirmCancellation("res-1", "another-member")).rejects.toMatchObject({ code: "FACILITY_CANCELLATION_CONFIRMATION_DENIED", statusCode: 403 });
+  });
+
 });

@@ -53,4 +53,18 @@ export const facilityRepository = {
       return { kind: "updated", item: updated };
     });
   },
+  async requestCancellation({ id, reason, actorUserId }) {
+    return prisma.$transaction(async (tx) => {
+      const changed = await tx.facility_reservations.updateMany({ where: { id, status: { in: ["pending", "approved"] }, cancellation_requested_at: null }, data: { cancellation_requested_by: actorUserId, cancellation_requested_at: new Date(), cancellation_reason: reason } });
+      if (changed.count !== 1) return { kind: "invalid" };
+      return { kind: "requested", item: await tx.facility_reservations.findUnique({ where: { id } }) };
+    });
+  },
+  async confirmCancellation({ id, actorUserId }) {
+    return prisma.$transaction(async (tx) => {
+      const changed = await tx.facility_reservations.updateMany({ where: { id, requester_user_id: actorUserId, status: { in: ["pending", "approved"] }, cancellation_requested_at: { not: null } }, data: { status: "cancelled", cancelled_by: actorUserId, cancelled_at: new Date() } });
+      if (changed.count !== 1) return { kind: "invalid" };
+      return { kind: "updated", item: await tx.facility_reservations.findUnique({ where: { id } }) };
+    });
+  },
 };

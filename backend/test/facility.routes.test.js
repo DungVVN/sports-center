@@ -5,7 +5,7 @@ import { createApp } from "../src/app.js";
 const dayId = "11111111-1111-4111-8111-111111111111";
 const reservationId = "22222222-2222-4222-8222-222222222222";
 const auth = (permissions = [], role = "member") => ({ getAuthentication: vi.fn().mockResolvedValue({ user: { id: "member-user", role }, permissions }) });
-const service = () => ({ publicCalendar: vi.fn().mockResolvedValue({ types: [], facilities: [], days: [] }), request: vi.fn().mockResolvedValue({ id: reservationId, status: "pending" }), mine: vi.fn().mockResolvedValue([]), reservations: vi.fn().mockResolvedValue([]), review: vi.fn().mockResolvedValue({ id: reservationId, status: "approved" }), cancel: vi.fn().mockResolvedValue({ id: reservationId, status: "cancelled" }) });
+const service = () => ({ publicCalendar: vi.fn().mockResolvedValue({ types: [], facilities: [], days: [] }), request: vi.fn().mockResolvedValue({ id: reservationId, status: "pending" }), mine: vi.fn().mockResolvedValue([]), reservations: vi.fn().mockResolvedValue([]), review: vi.fn().mockResolvedValue({ id: reservationId, status: "approved" }), cancel: vi.fn().mockResolvedValue({ id: reservationId, status: "cancelled" }), confirmCancellation: vi.fn().mockResolvedValue({ id: reservationId, status: "cancelled" }) });
 
 describe("facility reservation routes", () => {
   it("exposes only the public calendar without authentication", async () => {
@@ -33,6 +33,11 @@ describe("facility reservation routes", () => {
     await request(app).get("/api/v1/facility-reservations").set("Authorization", "Bearer token").expect(200);
     await request(app).patch(`/api/v1/facility-reservations/${reservationId}/review`).set("Authorization", "Bearer token").send({ approved: true }).expect(403);
     await request(app).patch(`/api/v1/facility-reservations/${reservationId}/cancel`).set("Authorization", "Bearer token").send({ reason: "Đổi lịch" }).expect(403);
+    const canceller = createApp({ authService: auth(["facility.booking.cancel"]), facilityService });
+    await request(canceller).patch(`/api/v1/facility-reservations/${reservationId}/cancel`).set("Authorization", "Bearer token").send({ reason: "Đổi lịch" }).expect(200);
+    expect(facilityService.cancel).toHaveBeenCalledWith(reservationId, "Đổi lịch", "member-user");
+    await request(createApp({ authService: auth(), facilityService })).patch(`/api/v1/facility-reservations/${reservationId}/cancel/confirm`).set("Authorization", "Bearer token").send({}).expect(200);
+    expect(facilityService.confirmCancellation).toHaveBeenCalledWith(reservationId, "member-user");
     const reviewer = createApp({ authService: auth(["facility.booking.approve"]), facilityService });
     await request(reviewer).patch(`/api/v1/facility-reservations/${reservationId}/review`).set("Authorization", "Bearer token").send({ approved: false }).expect(422);
     await request(reviewer).patch(`/api/v1/facility-reservations/${reservationId}/review`).set("Authorization", "Bearer token").send({ approved: true, startMinute: 540, endMinute: 600 }).expect(200);

@@ -21,7 +21,7 @@ export function createFacilityService({ repository, auditService }) {
     return items.map((item) => {
       const day = dayById.get(item.day_id);
       const facility = facilityById.get(day?.facility_id);
-      return { id: item.id, dayId: item.day_id, date: day ? dayString(day.open_on) : null, facilityName: facility?.name ?? "Sân không còn hoạt động", status: item.status, requestedStartMinute: item.requested_start_minute, requestedEndMinute: item.requested_end_minute, assignedStartMinute: item.assigned_start_minute, assignedEndMinute: item.assigned_end_minute, participantCount: item.participant_count, phone: item.contact_phone, requestedAt: item.requested_at, decisionReason: item.decision_reason, ...(includeRequester && { requesterName: requesterById.get(item.requester_user_id)?.display_name ?? "Người đặt" }) };
+      return { id: item.id, dayId: item.day_id, date: day ? dayString(day.open_on) : null, facilityName: facility?.name ?? "Sân không còn hoạt động", status: item.status, requestedStartMinute: item.requested_start_minute, requestedEndMinute: item.requested_end_minute, assignedStartMinute: item.assigned_start_minute, assignedEndMinute: item.assigned_end_minute, participantCount: item.participant_count, phone: item.contact_phone, requestedAt: item.requested_at, decisionReason: item.decision_reason, cancellationPending: Boolean(item.cancellation_requested_at), cancellationReason: item.cancellation_reason ?? null, cancellationRequestedAt: item.cancellation_requested_at ?? null, ...(includeRequester && { requesterName: requesterById.get(item.requester_user_id)?.display_name ?? "Người đặt" }) };
     });
   }
   return {
@@ -97,6 +97,24 @@ export function createFacilityService({ repository, auditService }) {
       try { const result = await repository.review({ id, approved: input.approved, startMinute, endMinute, reason: input.reason, actorUserId }); if (result.kind === "missing") fail(404, "FACILITY_REQUEST_NOT_FOUND", "Không tìm thấy đơn đặt sân."); if (result.kind === "invalid") fail(409, "FACILITY_REQUEST_FINAL", "Đơn không còn chờ duyệt."); return result.item; }
       catch (error) { if (overlap(error)) fail(409, "FACILITY_TIME_BOOKED", "Khoảng giờ đã có đơn được duyệt."); throw error; }
     },
-    async cancel(id, reason, actorUserId) { const result = await repository.cancel({ id, reason, actorUserId }); if (result.kind === "missing") fail(404, "FACILITY_REQUEST_NOT_FOUND", "Không tìm thấy đơn đặt sân."); if (result.kind === "invalid") fail(409, "FACILITY_REQUEST_FINAL", "Đơn không thể hủy."); return result.item; },
+    async cancel(id, reason, actorUserId) {
+      const current = await repository.reservation(id);
+      if (!current) fail(404, "FACILITY_REQUEST_NOT_FOUND", "Không tìm thấy đơn đặt sân.");
+      const ownReservation = current.requester_user_id === actorUserId;
+      const result = ownReservation ? await repository.cancel({ id, reason, actorUserId }) : await repository.requestCancellation({ id, reason, actorUserId });
+      if (result.kind === "missing") fail(404, "FACILITY_REQUEST_NOT_FOUND", "Không tìm thấy đơn đặt sân.");
+      if (result.kind === "invalid") fail(409, "FACILITY_CANCELLATION_NOT_AVAILABLE", "Đơn không thể hủy hoặc đang chờ người tạo đơn xác nhận.");
+      await auditService.record({ actorUserId, action: ownReservation ? "facility.reservation.cancelled" : "facility.reservation.cancellation_requested", entityType: "facility_reservation", entityId: id, summary: ownReservation ? "Người tạo đơn đã hủy đơn đặt sân." : "Đã gửi yêu cầu hủy đơn cho người tạo đơn xác nhận.", reason });
+      return { ...result.item, cancellationPending: result.kind === "requested" };
+    },
+    async confirmCancellation(id, actorUserId) {
+      const current = await repository.reservation(id);
+      if (!current) fail(404, "FACILITY_REQUEST_NOT_FOUND", "Không tìm thấy đơn đặt sân.");
+      if (current.requester_user_id !== actorUserId) fail(403, "FACILITY_CANCELLATION_CONFIRMATION_DENIED", "Chỉ người tạo đơn mới có thể xác nhận hủy.");
+      const result = await repository.confirmCancellation({ id, actorUserId });
+      if (result.kind === "invalid") fail(409, "FACILITY_CANCELLATION_NOT_AVAILABLE", "Đơn không có yêu cầu hủy đang chờ xác nhận.");
+      await auditService.record({ actorUserId, action: "facility.reservation.cancellation_confirmed", entityType: "facility_reservation", entityId: id, summary: "Người tạo đơn đã xác nhận hủy đơn đặt sân.", reason: current.cancellation_reason });
+      return result.item;
+    },
   };
 }
