@@ -110,6 +110,11 @@
   gap: var(--space-12);
 }
 
+.mobile-menu-toggle,
+.mobile-nav-menu {
+  display: none;
+}
+
 /* Hero Section Split Layout */
 .hero-section {
   position: relative;
@@ -984,6 +989,52 @@
 
   .navbar-links {
     display: none;
+  }
+
+  .mobile-menu-toggle {
+    display: inline-flex;
+    width: 36px;
+    height: 36px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-button-large);
+    background: var(--color-surface);
+    color: var(--color-text);
+    cursor: pointer;
+  }
+
+  .mobile-menu-toggle:focus-visible,
+  .mobile-nav-menu a:focus-visible {
+    outline: 3px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  .mobile-nav-menu.open {
+    display: grid;
+    gap: 4px;
+    position: absolute;
+    top: calc(100% - 4px);
+    right: 5%;
+    min-width: 190px;
+    padding: 8px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-card);
+  }
+
+  .mobile-nav-menu a {
+    padding: 12px 14px;
+    border-radius: var(--radius-control);
+    color: var(--color-text);
+    font-weight: var(--font-weight-semibold);
+    text-decoration: none;
+  }
+
+  .mobile-nav-menu a:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-primary);
   }
 
   /* Keep Login button visible with primary blue gradient on mobile */

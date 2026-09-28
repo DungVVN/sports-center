@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Activity, Star, Trophy, Users, Check, ChevronRight } from "lucide-react";
+import { Activity, Star, Trophy, Users, Check, ChevronRight, Menu, X } from "lucide-react";
 import { publicMembershipPackages } from "../../features/memberships/membership-api.js";
 import { PublicFooter } from "../../components/PublicFooter/PublicFooter.jsx";
 import "./LandingPage.css";
 
 export function LandingPage({ onLoginClick, onRegisterClick, onGalleryClick, onCalendarClick }) {
    const [scrolled, setScrolled] = useState(false);
+   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
    const { data: packages = [], isPending: packagesLoading, isError: packagesError, refetch: retryPackages } = useQuery({
       queryKey: ["public-membership-packages"],
       queryFn: publicMembershipPackages,
@@ -44,6 +45,22 @@ export function LandingPage({ onLoginClick, onRegisterClick, onGalleryClick, onC
             </div>
             <div className="navbar-actions">
                <button className="btn-primary btn-sm" onClick={onLoginClick}>Đăng Nhập</button>
+               <button
+                  className="mobile-menu-toggle"
+                  type="button"
+                  aria-label={mobileMenuOpen ? "Đóng menu" : "Mở menu"}
+                  aria-expanded={mobileMenuOpen}
+                  aria-controls="mobile-public-navigation"
+                  onClick={() => setMobileMenuOpen((open) => !open)}
+               >
+                  {mobileMenuOpen ? <X size={20} aria-hidden="true" /> : <Menu size={20} aria-hidden="true" />}
+               </button>
+            </div>
+            <div className={`mobile-nav-menu${mobileMenuOpen ? " open" : ""}`} id="mobile-public-navigation">
+               <a href="#about" onClick={() => setMobileMenuOpen(false)}>Về Chúng Tôi</a>
+               <a href="#facilities" onClick={() => setMobileMenuOpen(false)}>Dịch Vụ</a>
+               <a href="#pricing" onClick={() => setMobileMenuOpen(false)}>Bảng Giá</a>
+               <a href="#contact" onClick={() => setMobileMenuOpen(false)}>Liên Hệ</a>
             </div>
          </nav>
 

@@ -14,6 +14,8 @@ test.describe("production authentication", () => {
   for (const [role, email, roleLabel] of accounts) {
     test(`${role} signs in, reaches its workspace and signs out without reload`, async ({ page }) => {
       await page.goto("/", { waitUntil: "networkidle" });
+      await page.getByRole("button", { name: "Đăng Nhập" }).click();
+      await expect(page.locator("#login-email")).toBeVisible();
       await page.locator("#login-email").fill(email);
       await page.locator("#login-password").fill(password);
       await page.getByRole("button", { name: "Đăng nhập" }).click();
