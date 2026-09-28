@@ -4,6 +4,7 @@ import { useMutationFeedback, useSubmitMutation } from "../../../hooks/useMutati
 import { classApi } from "../../classes/class-api.js";
 import { memberApi } from "../../members/member-api.js";
 import { bookingApi } from "../booking-api.js";
+import { errorMessageFor } from "../../../api/error-message.js";
 
 const keys = {
   bookings: (memberId) => ["bookings", memberId ?? "all"],
@@ -32,7 +33,8 @@ export function useBookingsWorkspace({ canCreateBooking, isMember, memberId }) {
     successMessage: "Đã hủy đặt chỗ. Hội viên đủ điều kiện đầu tiên trong danh sách chờ sẽ được xác nhận tự động.",
     errorMessage: "Không thể hủy đặt chỗ.",
   });
-  const queryError = [bookingsQuery, classesQuery, membersQuery].find((query) => query.isError)?.error?.message ?? "";
+  const failedQuery = [bookingsQuery, classesQuery, membersQuery].find((query) => query.isError);
+  const queryError = failedQuery ? errorMessageFor(failedQuery.error, "Không thể tải dữ liệu đặt chỗ.") : "";
   return {
     bookings: bookingsQuery.data ?? [],
     cancelBooking,

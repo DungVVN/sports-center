@@ -33,8 +33,7 @@ export function createTrainingService({ repository, auditService }) {
     async templates() { const templates = await repository.templates(); return Promise.all(templates.map(async (template) => ({ ...template, exercises: await repository.templateExercises(template.id) }))); },
     async members(actor) { return actor.role === "coach" ? repository.membersForCoach(actor.id) : repository.members(); },
     async createTemplate(input, actorUserId) {
-      const template = await repository.createTemplate({ name: input.name, target_group: input.targetGroup, description: input.description ?? null, created_by: actorUserId });
-      await repository.createTemplateExercises(input.exercises.map((item, index) => ({ template_id: template.id, position: index + 1, ...item })));
+      const template = await repository.createTemplateWithExercises({ name: input.name, target_group: input.targetGroup, description: input.description ?? null, created_by: actorUserId }, input.exercises);
       await auditService.record({ actorUserId, action: "training_template.created", entityType: "training_template", entityId: template.id, summary: "Đã tạo mẫu giáo án." });
       return template;
     },
@@ -53,10 +52,9 @@ export function createTrainingService({ repository, auditService }) {
       if (!await repository.member(input.memberId)) throw new AppError({ statusCode: 404, code: "MEMBER_NOT_FOUND", message: "Không tìm thấy hội viên." });
       await ensureCoachAssignment(input.memberId, actor);
       if (input.templateId && !await repository.template(input.templateId)) throw new AppError({ statusCode: 422, code: "TRAINING_TEMPLATE_NOT_FOUND", message: "Không tìm thấy mẫu giáo án." });
-      const plan = await repository.createPlan({ member_id: input.memberId, coach_user_id: actor.id, name: input.name, goal: input.goal, starts_on: new Date(input.startsOn), ends_on: new Date(input.endsOn), status: "active" });
       const source = input.templateId ? await repository.templateExercises(input.templateId) : [];
       const exercises = input.exercises?.length ? input.exercises : source.map(({ name, sets, reps, duration_seconds, rest_seconds, instructions }) => ({ name, sets, reps, duration_seconds, rest_seconds, instructions }));
-      await repository.replaceExercises(plan.id, exercises);
+      const plan = await repository.createPlanWithExercises({ member_id: input.memberId, coach_user_id: actor.id, name: input.name, goal: input.goal, starts_on: new Date(input.startsOn), ends_on: new Date(input.endsOn), status: "active" }, exercises);
       await auditService.record({ actorUserId: actor.id, action: "training_plan.created", entityType: "training_plan", entityId: plan.id, summary: "Đã tạo giáo án cá nhân hóa." });
       return (await withCreatorMetadata([plan]))[0];
     },

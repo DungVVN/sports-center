@@ -3,10 +3,12 @@ import { Button } from "../../components/ui/Button.jsx";
 import { DataTableToolbar, FilterMenu, SortableHeader } from "../../components/ui/DataTable.jsx";
 import { Dialog } from "../../components/ui/Dialog.jsx";
 import { Pagination } from "../../components/ui/Pagination.jsx";
+import { TableSkeleton } from "../../components/ui/TableSkeleton.jsx";
 import { usePagination } from "../../components/ui/usePagination.js";
 import { sortTable } from "../../lib/table.js";
 import { hasSessionPermission } from "../../utils/session-permissions.js";
 import { useMutationFeedback } from "../../hooks/useMutationFeedback.js";
+import { errorMessageFor, fieldErrorsFor } from "../../api/error-message.js";
 import { useMembershipWorkspace } from "./hooks/useMembershipWorkspace.js";
 import "./membership-layout.css";
 
@@ -65,20 +67,33 @@ function estimatedExpiry(startsOn, durationDays) {
 }
 
 function validatePackageForm(form) {
-  const code = form.code.trim().toUpperCase();
-  const name = form.name.trim();
-  const priceText = form.priceVnd.trim();
-  const durationText = form.durationDays.trim();
-  const tierText = form.tierRank.trim();
+  const code = form.code?.trim().toUpperCase();
+  const name = form.name?.trim() || "";
+  const priceText = String(form.priceVnd || "").trim();
+  const durationText = String(form.durationDays || "").trim();
+  const tierText = String(form.tierRank || "").trim();
   const priceVnd = Number(priceText);
   const durationDays = Number(durationText);
   const tierRank = Number(tierText);
 
-  if (!/^[A-Z0-9_-]{2,30}$/.test(code)) return { error: "Mã gói gồm 2–30 ký tự in hoa, số, dấu gạch dưới hoặc gạch ngang." };
-  if (name.length < 2 || name.length > 100) return { error: "Tên gói phải từ 2 đến 100 ký tự." };
-  if (!/^\d+$/.test(priceText) || !Number.isSafeInteger(priceVnd) || priceVnd < 0) return { error: "Giá phải là số nguyên không âm." };
-  if (!/^\d+$/.test(durationText) || !Number.isSafeInteger(durationDays) || durationDays < 1 || durationDays > 730) return { error: "Số ngày phải là số nguyên từ 1 đến 730." };
-  if (!/^\d+$/.test(tierText) || !Number.isSafeInteger(tierRank) || tierRank < 1) return { error: "Thứ hạng quyền phải là số nguyên lớn hơn hoặc bằng 1." };
+  const errors = {};
+  if (form.code !== undefined) {
+    if (!code) errors.code = "Vui lòng nhập mã gói.";
+    else if (!/^[A-Z0-9_-]{2,30}$/.test(code)) errors.code = "Mã gói gồm 2–30 ký tự in hoa, số, _ hoặc -.";
+  }
+  if (!name) errors.name = "Vui lòng nhập tên gói.";
+  else if (name.length < 2 || name.length > 100) errors.name = "Tên gói phải từ 2 đến 100 ký tự.";
+
+  if (!priceText) errors.priceVnd = "Vui lòng nhập giá.";
+  else if (!/^\d+$/.test(priceText) || !Number.isSafeInteger(priceVnd) || priceVnd < 0) errors.priceVnd = "Giá phải là số nguyên không âm.";
+
+  if (!durationText) errors.durationDays = "Vui lòng nhập số ngày.";
+  else if (!/^\d+$/.test(durationText) || !Number.isSafeInteger(durationDays) || durationDays < 1 || durationDays > 730) errors.durationDays = "Số ngày từ 1 đến 730.";
+
+  if (!tierText) errors.tierRank = "Vui lòng nhập thứ hạng quyền.";
+  else if (!/^\d+$/.test(tierText) || !Number.isSafeInteger(tierRank) || tierRank < 1) errors.tierRank = "Thứ hạng quyền phải >= 1.";
+
+  if (Object.keys(errors).length > 0) return { errors };
 
   return {
     input: {
@@ -88,15 +103,28 @@ function validatePackageForm(form) {
       priceVnd,
       durationDays,
       tierRank,
-      benefits: form.benefits.split("\n").map((value) => value.trim()).filter(Boolean),
-      entitlements: form.entitlements.map((codeValue) => ({ code: codeValue })),
+      benefits: (form.benefits || "").split("\n").map((value) => value.trim()).filter(Boolean),
+      entitlements: (form.entitlements || []).map((codeValue) => ({ code: codeValue })),
     },
   };
 }
 
-function validationErrorMessage(error) {
-  if (error?.code !== "VALIDATION_ERROR" || !Array.isArray(error.details) || !error.details.length) return error?.message ?? "Không thể tạo gói tập.";
-  return error.details.map((issue) => `${issue.path?.replace(/^body\./, "") ?? "Dữ liệu"}: ${issue.message}`).join(" ");
+function validateMembershipForm(form) {
+  const errors = {};
+  if (!form.memberId) errors.memberId = "Vui lòng chọn hội viên.";
+  if (!form.packageId) errors.packageId = "Vui lòng chọn gói tập.";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(form.startsOn)) errors.startsOn = "Vui lòng chọn ngày bắt đầu hợp lệ.";
+  return errors;
+}
+
+function validateFreezeForm(form) {
+  const errors = {};
+  if (!form.membershipId) errors.membershipId = "Vui lòng chọn gói đang hoạt động.";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(form.startsOn)) errors.startsOn = "Vui lòng chọn ngày bắt đầu hợp lệ.";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(form.endsOn)) errors.endsOn = "Vui lòng chọn ngày kết thúc hợp lệ.";
+  else if (form.startsOn && form.endsOn <= form.startsOn) errors.endsOn = "Ngày kết thúc phải sau ngày bắt đầu.";
+  if (form.reason.trim().length < 3) errors.reason = "Lý do phải có ít nhất 3 ký tự.";
+  return errors;
 }
 
 export function MembershipsPage({ mode = "workspace", session }) {
@@ -134,9 +162,15 @@ export function MembershipsPage({ mode = "workspace", session }) {
     selectedMemberId,
   });
   const [packageForm, setPackageForm] = useState(emptyPackage);
+  const [packageFormErrors, setPackageFormErrors] = useState({});
   const [freezeForm, setFreezeForm] = useState(emptyFreeze);
+  const [freezeTouched, setFreezeTouched] = useState({});
   const [membershipForm, setMembershipForm] = useState(emptyMembership);
+  const [membershipTouched, setMembershipTouched] = useState({});
+  const freezeErrors = validateFreezeForm(freezeForm);
+  const membershipErrors = validateMembershipForm(membershipForm);
   const [editingPackage, setEditingPackage] = useState(null);
+  const [editingPackageErrors, setEditingPackageErrors] = useState({});
   const [packageSearch, setPackageSearch] = useState("");
   const [packageStatusFilters, setPackageStatusFilters] = useState([]);
   const [packageDurationFilters, setPackageDurationFilters] = useState([]);
@@ -179,15 +213,35 @@ export function MembershipsPage({ mode = "workspace", session }) {
   const submitting = createPackageMutation.isPending || updatePackageMutation.isPending || createMembershipMutation.isPending || requestFreezeMutation.isPending || reviewFreezeMutation.isPending || cancelPendingRenewalMutation.isPending;
   const setError = feedback.setError;
   const setNotice = feedback.setNotice;
-  const setSubmitting = () => {};
   const { error, notice } = feedback;
+  function changePackageField(field, value) {
+    const next = { ...packageForm, [field]: value };
+    setPackageForm(next);
+    setPackageFormErrors((current) => ({ ...current, [field]: validatePackageForm(next).errors?.[field] }));
+  }
+  function changeEditingPackageField(field, value) {
+    const next = { ...editingPackage, [field]: value };
+    setEditingPackage(next);
+    setEditingPackageErrors((current) => ({ ...current, [field]: validatePackageForm(next).errors?.[field] }));
+  }
+  function changeFreezeField(field, value) {
+    setFreezeTouched((current) => ({ ...current, [field]: true }));
+    setFreezeForm((current) => ({ ...current, [field]: value }));
+  }
+  function changeMembershipField(field, value) {
+    setMembershipTouched((current) => ({ ...current, [field]: true }));
+    setMembershipForm((current) => ({ ...current, [field]: value }));
+  }
   async function createPackage(event) {
     event.preventDefault();
+    if (submitting) return;
     setError("");
     setNotice("");
+    setPackageFormErrors({});
     const validation = validatePackageForm(packageForm);
-    if (validation.error) {
-      setError(validation.error);
+    if (validation.errors) {
+      setPackageFormErrors(validation.errors);
+      setError(Object.values(validation.errors).join(" "));
       return;
     }
     try {
@@ -196,9 +250,8 @@ export function MembershipsPage({ mode = "workspace", session }) {
       setNotice("Đã tạo gói tập.");
       await load();
     } catch (caught) {
-      setError(validationErrorMessage(caught));
-    } finally {
-      setSubmitting(false);
+      setPackageFormErrors((current) => ({ ...current, ...fieldErrorsFor(caught) }));
+      setError(errorMessageFor(caught, "Không thể tạo gói tập."));
     }
   }
   function toggleEntitlement(code) {
@@ -218,6 +271,7 @@ export function MembershipsPage({ mode = "workspace", session }) {
     }));
   }
   function openPackageEditor(item) {
+    setEditingPackageErrors({});
     setEditingPackage({
       id: item.id,
       name: item.name,
@@ -230,66 +284,54 @@ export function MembershipsPage({ mode = "workspace", session }) {
     });
   }
   async function updatePackage(event) {
-    event.preventDefault();
+    event.preventDefault(); if (submitting) return;
     if (!editingPackage) return;
     setError("");
     setNotice("");
-    setSubmitting(true);
+    setEditingPackageErrors({});
+    const validation = validatePackageForm(editingPackage);
+    if (validation.errors) {
+      setEditingPackageErrors(validation.errors);
+      setError(Object.values(validation.errors).join(" "));
+      return;
+    }
     try {
-      const {
-        id,
-        benefits,
-        entitlements,
-        priceVnd,
-        durationDays,
-        tierRank,
-        ...input
-      } = editingPackage;
-      await updatePackageMutation.mutateAsync({ id, input: {
-        ...input,
-        priceVnd: Number(priceVnd),
-        durationDays: Number(durationDays),
-        tierRank: Number(tierRank),
-        benefits: benefits
-          .split("\n")
-          .map((value) => value.trim())
-          .filter(Boolean),
-        entitlements: entitlements.map((code) => ({ code })),
-      } });
+      const { id, ...input } = validation.input;
+      await updatePackageMutation.mutateAsync({ id, input });
       setEditingPackage(null);
       setNotice("Đã cập nhật gói tập và quyền sử dụng.");
       await load();
     } catch (caught) {
-      setError(caught.message);
-    } finally {
-      setSubmitting(false);
+      setEditingPackageErrors((current) => ({ ...current, ...fieldErrorsFor(caught) }));
+      setError(errorMessageFor(caught, "Không thể cập nhật gói tập."));
     }
   }
   async function createMembership(event) {
-    event.preventDefault();
+    event.preventDefault(); if (submitting) return;
+    setMembershipTouched({ memberId: true, packageId: true, startsOn: true });
+    if (Object.keys(membershipErrors).length) { setError(Object.values(membershipErrors).join(" ")); return; }
     setError("");
     setNotice("");
-    setSubmitting(true);
     try {
       await createMembershipMutation.mutateAsync({ memberId: membershipForm.memberId, input: {
         packageId: membershipForm.packageId,
         startsOn: membershipForm.startsOn,
       } });
       setMembershipForm(emptyMembership);
+      setMembershipTouched({});
       setNotice(
         "Đã tạo gói chờ thanh toán. Hãy chuyển sang Thanh toán để ghi nhận giao dịch.",
       );
     } catch (caught) {
-      setError(caught.message);
-    } finally {
-      setSubmitting(false);
+      setError(errorMessageFor(caught, "Không thể tạo gói cho hội viên."));
     }
   }
   async function requestFreeze(event) {
-    event.preventDefault();
+    event.preventDefault(); if (submitting) return;
+    setFreezeTouched({ membershipId: true, startsOn: true, endsOn: true, reason: true });
+    if (Object.keys(freezeErrors).length) { setError(Object.values(freezeErrors).join(" ")); return; }
     setError("");
     setNotice("");
-    setSubmitting(true);
     try {
       await requestFreezeMutation.mutateAsync({ id: freezeForm.membershipId, input: {
         startsOn: freezeForm.startsOn,
@@ -297,18 +339,16 @@ export function MembershipsPage({ mode = "workspace", session }) {
         reason: freezeForm.reason,
       } });
       setFreezeForm(emptyFreeze);
+      setFreezeTouched({});
       setNotice("Đã gửi yêu cầu đóng băng để Lễ tân duyệt.");
       await load();
     } catch (caught) {
-      setError(caught.message);
-    } finally {
-      setSubmitting(false);
+      setError(errorMessageFor(caught, "Không thể gửi yêu cầu đóng băng."));
     }
   }
   async function reviewFreeze(id, approved) {
     setError("");
     setNotice("");
-    setSubmitting(true);
     try {
       await reviewFreezeMutation.mutateAsync({ id, approved });
       setNotice(
@@ -318,9 +358,7 @@ export function MembershipsPage({ mode = "workspace", session }) {
       );
       await load();
     } catch (caught) {
-      setError(caught.message);
-    } finally {
-      setSubmitting(false);
+      setError(errorMessageFor(caught, "Không thể xử lý yêu cầu đóng băng."));
     }
   }
   async function loadMemberMemberships(memberId) {
@@ -331,7 +369,6 @@ export function MembershipsPage({ mode = "workspace", session }) {
   async function cancelPendingRenewal(id) {
     setError("");
     setNotice("");
-    setSubmitting(true);
     try {
       await cancelPendingRenewalMutation.mutateAsync(id);
       setNotice(
@@ -339,9 +376,7 @@ export function MembershipsPage({ mode = "workspace", session }) {
       );
       await load();
     } catch (caught) {
-      setError(caught.message);
-    } finally {
-      setSubmitting(false);
+      setError(errorMessageFor(caught, "Không thể hủy yêu cầu gia hạn."));
     }
   }
 
@@ -363,17 +398,14 @@ export function MembershipsPage({ mode = "workspace", session }) {
           </p>
         )}
         <section className="members-grid">
-          <form className="members-form" onSubmit={requestFreeze}>
+          <form className="members-form" onSubmit={requestFreeze} noValidate>
             <h2>Yêu cầu đóng băng</h2>
             <label>
               Gói tập
               <select
-                onChange={(event) =>
-                  setFreezeForm({
-                    ...freezeForm,
-                    membershipId: event.target.value,
-                  })
-                }
+                aria-invalid={Boolean(freezeTouched.membershipId && freezeErrors.membershipId)}
+                className={freezeTouched.membershipId && freezeErrors.membershipId ? "input-error" : ""}
+                onChange={(event) => changeFreezeField("membershipId", event.target.value)}
                 required
                 value={freezeForm.membershipId}
               >
@@ -387,39 +419,43 @@ export function MembershipsPage({ mode = "workspace", session }) {
                     </option>
                   ))}
               </select>
+              {freezeTouched.membershipId && freezeErrors.membershipId && <span className="field-error">{freezeErrors.membershipId}</span>}
             </label>
             <label>
               Ngày bắt đầu
               <input
-                onChange={(event) =>
-                  setFreezeForm({ ...freezeForm, startsOn: event.target.value })
-                }
+                aria-invalid={Boolean(freezeTouched.startsOn && freezeErrors.startsOn)}
+                className={freezeTouched.startsOn && freezeErrors.startsOn ? "input-error" : ""}
+                onChange={(event) => changeFreezeField("startsOn", event.target.value)}
                 required
                 type="date"
                 value={freezeForm.startsOn}
               />
+              {freezeTouched.startsOn && freezeErrors.startsOn && <span className="field-error">{freezeErrors.startsOn}</span>}
             </label>
             <label>
               Ngày kết thúc
               <input
-                onChange={(event) =>
-                  setFreezeForm({ ...freezeForm, endsOn: event.target.value })
-                }
+                aria-invalid={Boolean(freezeTouched.endsOn && freezeErrors.endsOn)}
+                className={freezeTouched.endsOn && freezeErrors.endsOn ? "input-error" : ""}
+                onChange={(event) => changeFreezeField("endsOn", event.target.value)}
                 required
                 type="date"
                 value={freezeForm.endsOn}
               />
+              {freezeTouched.endsOn && freezeErrors.endsOn && <span className="field-error">{freezeErrors.endsOn}</span>}
             </label>
             <label>
               Lý do
               <textarea
+                aria-invalid={Boolean(freezeTouched.reason && freezeErrors.reason)}
+                className={freezeTouched.reason && freezeErrors.reason ? "input-error" : ""}
                 minLength="3"
-                onChange={(event) =>
-                  setFreezeForm({ ...freezeForm, reason: event.target.value })
-                }
+                onChange={(event) => changeFreezeField("reason", event.target.value)}
                 required
                 value={freezeForm.reason}
               />
+              {freezeTouched.reason && freezeErrors.reason && <span className="field-error">{freezeErrors.reason}</span>}
             </label>
             <Button loading={submitting} type="submit">
               Gửi yêu cầu
@@ -453,21 +489,21 @@ export function MembershipsPage({ mode = "workspace", session }) {
         className={`members-grid membership-workspace${isManager ? (showManagerCreate && showManagerCatalog ? " membership-workspace--manager" : mode === "catalog" ? " membership-workspace--catalog" : " membership-workspace--single") : " membership-workspace--assignment-only"}${showAssignment ? " membership-workspace--assignment" : ""}${packagePageLayout}`}
       >
         {showManagerCreate && (
-          <form className="members-form package-create-form" onSubmit={createPackage}>
+          <form className="members-form package-create-form" onSubmit={createPackage} noValidate>
             <h2>Tạo gói tập</h2>
             <label className="package-create-form__identity">
               Mã gói
               <input
                 list="package-code-options"
-                onChange={(event) =>
-                  setPackageForm({ ...packageForm, code: event.target.value.toUpperCase() })
-                }
+                className={packageFormErrors.code ? "input-error" : ""}
+                onChange={(event) => changePackageField("code", event.target.value.toUpperCase())}
                 placeholder="Ví dụ: STANDARD"
                 pattern="[A-Z0-9_-]{2,30}"
                 required
                 title="Mã gói gồm 2–30 ký tự in hoa, số, dấu gạch dưới hoặc gạch ngang."
                 value={packageForm.code}
               />
+              {packageFormErrors.code && <span className="field-error">{packageFormErrors.code}</span>}
               <datalist id="package-code-options">
                 {packageTemplates.map((item) => (
                   <option key={item.code} value={item.code}>
@@ -480,15 +516,15 @@ export function MembershipsPage({ mode = "workspace", session }) {
               Tên gói
               <input
                 list="package-name-options"
-                onChange={(event) =>
-                  setPackageForm({ ...packageForm, name: event.target.value })
-                }
+                className={packageFormErrors.name ? "input-error" : ""}
+                onChange={(event) => changePackageField("name", event.target.value)}
                 placeholder="Ví dụ: Gói Tiêu chuẩn"
                 required
                 minLength={2}
                 maxLength={100}
                 value={packageForm.name}
               />
+              {packageFormErrors.name && <span className="field-error">{packageFormErrors.name}</span>}
               <datalist id="package-name-options">
                 {packageTemplates.map((item) => (
                   <option key={item.name} value={item.name}>
@@ -505,19 +541,16 @@ export function MembershipsPage({ mode = "workspace", session }) {
               <label className="package-create-form__metric" key={key}>
                 {label}
                 <input
+                  className={packageFormErrors[key] ? "input-error" : ""}
                   min={key === "priceVnd" ? 0 : 1}
                   max={key === "durationDays" ? 730 : undefined}
-                  onChange={(event) =>
-                    setPackageForm({
-                      ...packageForm,
-                      [key]: event.target.value,
-                    })
-                  }
+                  onChange={(event) => changePackageField(key, event.target.value)}
                   required
                   step="1"
                   type="number"
                   value={packageForm[key]}
                 />
+                {packageFormErrors[key] && <span className="field-error">{packageFormErrors[key]}</span>}
               </label>
             ))}
             <fieldset className="entitlement-fieldset">
@@ -551,17 +584,14 @@ export function MembershipsPage({ mode = "workspace", session }) {
           </form>
         )}
         {showAssignment && (
-        <form className="members-form" onSubmit={createMembership}>
+        <form className="members-form" onSubmit={createMembership} noValidate>
           <h2>Tạo gói cho hội viên</h2>
           <label>
             Hội viên
             <select
-              onChange={(event) =>
-                setMembershipForm({
-                  ...membershipForm,
-                  memberId: event.target.value,
-                })
-              }
+              aria-invalid={Boolean(membershipTouched.memberId && membershipErrors.memberId)}
+              className={membershipTouched.memberId && membershipErrors.memberId ? "input-error" : ""}
+              onChange={(event) => changeMembershipField("memberId", event.target.value)}
               required
               value={membershipForm.memberId}
             >
@@ -572,6 +602,7 @@ export function MembershipsPage({ mode = "workspace", session }) {
                 </option>
               ))}
             </select>
+            {membershipTouched.memberId && membershipErrors.memberId && <span className="field-error">{membershipErrors.memberId}</span>}
           </label>
           <section className="selected-member-summary" aria-live="polite">
             <div>
@@ -596,12 +627,9 @@ export function MembershipsPage({ mode = "workspace", session }) {
           <label>
             Gói tập
             <select
-              onChange={(event) =>
-                setMembershipForm({
-                  ...membershipForm,
-                  packageId: event.target.value,
-                })
-              }
+              aria-invalid={Boolean(membershipTouched.packageId && membershipErrors.packageId)}
+              className={membershipTouched.packageId && membershipErrors.packageId ? "input-error" : ""}
+              onChange={(event) => changeMembershipField("packageId", event.target.value)}
               required
               value={membershipForm.packageId}
             >
@@ -615,6 +643,7 @@ export function MembershipsPage({ mode = "workspace", session }) {
                   </option>
                 ))}
             </select>
+            {membershipTouched.packageId && membershipErrors.packageId && <span className="field-error">{membershipErrors.packageId}</span>}
           </label>
           <section className="selected-member-summary" aria-live="polite">
             <div>
@@ -639,16 +668,14 @@ export function MembershipsPage({ mode = "workspace", session }) {
           <label>
             Ngày bắt đầu dự kiến
             <input
-              onChange={(event) =>
-                setMembershipForm({
-                  ...membershipForm,
-                  startsOn: event.target.value,
-                })
-              }
+              aria-invalid={Boolean(membershipTouched.startsOn && membershipErrors.startsOn)}
+              className={membershipTouched.startsOn && membershipErrors.startsOn ? "input-error" : ""}
+              onChange={(event) => changeMembershipField("startsOn", event.target.value)}
               required
               type="date"
               value={membershipForm.startsOn}
             />
+            {membershipTouched.startsOn && membershipErrors.startsOn && <span className="field-error">{membershipErrors.startsOn}</span>}
           </label>
           <label>
             Ngày hết hạn dự kiến
@@ -687,7 +714,7 @@ export function MembershipsPage({ mode = "workspace", session }) {
           </Button>
         </div>
         {loading ? (
-          <p>Đang tải…</p>
+          <TableSkeleton columns={6} />
         ) : (
           <>
             <DataTableToolbar
@@ -794,64 +821,53 @@ export function MembershipsPage({ mode = "workspace", session }) {
         title="Cập nhật gói tập"
       >
         {editingPackage && (
-          <form className="members-form" onSubmit={updatePackage}>
+          <form className="members-form dialog-scrollable-form" onSubmit={updatePackage} noValidate>
+            <div className="dialog-scrollable-content">
             <label>
               Tên gói
               <input
-                onChange={(event) =>
-                  setEditingPackage({
-                    ...editingPackage,
-                    name: event.target.value,
-                  })
-                }
+                className={editingPackageErrors.name ? "input-error" : ""}
+                onChange={(event) => changeEditingPackageField("name", event.target.value)}
                 required
                 value={editingPackage.name}
               />
+              {editingPackageErrors.name && <span className="field-error">{editingPackageErrors.name}</span>}
             </label>
             <label>
               Giá (VNĐ)
               <input
                 min="0"
-                onChange={(event) =>
-                  setEditingPackage({
-                    ...editingPackage,
-                    priceVnd: event.target.value,
-                  })
-                }
+                className={editingPackageErrors.priceVnd ? "input-error" : ""}
+                onChange={(event) => changeEditingPackageField("priceVnd", event.target.value)}
                 required
                 type="number"
                 value={editingPackage.priceVnd}
               />
+              {editingPackageErrors.priceVnd && <span className="field-error">{editingPackageErrors.priceVnd}</span>}
             </label>
             <label>
               Số ngày
               <input
                 min="1"
-                onChange={(event) =>
-                  setEditingPackage({
-                    ...editingPackage,
-                    durationDays: event.target.value,
-                  })
-                }
+                className={editingPackageErrors.durationDays ? "input-error" : ""}
+                onChange={(event) => changeEditingPackageField("durationDays", event.target.value)}
                 required
                 type="number"
                 value={editingPackage.durationDays}
               />
+              {editingPackageErrors.durationDays && <span className="field-error">{editingPackageErrors.durationDays}</span>}
             </label>
             <label>
               Thứ hạng quyền
               <input
                 min="1"
-                onChange={(event) =>
-                  setEditingPackage({
-                    ...editingPackage,
-                    tierRank: event.target.value,
-                  })
-                }
+                className={editingPackageErrors.tierRank ? "input-error" : ""}
+                onChange={(event) => changeEditingPackageField("tierRank", event.target.value)}
                 required
                 type="number"
                 value={editingPackage.tierRank}
               />
+              {editingPackageErrors.tierRank && <span className="field-error">{editingPackageErrors.tierRank}</span>}
             </label>
             <fieldset className="entitlement-fieldset">
               <legend>Quyền sử dụng</legend>
@@ -891,9 +907,12 @@ export function MembershipsPage({ mode = "workspace", session }) {
               />{" "}
               Gói đang khả dụng
             </label>
-            <Button loading={submitting} type="submit">
-              Lưu gói tập
-            </Button>
+            </div>
+            <div className="dialog-sticky-footer">
+              <Button loading={submitting} type="submit">
+                Lưu gói tập
+              </Button>
+            </div>
           </form>
         )}
       </Dialog>
@@ -907,7 +926,7 @@ function MembershipList({ embedded = false, items, loading, onCancel, submitting
     <>
       {embedded ? <h3>Gói đã đăng ký</h3> : <h2>Gói đã đăng ký</h2>}
       {loading ? (
-        <p>Đang tải…</p>
+        <TableSkeleton columns={5} />
       ) : items.length === 0 ? (
         <p>Chưa có gói tập.</p>
       ) : (

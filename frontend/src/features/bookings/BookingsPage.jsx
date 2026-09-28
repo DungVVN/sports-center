@@ -12,6 +12,7 @@ import { usePagination } from "../../components/ui/usePagination.js";
 import { sortTable } from "../../lib/table.js";
 import { hasSessionPermission } from "../../utils/session-permissions.js";
 import { useBookingsWorkspace } from "./hooks/useBookingsWorkspace.js";
+import { TableSkeleton } from "../../components/ui/TableSkeleton.jsx";
 
 const emptyForm = { memberId: "", classId: "" };
 const labels = {
@@ -236,7 +237,7 @@ export function BookingsPage({ session }) {
             </Button>
           </div>
           {workspace.loading ? (
-            <p>Đang tải…</p>
+            <TableSkeleton columns={6} />
           ) : items.length === 0 ? (
             <p>Chưa có lịch đặt chỗ.</p>
           ) : (
@@ -288,6 +289,7 @@ export function BookingsPage({ session }) {
                         >
                           Mã đặt chỗ
                         </SortableHeader>
+                        {!isMember && <th>Hội viên</th>}
                         <SortableHeader
                           activeSort={bookingSort.key}
                           column="className"
@@ -324,6 +326,7 @@ export function BookingsPage({ session }) {
                           <td>
                             <code>{item.booking_code}</code>
                           </td>
+                          {!isMember && <td>{item.member?.full_name ?? "Hội viên"}</td>}
                           <td>{item.class_session?.name ?? "Lớp học"}</td>
                           <td>
                             {item.class_session?.starts_at

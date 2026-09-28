@@ -1,12 +1,33 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DashboardPlaceholder } from "./DashboardPlaceholder.jsx";
+import { dashboardApi } from "../dashboard/dashboard-api.js";
+
+const showToast = vi.hoisted(() => vi.fn());
 
 vi.mock("../../components/layout/AppShell.jsx", () => ({ AppShell: ({ navigation }) => <nav>{navigation.flatMap((item) => [item, ...(item.children ?? [])]).map((item) => <span key={item.id}>{item.label}</span>)}</nav> }));
 vi.mock("../dashboard/dashboard-api.js", () => ({ dashboardApi: { notifications: vi.fn().mockResolvedValue([]) } }));
+vi.mock("../../contexts/useToast.js", () => ({ useToast: () => showToast }));
 
 describe("role navigation", () => {
-  afterEach(cleanup);
+  afterEach(() => { cleanup(); vi.useRealTimers(); vi.clearAllMocks(); dashboardApi.notifications.mockResolvedValue([]); });
+
+  it("does not invent a cash payment notification on a timer", async () => {
+    vi.useFakeTimers();
+    render(<DashboardPlaceholder session={{ user: { role: "receptionist" }, permissions: [] }} />);
+    await act(async () => { await Promise.resolve(); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(46_000); });
+    expect(showToast).not.toHaveBeenCalled();
+  });
+
+  it("toasts only a newly returned unread notification", async () => {
+    vi.useFakeTimers();
+    dashboardApi.notifications.mockResolvedValueOnce([]).mockResolvedValue([{ id: "new-1", title: "Phiếu thu mới", read: false }]);
+    render(<DashboardPlaceholder session={{ user: { role: "receptionist" }, permissions: [] }} />);
+    await act(async () => { await Promise.resolve(); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(30_000); });
+    expect(showToast).toHaveBeenCalledExactlyOnceWith("Phiếu thu mới", "info");
+  });
 
   it("hides registration approval from Manager when the permission was removed", () => {
     render(<DashboardPlaceholder session={{ user: { role: "manager" }, permissions: ["payment.read", "class.read"] }} />);

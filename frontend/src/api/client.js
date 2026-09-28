@@ -10,7 +10,28 @@ function buildUrl(path) {
 
 async function parseResponse(response) {
   const contentType = response.headers.get("content-type") ?? "";
-  return contentType.includes("application/json") ? response.json() : null;
+  if (!contentType.includes("application/json")) return null;
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
+
+export function apiErrorFromResponse(response, payload, { suppressAuthenticationExpiredEvent = false } = {}) {
+  if (response.status === 401 && !suppressAuthenticationExpiredEvent && typeof window !== "undefined") {
+    window.dispatchEvent(new Event(authenticationExpiredEvent));
+  }
+  if (response.status === 403 && typeof window !== "undefined") {
+    window.dispatchEvent(new Event(permissionsChangedEvent));
+  }
+  return new ApiError({
+    status: response.status,
+    code: payload?.error?.code ?? "REQUEST_FAILED",
+    message: payload?.error?.message ?? "Máy chủ không cung cấp thông báo lỗi hợp lệ.",
+    details: payload?.error?.details,
+    requestId: payload?.error?.requestId ?? response.headers.get("x-request-id"),
+  });
 }
 
 export async function request(path, { method = "GET", body, headers, signal, suppressAuthenticationExpiredEvent = false } = {}) {
@@ -28,27 +49,17 @@ export async function request(path, { method = "GET", body, headers, signal, sup
       ...(body ? { body: JSON.stringify(body) } : {}),
     });
   } catch (error) {
+    if (error?.name === "AbortError") throw error;
     throw new ApiError({
       code: "NETWORK_ERROR",
-      message: "Không thể kết nối đến máy chủ. Vui lòng thử lại.",
+      message: "Không nhận được phản hồi từ API. Kiểm tra kết nối mạng hoặc trạng thái máy chủ rồi thử lại.",
       details: error,
     });
   }
 
   const payload = await parseResponse(response);
   if (!response.ok || !payload?.success) {
-    if (response.status === 401 && !suppressAuthenticationExpiredEvent && typeof window !== "undefined") {
-      window.dispatchEvent(new Event(authenticationExpiredEvent));
-    }
-    if (response.status === 403 && typeof window !== "undefined") {
-      window.dispatchEvent(new Event(permissionsChangedEvent));
-    }
-    throw new ApiError({
-      status: response.status,
-      code: payload?.error?.code ?? "REQUEST_FAILED",
-      message: payload?.error?.message ?? "Yêu cầu không thể hoàn tất.",
-      details: payload?.error?.details,
-    });
+    throw apiErrorFromResponse(response, payload, { suppressAuthenticationExpiredEvent });
   }
 
   return payload.data;

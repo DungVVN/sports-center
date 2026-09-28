@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMutationFeedback, useSubmitMutation } from "../../../hooks/useMutationFeedback.js";
 import { staffApi } from "../staff-api.js";
+import { errorMessageFor } from "../../../api/error-message.js";
 
 const keys = { detail: (id) => ["staff", id], list: ["staff"] };
 
@@ -14,6 +15,7 @@ export function useStaffWorkspace({ editingId }) {
   const createStaff = useSubmitMutation({ feedback, mutationFn: (input) => staffApi.create(input), onSuccess: invalidate, successMessage: "Đã tạo nhân viên.", errorMessage: "Không thể tạo nhân viên." });
   const updateStaff = useSubmitMutation({ feedback, mutationFn: ({ id, input }) => staffApi.update(id, input), onSuccess: invalidate, successMessage: "Đã cập nhật nhân viên.", errorMessage: "Không thể cập nhật nhân viên." });
   const updateStatus = useSubmitMutation({ feedback, mutationFn: ({ id, status }) => staffApi.setStatus(id, status), onSuccess: invalidate, successMessage: "Đã cập nhật trạng thái nhân viên.", errorMessage: "Không thể cập nhật trạng thái." });
-  const queryError = [staffQuery, detailQuery].find((query) => query.isError)?.error?.message ?? "";
+  const failedQuery = [staffQuery, detailQuery].find((query) => query.isError);
+  const queryError = failedQuery ? errorMessageFor(failedQuery.error, "Không thể tải dữ liệu nhân viên.") : "";
   return { createStaff, detail: detailQuery.data ?? null, detailLoading: detailQuery.isFetching || updateStaff.isPending, error: feedback.error || queryError, loading: staffQuery.isLoading, notice: feedback.notice, reload: staffQuery.refetch, staff: staffQuery.data ?? [], updateStaff, updateStatus };
 }

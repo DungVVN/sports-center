@@ -449,6 +449,7 @@ model facility_days {
   created_by  String   @db.Uuid
   created_at  DateTime @default(now()) @db.Timestamptz(6)
   @@unique([facility_id, open_on])
+  @@index([open_on])
 }
 
 model facility_reservations {
@@ -474,6 +475,8 @@ model facility_reservations {
   @@index([requester_user_id, requested_at])
   @@index([requester_user_id, cancellation_requested_at])
   @@index([day_id, status])
+  @@index([status, requested_at])
+  @@index([cancellation_requested_at, status])
 }
 
 model payments {

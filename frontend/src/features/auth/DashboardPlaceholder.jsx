@@ -1,8 +1,10 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "../../components/layout/AppShell.jsx";
 import { dashboardPath, dashboardView } from "../../app/dashboard-routes.js";
 import { dashboardApi } from "../dashboard/dashboard-api.js";
 import { authApi } from "./auth-api.js";
+import { useToast } from "../../contexts/useToast.js";
+import { errorMessageFor } from "../../api/error-message.js";
 import "./auth.css";
 
 const WorkspaceContent = lazy(() => import("../../app/WorkspaceContent.jsx").then(({ WorkspaceContent: Component }) => ({ default: Component })));
@@ -54,6 +56,7 @@ const accessByView = {
 export function DashboardPlaceholder({ initialView = "dashboard", session, onLogout, onProfileSaved }) {
   const [view, setView] = useState(() => dashboardView(window.location.pathname) ?? initialView);
   const [notifications, setNotifications] = useState([]);
+  const showToast = useToast();
   const granted = useMemo(() => new Set(session.permissions ?? []), [session.permissions]);
   const navigation = useMemo(() => {
     const allowed = (id) => session.user.role === "admin" || !accessByView[id] || accessByView[id].some((permission) => granted.has(permission));
@@ -85,21 +88,35 @@ export function DashboardPlaceholder({ initialView = "dashboard", session, onLog
     window.addEventListener("popstate", syncViewFromUrl);
     return () => window.removeEventListener("popstate", syncViewFromUrl);
   }, [allowedViews, initialView]);
-  async function loadNotifications() {
+  const notificationIds = useRef(null);
+  const notificationLoadFailed = useRef(false);
+  const loadNotifications = useCallback(async () => {
     try {
-      setNotifications(await dashboardApi.notifications());
-    } catch {
-      setNotifications([]);
+      const data = await dashboardApi.notifications();
+      if (notificationIds.current !== null) {
+        data.filter((item) => !item.read && !notificationIds.current.has(item.id))
+          .forEach((item) => showToast(item.title || "Có thông báo mới", "info"));
+      }
+      notificationIds.current = new Set(data.map((item) => item.id));
+      setNotifications(data);
+      notificationLoadFailed.current = false;
+    } catch (cause) {
+      // Preserve the last snapshot, and report an outage once rather than every polling interval.
+      if (!notificationLoadFailed.current) showToast?.(errorMessageFor(cause, "Không thể tải thông báo mới."), "error");
+      notificationLoadFailed.current = true;
     }
-  }
+  }, [showToast]);
   useEffect(() => {
     void Promise.resolve().then(loadNotifications);
     const timer = window.setInterval(() => void loadNotifications(), 30_000);
     return () => window.clearInterval(timer);
-  }, [session.user.role]);
+  }, [loadNotifications]);
   async function logout() {
     try {
       await authApi.logout();
+      showToast?.("Đã đăng xuất khỏi hệ thống.", "success");
+    } catch (cause) {
+      showToast?.(`${errorMessageFor(cause, "Không thể kết thúc phiên trên máy chủ.")} Bạn đã được đăng xuất trên thiết bị này.`, "error");
     } finally {
       onLogout();
     }
@@ -108,8 +125,9 @@ export function DashboardPlaceholder({ initialView = "dashboard", session, onLog
     try {
       await dashboardApi.markNotificationRead(id);
       await loadNotifications();
-    } catch {
-      /* A notification remains unread if the server rejects the update. */
+      showToast?.("Đã đánh dấu thông báo là đã đọc.", "success");
+    } catch (cause) {
+      showToast?.(errorMessageFor(cause, "Không thể đánh dấu thông báo đã đọc."), "error");
     }
   }
   const content = (

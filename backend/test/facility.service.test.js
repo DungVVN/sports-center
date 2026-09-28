@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { createFacilityService } from "../src/modules/facilities/facility.service.js";
 
-const date = new Date("2026-09-25T00:00:00.000Z");
+const date = new Date(Date.now() + 24 * 60 * 60 * 1000);
+const dateText = date.toISOString().slice(0, 10);
 const auditService = { record: vi.fn() };
 
 describe("facility calendar service", () => {
@@ -12,8 +13,8 @@ describe("facility calendar service", () => {
       days: vi.fn().mockResolvedValue([{ id: "day-1", facility_id: "court-1", open_on: date }]),
       approved: vi.fn().mockResolvedValue([{ day_id: "day-1", assigned_start_minute: 480, assigned_end_minute: 540, member_id: "private", contact_phone: "0901234567" }]),
     };
-    const result = await createFacilityService({ repository, auditService }).publicCalendar({ from: "2026-09-25", to: "2026-09-25" });
-    expect(result.days[0]).toEqual({ id: "day-1", facilityId: "court-1", date: "2026-09-25", free: [{ startMinute: 360, endMinute: 480 }, { startMinute: 540, endMinute: 720 }], booked: [{ startMinute: 480, endMinute: 540 }] });
+    const result = await createFacilityService({ repository, auditService }).publicCalendar({ from: dateText, to: dateText });
+    expect(result.days[0]).toEqual({ id: "day-1", facilityId: "court-1", date: dateText, free: [{ startMinute: 360, endMinute: 480 }, { startMinute: 540, endMinute: 720 }], booked: [{ startMinute: 480, endMinute: 540 }] });
     expect(JSON.stringify(result)).not.toMatch(/private|0901234567/);
   });
 

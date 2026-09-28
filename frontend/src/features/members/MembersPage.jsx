@@ -6,6 +6,7 @@ import { CoachAssignmentDialog } from "./dialogs/CoachAssignmentDialog.jsx";
 import { MemberEditorDialog } from "./dialogs/MemberEditorDialog.jsx";
 import { MemberCreateForm } from "./forms/MemberCreateForm.jsx";
 import { useMembersWorkspace } from "./hooks/useMembersWorkspace.js";
+import { useToast } from "../../contexts/useToast.js";
 import { MembersTable } from "./tables/MembersTable.jsx";
 
 const emptyMember = { fullName: "", email: "", phone: "", createAccount: true };
@@ -21,6 +22,7 @@ export function MembersPage({ readOnly = false }) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [credentials, setCredentials] = useState(null);
   const [copiedPassword, setCopiedPassword] = useState(false);
+  const showToast = useToast();
   const workspace = useMembersWorkspace({ assignmentMemberId: assignmentMember?.id, editingMemberId });
   const visibleMembers = useMemo(() => {
     const query = search.trim().toLocaleLowerCase("vi-VN");
@@ -41,11 +43,16 @@ export function MembersPage({ readOnly = false }) {
       setMemberForm(emptyMember);
     } });
   };
-  const copyPassword = () => {
+  const copyPassword = async () => {
     if (!credentials?.password) return;
-    navigator.clipboard.writeText(credentials.password);
-    setCopiedPassword(true);
-    setTimeout(() => setCopiedPassword(false), 2000);
+    try {
+      await navigator.clipboard.writeText(credentials.password);
+      setCopiedPassword(true);
+      showToast?.("Đã sao chép mật khẩu tạm thời.", "success");
+      setTimeout(() => setCopiedPassword(false), 2000);
+    } catch {
+      showToast?.("Không thể sao chép mật khẩu. Vui lòng chọn và sao chép thủ công từ ô đang hiển thị.", "error");
+    }
   };
   const issueAccountCredentials = (member) => {
     const action = member.hasAccount ? "gửi mật khẩu tạm mới" : "tạo tài khoản và gửi mật khẩu tạm";

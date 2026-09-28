@@ -33,8 +33,8 @@ export const attendanceRepository = {
       orderBy: { recorded_at: "desc" },
     }),
   record: (id) => prisma.attendance_records.findUnique({ where: { id } }),
-  upsert: (data) =>
-    prisma.attendance_records.upsert({
+  upsert: async (data) => {
+    const record = await prisma.attendance_records.upsert({
       where: {
         class_session_id_member_id: {
           class_session_id: data.classSessionId,
@@ -51,10 +51,13 @@ export const attendanceRepository = {
       },
       update: {
         status: data.status,
-        checked_in_at: data.checkedInAt,
         recorded_by: data.actor,
       },
-    }),
+    });
+    if (record.checked_in_at || !data.checkedInAt) return record;
+    await prisma.attendance_records.updateMany({ where: { id: record.id, checked_in_at: null }, data: { checked_in_at: data.checkedInAt } });
+    return prisma.attendance_records.findUnique({ where: { id: record.id } });
+  },
   checkOut: (id, actor) =>
     prisma.attendance_records.update({
       where: { id },
@@ -74,9 +77,13 @@ export const attendanceRepository = {
       if (pending.length || entryByBooking.size !== bookings.length) return { pendingCount: pending.length || 1 };
       const existing = await tx.attendance_submissions.findUnique({ where: { class_session_id: classSessionId } });
       if (existing) return { alreadySubmitted: true, ...existing };
+      const recorded = await tx.attendance_records.findMany({ where: { class_session_id: classSessionId }, select: { member_id: true, checked_in_at: true } });
+      const checkInByMember = new Map(recorded.map((item) => [item.member_id, item.checked_in_at]));
+      const submittedAt = new Date();
       for (const booking of bookings) {
         const entry = entryByBooking.get(booking.id);
-        await tx.attendance_records.upsert({ where: { class_session_id_member_id: { class_session_id: classSessionId, member_id: booking.member_id } }, create: { class_session_id: classSessionId, member_id: booking.member_id, booking_id: booking.id, status: entry.status, checked_in_at: entry.status === "absent" ? null : new Date(), recorded_by: actorUserId }, update: { status: entry.status, checked_in_at: entry.status === "absent" ? null : new Date(), recorded_by: actorUserId } });
+        const checkInTime = entry.status === "absent" ? null : (checkInByMember.get(booking.member_id) ?? submittedAt);
+        await tx.attendance_records.upsert({ where: { class_session_id_member_id: { class_session_id: classSessionId, member_id: booking.member_id } }, create: { class_session_id: classSessionId, member_id: booking.member_id, booking_id: booking.id, status: entry.status, checked_in_at: checkInTime, recorded_by: actorUserId }, update: { status: entry.status, checked_in_at: checkInTime, recorded_by: actorUserId } });
       }
       const submission = await tx.attendance_submissions.create({ data: { class_session_id: classSessionId, submitted_by: actorUserId } });
       const members = await tx.members.findMany({ where: { id: { in: bookings.map((booking) => booking.member_id) } }, select: { id: true, user_id: true } });

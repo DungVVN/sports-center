@@ -12,6 +12,14 @@ afterEach(() => {
 });
 
 describe("LoginPage", () => {
+  it("shows a field error while an invalid email is being entered", () => {
+    render(<LoginPage onLoggedIn={vi.fn()} onMfaRequired={vi.fn()} onRegister={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "khong-hop-le" } });
+    expect(screen.getByText("Email chưa đúng định dạng.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Email")).toHaveAttribute("aria-invalid", "true");
+    expect(authApi.login).not.toHaveBeenCalled();
+  });
+
   it("submits credentials and returns the API session to the app", async () => {
     const onLoggedIn = vi.fn();
     authApi.login.mockResolvedValue({ user: { role: "manager" } });

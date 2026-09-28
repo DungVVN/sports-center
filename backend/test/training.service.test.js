@@ -3,12 +3,28 @@ import { createTrainingService } from "../src/modules/training/training.service.
 
 function dependencies() {
   return {
-    repository: { membersForCoach: vi.fn().mockResolvedValue([{ id: "member-1" }]), plansForMembers: vi.fn().mockResolvedValue([{ id: "plan-1" }]), plans: vi.fn().mockResolvedValue([{ id: "manager-plan" }]), usersByIds: vi.fn().mockResolvedValue([]), member: vi.fn(), assigned: vi.fn().mockResolvedValue(true), template: vi.fn(), templateExercises: vi.fn(), createPlan: vi.fn(), replaceExercises: vi.fn(), plan: vi.fn().mockResolvedValue({ id: "plan-1", member_id: "member-1" }), session: vi.fn(), createSession: vi.fn().mockResolvedValue({ id: "session-1" }), updateSession: vi.fn().mockResolvedValue({ id: "session-1" }), sessions: vi.fn().mockResolvedValue([{ id: "session-1" }, { id: "session-2" }]), sessionExercises: vi.fn().mockResolvedValue([]), reorderSessions: vi.fn().mockResolvedValue([]) },
+    repository: { membersForCoach: vi.fn().mockResolvedValue([{ id: "member-1" }]), plansForMembers: vi.fn().mockResolvedValue([{ id: "plan-1" }]), plans: vi.fn().mockResolvedValue([{ id: "manager-plan" }]), usersByIds: vi.fn().mockResolvedValue([]), member: vi.fn(), assigned: vi.fn().mockResolvedValue(true), template: vi.fn(), templateExercises: vi.fn(), createTemplateWithExercises: vi.fn().mockResolvedValue({ id: "template-1" }), createPlanWithExercises: vi.fn().mockResolvedValue({ id: "plan-1" }), replaceExercises: vi.fn(), plan: vi.fn().mockResolvedValue({ id: "plan-1", member_id: "member-1" }), session: vi.fn(), createSession: vi.fn().mockResolvedValue({ id: "session-1" }), updateSession: vi.fn().mockResolvedValue({ id: "session-1" }), sessions: vi.fn().mockResolvedValue([{ id: "session-1" }, { id: "session-2" }]), sessionExercises: vi.fn().mockResolvedValue([]), reorderSessions: vi.fn().mockResolvedValue([]) },
     auditService: { record: vi.fn() },
   };
 }
 
 describe("Training service scope", () => {
+  it("creates a template and its exercises together", async () => {
+    const { repository, auditService } = dependencies();
+    const exercises = [{ name: "Chạy", sets: 3, reps: 1 }];
+    await createTrainingService({ repository, auditService }).createTemplate({ name: "Sức bền", targetGroup: "Người mới", exercises }, "coach-1");
+    expect(repository.createTemplateWithExercises).toHaveBeenCalledWith(expect.objectContaining({ name: "Sức bền" }), exercises);
+  });
+
+  it("creates a plan and its exercises in one repository transaction", async () => {
+    const { repository, auditService } = dependencies();
+    repository.member.mockResolvedValue({ id: "member-1" });
+    const input = { memberId: "member-1", name: "Kế hoạch", goal: "Sức bền", startsOn: "2026-10-01", endsOn: "2026-10-31", exercises: [{ name: "Chạy", sets: 3, reps: 1 }] };
+    await createTrainingService({ repository, auditService }).createPlan(input, { id: "coach-1", role: "coach" });
+    expect(repository.createPlanWithExercises).toHaveBeenCalledWith(expect.objectContaining({ member_id: "member-1" }), input.exercises);
+    expect(repository.replaceExercises).not.toHaveBeenCalled();
+  });
+
   it("returns a fixable conflict for duplicate session positions", async () => {
     const { repository, auditService } = dependencies();
     repository.createSession.mockRejectedValue({ code: "P2002", meta: { target: ["plan_id", "position"] } });

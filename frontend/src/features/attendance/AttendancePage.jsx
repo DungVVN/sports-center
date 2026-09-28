@@ -117,10 +117,11 @@ export function AttendancePage({ session }) {
 
   function checkIn(nextBookingId) {
     setDraftStatuses((current) => ({ ...current, [nextBookingId]: "present" }));
-    workspace.setNotice("Đã đánh dấu có mặt. Hãy bấm Lưu điểm danh để ghi nhận chính thức.");
+    workspace.setNotice("Đã đánh dấu có mặt. Hãy bấm Lưu điểm danh để ghi nhận chính thức.", "info");
   }
 
   function submitAttendance() {
+    if (submitting) return;
     const entries = attendanceRows.map((row) => ({ bookingId: row.booking.id, status: row.status === "not_marked" ? "absent" : row.status }));
     workspace.submitAttendance.mutate({ classId, entries }, { onSuccess: () => { setDraftStatuses({}); setConfirmSubmitOpen(false); } });
   }
@@ -133,7 +134,7 @@ export function AttendancePage({ session }) {
   }
 
   async function correct(event) {
-    event.preventDefault();
+    event.preventDefault(); if (submitting) return;
     if (
       !correction.record ||
       (correctionRequiresReason && correction.reason.trim().length < 3)
@@ -299,8 +300,8 @@ export function AttendancePage({ session }) {
                         {record.member ? (
                           <>
                             {record.member.full_name}
-                            <br />
-                            <small>{record.member.member_code}</small>
+
+
                           </>
                         ) : (
                           <code>{record.member_id}</code>

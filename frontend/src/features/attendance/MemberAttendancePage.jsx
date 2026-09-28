@@ -5,6 +5,7 @@ import { Pagination } from "../../components/ui/Pagination.jsx";
 import { usePagination } from "../../components/ui/usePagination.js";
 import { classApi } from "../classes/class-api.js";
 import { attendanceApi } from "./attendance-api.js";
+import { errorMessageFor } from "../../api/error-message.js";
 
 const labels = {
   present: "Có mặt",
@@ -28,7 +29,8 @@ export function MemberAttendancePage() {
         <p>Điểm danh</p>
         <h1>Lịch sử điểm danh</h1>
       </header>
-      {attendanceQuery.isError && <p className="auth-alert" role="alert">{attendanceQuery.error.message}</p>}
+      {attendanceQuery.isError && <p className="auth-alert" role="alert">{errorMessageFor(attendanceQuery.error, "Không thể tải lịch sử điểm danh.")}</p>}
+      {classesQuery.isError && <p className="auth-alert" role="alert">{errorMessageFor(classesQuery.error, "Không thể tải thông tin lớp học.")}</p>}
       <section className="members-list">
         <div className="list-heading">
           <h2>Các buổi học của tôi</h2>

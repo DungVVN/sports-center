@@ -4,6 +4,8 @@ import { Button } from "../../components/ui/Button.jsx";
 import { Pagination } from "../../components/ui/Pagination.jsx";
 import { usePagination } from "../../components/ui/usePagination.js";
 import { authApi } from "./auth-api.js";
+import { TableSkeleton } from "../../components/ui/TableSkeleton.jsx";
+import { errorMessageFor } from "../../api/error-message.js";
 
 export function RegistrationApprovalPage() {
   const client = useQueryClient();
@@ -23,7 +25,7 @@ export function RegistrationApprovalPage() {
       </header>
       {(feedback.error || registrationsQuery.isError) && (
         <p className="auth-alert" role="alert">
-          {feedback.error || registrationsQuery.error.message}
+          {feedback.error || errorMessageFor(registrationsQuery.error, "Không thể tải danh sách đăng ký chờ duyệt.")}
         </p>
       )}
       {feedback.notice && (
@@ -39,7 +41,7 @@ export function RegistrationApprovalPage() {
           </Button>
         </div>
         {registrationsQuery.isLoading ? (
-          <p>Đang tải…</p>
+          <TableSkeleton columns={5} />
         ) : items.length === 0 ? (
           <p>Không có đăng ký chờ duyệt.</p>
         ) : (

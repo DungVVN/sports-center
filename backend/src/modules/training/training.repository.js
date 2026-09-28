@@ -17,8 +17,11 @@ export const trainingRepository = {
   templates: () => prisma.training_plan_templates.findMany({ where: { is_active: true }, orderBy: { name: "asc" } }),
   template: (id) => prisma.training_plan_templates.findUnique({ where: { id } }),
   templateExercises: (id) => prisma.training_template_exercises.findMany({ where: { template_id: id }, orderBy: { position: "asc" } }),
-  createTemplate: (data) => prisma.training_plan_templates.create({ data }),
-  createTemplateExercises: (data) => prisma.training_template_exercises.createMany({ data }),
+  createTemplateWithExercises: (data, exercises) => prisma.$transaction(async (tx) => {
+    const template = await tx.training_plan_templates.create({ data });
+    await tx.training_template_exercises.createMany({ data: exercises.map((item, index) => ({ template_id: template.id, position: index + 1, ...item })) });
+    return template;
+  }),
   member: (id) => prisma.members.findUnique({ where: { id } }),
   memberByUser: (userId) => prisma.members.findUnique({ where: { user_id: userId }, select: { id: true } }),
   members: () => prisma.members.findMany({ orderBy: { full_name: "asc" }, select: { id: true, full_name: true, member_code: true } }),
@@ -28,7 +31,13 @@ export const trainingRepository = {
   plans: (memberId) => prisma.training_plans.findMany({ where: memberId ? { member_id: memberId } : undefined, orderBy: { starts_on: "desc" } }),
   plansForMembers: (memberIds) => prisma.training_plans.findMany({ where: { member_id: { in: memberIds } }, orderBy: { starts_on: "desc" } }),
   usersByIds: (ids) => prisma.users.findMany({ where: { id: { in: ids } }, select: { id: true, display_name: true } }),
-  createPlan: (data) => prisma.training_plans.create({ data }),
+  createPlanWithExercises: (data, exercises) => prisma.$transaction(async (tx) => {
+    const plan = await tx.training_plans.create({ data });
+    if (exercises.length) {
+      await tx.training_plan_exercises.createMany({ data: exercises.map((item, index) => ({ plan_id: plan.id, position: index + 1, ...item })) });
+    }
+    return plan;
+  }),
   updatePlan: (id, data) => prisma.training_plans.update({ where: { id }, data }),
   sessions: (planId) => prisma.training_sessions.findMany({ where: { plan_id: planId }, orderBy: { position: "asc" } }),
   session: (id) => prisma.training_sessions.findUnique({ where: { id } }),

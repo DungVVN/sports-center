@@ -10,7 +10,7 @@ export function VerificationPage({ registration, onCompleted }) {
   const [code, setCode] = useState("");
   const [cooldown, setCooldown] = useState(0);
   const feedback = useMutationFeedback();
-  const verify = useSubmitMutation({ feedback, mutationFn: (input) => authApi.confirmVerification(input), onSuccess: (result) => { if (result.status === "pending_approval") onCompleted(); }, errorMessage: "Không thể xác thực mã." });
+  const verify = useSubmitMutation({ feedback, mutationFn: (input) => authApi.confirmVerification(input), onSuccess: (result) => { if (result.status === "pending_approval") onCompleted(); }, successMessage: "Đã xác thực email. Tài khoản đang chờ Lễ tân duyệt.", errorMessage: "Không thể xác thực mã." });
   const resendMutation = useSubmitMutation({ feedback, mutationFn: (input) => authApi.resendVerification(input), successMessage: "Đã gửi lại mã xác thực.", errorMessage: "Không thể gửi lại mã." });
 
   useEffect(() => {

@@ -5,6 +5,7 @@ import { Dialog } from "../../components/ui/Dialog.jsx";
 import { Pagination } from "../../components/ui/Pagination.jsx";
 import { usePagination } from "../../components/ui/usePagination.js";
 import { paymentApi } from "./payment-api.js";
+import { errorMessageFor } from "../../api/error-message.js";
 
 const statusLabels = {
   pending: "Chờ xác nhận",
@@ -23,7 +24,7 @@ const eventTypeLabels = {
 };
 
 export function MemberPaymentsPage() {
-  const paymentsQuery = useQuery({ queryKey: ["member", "payments"], queryFn: paymentApi.mine });
+  const paymentsQuery = useQuery({ queryKey: ["member", "payments"], queryFn: paymentApi.mine, refetchInterval: 30_000 });
   const [receiptId, setReceiptId] = useState(null);
   const receiptQuery = useQuery({ queryKey: ["member", "payments", receiptId], queryFn: () => paymentApi.ownReceipt(receiptId), enabled: Boolean(receiptId) });
   const payments = paymentsQuery.data ?? [];
@@ -37,7 +38,7 @@ export function MemberPaymentsPage() {
         <p>Thanh toán</p>
         <h1>Phiếu thu của tôi</h1>
       </header>
-      {(paymentsQuery.isError || receiptQuery.isError) && <p className="auth-alert" role="alert">{paymentsQuery.error?.message ?? receiptQuery.error?.message}</p>}
+      {(paymentsQuery.isError || receiptQuery.isError) && <p className="auth-alert" role="alert">{paymentsQuery.isError ? errorMessageFor(paymentsQuery.error, "Không thể tải phiếu thu.") : errorMessageFor(receiptQuery.error, "Không thể tải chi tiết phiếu thu.")}</p>}
       <section className="members-list">
         <div className="list-heading">
           <h2>Lịch sử phiếu thu</h2>

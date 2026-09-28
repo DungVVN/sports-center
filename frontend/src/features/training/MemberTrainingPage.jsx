@@ -3,6 +3,7 @@ import { Button } from "../../components/ui/Button.jsx";
 import { Pagination } from "../../components/ui/Pagination.jsx";
 import { usePagination } from "../../components/ui/usePagination.js";
 import { trainingApi } from "./training-api.js";
+import { errorMessageFor } from "../../api/error-message.js";
 
 const formatDate = (value) => value ? new Date(value).toLocaleDateString("vi-VN") : "—";
 
@@ -18,7 +19,7 @@ export function MemberTrainingPage() {
 
   return <main className="members-page">
     <header><p>Giáo án</p><h1>Tiến độ tập luyện của tôi</h1></header>
-    {progressQuery.isError && <p className="auth-alert" role="alert">{progressQuery.error.message}</p>}
+    {progressQuery.isError && <p className="auth-alert" role="alert">{errorMessageFor(progressQuery.error, "Không thể tải tiến độ tập luyện.")}</p>}
     <section className="members-list"><div className="list-heading"><h2>Giáo án đang áp dụng</h2><Button onClick={progressQuery.refetch} size="sm" variant="ghost">Tải lại</Button></div>
       {progressQuery.isLoading ? <p>Đang tải giáo án…</p> : progress?.plans.length === 0 ? <p>Coach chưa tạo giáo án cho bạn.</p> : <><div className="table-scroll"><table><thead><tr><th>Mã giáo án</th><th>Tên giáo án</th><th>Mục tiêu</th><th>Hiệu lực</th><th>Trạng thái</th></tr></thead><tbody>{plansPagination.pageItems.map((plan) => <tr key={plan.id}><td><code>#{plan.id.slice(0, 8)}</code></td><td><strong>{plan.name}</strong></td><td>{plan.goal}</td><td>{formatDate(plan.starts_on)} – {formatDate(plan.ends_on)}</td><td><span className={plan.status === "active" ? "badge badge--success" : "badge"}>{planStatusLabels[plan.status] ?? plan.status}</span></td></tr>)}</tbody></table></div><Pagination {...plansPagination} /></>}
     </section>

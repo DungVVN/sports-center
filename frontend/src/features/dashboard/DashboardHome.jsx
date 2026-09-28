@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { ArrowRight, CalendarDays, CircleAlert, ClipboardCheck, CreditCard, ReceiptText, UsersRound } from "lucide-react";
 import { dashboardApi } from "./dashboard-api.js";
+import { errorMessageFor } from "../../api/error-message.js";
 import "./dashboard-home.css";
 import "./dashboard-typography.css";
 
@@ -280,7 +281,7 @@ export function DashboardHome({ onNavigate, role }) {
   const summaryQuery = useQuery({ queryKey: ["dashboard-summary", role, isOperationsLeader ? period : null], queryFn: () => dashboardApi.summary(role, isOperationsLeader ? { period } : {}) });
   const summary = summaryQuery.data ?? null;
   const loading = summaryQuery.isLoading;
-  const error = summaryQuery.error?.message ?? "";
+  const error = summaryQuery.error ? errorMessageFor(summaryQuery.error, "Không tải được số liệu Tổng quan.") : "";
 
   const heading = isOperationsLeader
     ? {
@@ -318,8 +319,9 @@ export function DashboardHome({ onNavigate, role }) {
       </header>
       {error ? (
         <article className="dashboard-error">
-          <strong>Không thể tải dashboard.</strong>
+          <strong>Lỗi tải dữ liệu Tổng quan</strong>
           <span>{error}</span>
+          <button onClick={() => void summaryQuery.refetch()} type="button">Thử tải lại số liệu</button>
         </article>
       ) : loading ? (
         <div className="dashboard-skeleton" aria-label="Đang tải số liệu">

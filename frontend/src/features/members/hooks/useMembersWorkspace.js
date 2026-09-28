@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMutationFeedback, useSubmitMutation } from "../../../hooks/useMutationFeedback.js";
 import { classApi } from "../../classes/class-api.js";
 import { memberApi } from "../member-api.js";
+import { errorMessageFor } from "../../../api/error-message.js";
 
 const keys = {
   assignmentHistory: (memberId) => ["members", memberId, "coach-assignments"],
@@ -12,7 +13,7 @@ const keys = {
 };
 
 function queryMessage(query, fallback) {
-  return query.isError ? query.error?.message ?? fallback : "";
+  return query.isError ? errorMessageFor(query.error, fallback) : "";
 }
 
 export function useMembersWorkspace({ assignmentMemberId, editingMemberId }) {

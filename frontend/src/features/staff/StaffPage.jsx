@@ -7,6 +7,8 @@ import { Pagination } from "../../components/ui/Pagination.jsx";
 import { usePagination } from "../../components/ui/usePagination.js";
 import { sortTable } from "../../lib/table.js";
 import { useStaffWorkspace } from "./hooks/useStaffWorkspace.js";
+import { TableSkeleton } from "../../components/ui/TableSkeleton.jsx";
+import { useToast } from "../../contexts/useToast.js";
 import "./staff.css";
 
 const empty = {
@@ -36,6 +38,7 @@ export function StaffPage() {
   const [password, setPassword] = useState(null);
   const [credentialEmailDelivered, setCredentialEmailDelivered] = useState(null);
   const [copiedPassword, setCopiedPassword] = useState(false);
+  const showToast = useToast();
   const [staffSearch, setStaffSearch] = useState("");
   const [staffRoleFilters, setStaffRoleFilters] = useState([]);
   const [staffStatusFilters, setStaffStatusFilters] = useState([]);
@@ -76,11 +79,16 @@ export function StaffPage() {
       setForm(empty);
     } });
   }
-  function copyPassword() {
+  async function copyPassword() {
     if (!password) return;
-    navigator.clipboard.writeText(password);
-    setCopiedPassword(true);
-    setTimeout(() => setCopiedPassword(false), 2000);
+    try {
+      await navigator.clipboard.writeText(password);
+      setCopiedPassword(true);
+      showToast?.("Đã sao chép mật khẩu tạm thời.", "success");
+      setTimeout(() => setCopiedPassword(false), 2000);
+    } catch {
+      showToast?.("Không thể sao chép mật khẩu. Vui lòng chọn và sao chép thủ công từ ô đang hiển thị.", "error");
+    }
   }
   function status(id, value) {
     workspace.updateStatus.mutate({ id, status: value });
@@ -169,7 +177,7 @@ export function StaffPage() {
         <section className="staff-list">
           <div className="list-heading"><h2>Danh sách nhân viên</h2><Button onClick={workspace.reload} size="sm" variant="ghost">Tải lại</Button></div>
           {workspace.loading ? (
-            <p>Đang tải…</p>
+            <TableSkeleton columns={6} />
           ) : staff.length === 0 ? (
             <p>Chưa có nhân viên.</p>
           ) : (

@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "../../api/api-error.js";
 import { membershipApi } from "./membership-api.js";
+import { memberApi } from "../members/member-api.js";
 import { MembershipsPage } from "./MembershipsPage.jsx";
 
 vi.mock("./membership-api.js", () => ({
@@ -19,6 +20,7 @@ vi.mock("./membership-api.js", () => ({
     cancelPendingRenewal: vi.fn(),
   },
 }));
+vi.mock("../members/member-api.js", () => ({ memberApi: { list: vi.fn() } }));
 
 const manager = { user: { role: "manager" }, permissions: ["membership.package.manage"] };
 
@@ -39,6 +41,7 @@ describe("MembershipsPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     membershipApi.packages.mockResolvedValue([]);
+    memberApi.list.mockResolvedValue([]);
   });
   afterEach(cleanup);
 
@@ -56,6 +59,15 @@ describe("MembershipsPage", () => {
     renderPage();
     fillValidPackage();
     fireEvent.click(screen.getByRole("button", { name: "Tạo gói" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("tierRank: Expected number.");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Thứ hạng quyền: Cần nhập số hợp lệ.");
+  });
+
+  it("shows assignment field errors before sending a request", async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<QueryClientProvider client={client}><MembershipsPage mode="assign" session={{ user: { role: "receptionist" }, permissions: ["membership.assign"] }} /></QueryClientProvider>);
+    fireEvent.click(screen.getByRole("button", { name: "Tạo chờ thanh toán" }));
+    expect(screen.getByText("Vui lòng chọn hội viên.")).toBeInTheDocument();
+    expect(screen.getByText("Vui lòng chọn gói tập.")).toBeInTheDocument();
+    expect(membershipApi.create).not.toHaveBeenCalled();
   });
 });

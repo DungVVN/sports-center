@@ -4,6 +4,7 @@ import { useMutationFeedback, useSubmitMutation } from "../../hooks/useMutationF
 import { Bell, Mail } from "lucide-react";
 import { Button } from "../../components/ui/Button.jsx";
 import { apiClient } from "../../api/client.js";
+import { errorMessageFor } from "../../api/error-message.js";
 import "./notification-preferences.css";
 
 export function NotificationPreferencesPanel({ className = "" }) {
@@ -21,7 +22,7 @@ export function NotificationPreferencesPanel({ className = "" }) {
   return (
     <section className={`notification-preferences ${className}`.trim()}>
       {feedback.notice && <p className="profile-notice" role="status">{feedback.notice}</p>}
-      {(feedback.error || preferencesQuery.isError) && <p className="auth-alert" role="alert">{feedback.error || preferencesQuery.error.message}</p>}
+      {(feedback.error || preferencesQuery.isError) && <p className="auth-alert" role="alert">{feedback.error || errorMessageFor(preferencesQuery.error, "Không thể tải tùy chọn thông báo.")}</p>}
       {preferencesQuery.isLoading ? (
         <p className="notification-preferences__loading">Đang tải tùy chọn thông báo…</p>
       ) : (

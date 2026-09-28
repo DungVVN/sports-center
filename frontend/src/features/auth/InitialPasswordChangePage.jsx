@@ -9,7 +9,7 @@ export function InitialPasswordChangePage({ onCompleted }) {
   const [form, setForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
   const [show, setShow] = useState({ current: false, next: false, confirm: false });
   const feedback = useMutationFeedback();
-  const changePassword = useSubmitMutation({ feedback, mutationFn: (input) => authApi.changePassword(input), onSuccess: onCompleted, errorMessage: "Không thể đổi mật khẩu. Vui lòng thử lại." });
+  const changePassword = useSubmitMutation({ feedback, mutationFn: (input) => authApi.changePassword(input), onSuccess: onCompleted, successMessage: "Đã đổi mật khẩu. Tài khoản của bạn đã sẵn sàng.", errorMessage: "Không thể đổi mật khẩu." });
 
   function update(name, value) {
     setForm((current) => ({ ...current, [name]: value }));

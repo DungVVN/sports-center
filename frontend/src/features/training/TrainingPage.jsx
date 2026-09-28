@@ -56,6 +56,7 @@ export function TrainingPage({ session }) {
   );
   const plansPagination = usePagination(plans);
   async function submit(task, success) {
+    if (workspace.runAction.isPending) return;
     try {
       await workspace.runAction.mutateAsync({ task, success });
     } catch {

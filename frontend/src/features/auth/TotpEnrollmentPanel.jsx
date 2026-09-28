@@ -4,13 +4,15 @@ import QRCode from "qrcode";
 import { useMutationFeedback, useSubmitMutation } from "../../hooks/useMutationFeedback.js";
 import { Button } from "../../components/ui/Button.jsx";
 import { authApi } from "./auth-api.js";
+import { useToast } from "../../contexts/useToast.js";
 
 export function TotpEnrollmentPanel({ onEnrollmentCompleted }) {
   const [enrollment, setEnrollment] = useState(null);
   const [code, setCode] = useState("");
   const [copiedSecret, setCopiedSecret] = useState(false);
   const feedback = useMutationFeedback();
-  const beginEnrollment = useSubmitMutation({ feedback, mutationFn: authApi.beginTotpEnrollment, errorMessage: "Không thể bắt đầu đăng ký Authenticator." });
+  const showToast = useToast();
+  const beginEnrollment = useSubmitMutation({ feedback, mutationFn: authApi.beginTotpEnrollment, successMessage: "Đã tạo mã thiết lập Authenticator. Nhập mã 6 số để hoàn tất.", errorMessage: "Không thể bắt đầu đăng ký Authenticator." });
   const confirmEnrollment = useSubmitMutation({ feedback, mutationFn: (input) => authApi.confirmTotpEnrollment(input), onSuccess: () => { setEnrollment(null); setCode(""); onEnrollmentCompleted?.(); }, successMessage: "Authenticator đã được kích hoạt. Lần đăng nhập Manager tiếp theo sẽ yêu cầu mã 6 số.", errorMessage: "Không thể xác nhận Authenticator." });
   async function begin() {
     try { setEnrollment(await beginEnrollment.mutateAsync()); } catch { /* feedback is rendered below */ }
@@ -21,11 +23,16 @@ export function TotpEnrollmentPanel({ onEnrollmentCompleted }) {
     await confirmEnrollment.mutateAsync({ enrollmentId: enrollment.enrollmentId, code }).catch(() => {});
   }
 
-  function copySecret() {
+  async function copySecret() {
     if (!enrollment?.secret) return;
-    navigator.clipboard.writeText(enrollment.secret);
-    setCopiedSecret(true);
-    setTimeout(() => setCopiedSecret(false), 2000);
+    try {
+      await navigator.clipboard.writeText(enrollment.secret);
+      setCopiedSecret(true);
+      showToast?.("Đã sao chép khóa Authenticator.", "success");
+      setTimeout(() => setCopiedSecret(false), 2000);
+    } catch {
+      showToast?.("Không thể sao chép khóa Authenticator. Vui lòng sao chép thủ công từ ô đang hiển thị.", "error");
+    }
   }
 
   return (

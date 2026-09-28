@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { classApi } from "../class-api.js";
+import { errorMessageFor } from "../../../api/error-message.js";
 
 const queryKeys = {
   classes: ["classes"],
@@ -44,8 +45,8 @@ export function useClassesWorkspace({ canReview }) {
   const requestChange = useMutation({ mutationFn: ({ id, input }) => classApi.requestChange(id, input), onSuccess: invalidateWorkspace });
   const reviewChange = useMutation({ mutationFn: ({ id, approved }) => classApi.reviewChange(id, approved), onSuccess: invalidateWorkspace });
 
-  const queryError = [classesQuery, roomsQuery, coachesQuery, requestsQuery]
-    .find((query) => query.isError)?.error?.message ?? "";
+  const failedQuery = [classesQuery, roomsQuery, coachesQuery, requestsQuery].find((query) => query.isError);
+  const queryError = failedQuery ? errorMessageFor(failedQuery.error, "Không thể tải dữ liệu lớp học.") : "";
 
   return {
     classes: classesQuery.data ?? [],

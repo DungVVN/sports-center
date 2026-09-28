@@ -55,6 +55,22 @@ describe("PaymentsPage", () => {
     expect(await screen.findByRole("link", { name: "Mở trang thanh toán" })).toHaveAttribute("href", "https://payments.example.test/checkout");
   });
 
+  it("shows an amount mismatch before submit and omits PayOS provider for cash", async () => {
+    paymentApi.create.mockResolvedValue({ id: "payment-1" });
+    renderPage();
+    await screen.findByRole("option", { name: /Bình/ });
+    fireEvent.change(screen.getByLabelText("Hội viên"), { target: { value: "member-1" } });
+    await screen.findByRole("option", { name: /Gold/ });
+    fireEvent.change(screen.getByLabelText("Gói chờ thanh toán"), { target: { value: "membership-1" } });
+    fireEvent.change(screen.getByLabelText("Số tiền (VNĐ)"), { target: { value: "400000" } });
+    expect(screen.getByText(/Số tiền phải khớp giá gói/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Lập phiếu thu" }));
+    expect(paymentApi.create).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText("Số tiền (VNĐ)"), { target: { value: "500000" } });
+    fireEvent.click(screen.getByRole("button", { name: "Lập phiếu thu" }));
+    await waitFor(() => expect(paymentApi.create).toHaveBeenCalledWith(expect.objectContaining({ method: "cash", provider: undefined, amountVnd: 500000 })));
+  });
+
   it("shows the API 409 conflict after payment confirmation", async () => {
     paymentApi.list.mockResolvedValue([{ id: "payment-1", transaction_code: "PT-01", status: "pending", method: "cash", amountVnd: 500000, member, updated_at: new Date().toISOString() }]);
     paymentApi.confirm.mockRejectedValue(new ApiError({ status: 409, message: "Phiếu thu đã được xử lý." }));

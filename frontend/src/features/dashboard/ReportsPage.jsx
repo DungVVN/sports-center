@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { classApi } from "../classes/class-api.js";
 import { dashboardApi } from "./dashboard-api.js";
+import { errorMessageFor } from "../../api/error-message.js";
+import { useMutationFeedback } from "../../hooks/useMutationFeedback.js";
 import "./reports.css";
 const periods = [["day","Ngày"],["week","Tuần"],["month","Tháng"],["quarter","Quý"],["year","Năm"],["custom","Tùy chọn"]];
 const paymentLabels = { pending: "Chờ xác nhận", paid: "Đã thanh toán", failed: "Thất bại", refunded: "Đã hoàn tiền" };
@@ -14,7 +16,7 @@ export function ReportsPage() {
   const [period, setPeriod] = useState("month");
   const [range, setRange] = useState({ from: "", to: "" });
   const [coachUserId, setCoachUserId] = useState("");
-  const [error, setError] = useState("");
+  const feedback = useMutationFeedback();
   const query = { period, ...(period === "custom" ? range : {}), ...(coachUserId ? { coachUserId } : {}) };
   const reportQuery = useQuery({ queryKey: ["reports", query], queryFn: async () => { const [revenue, attendance] = await Promise.all([dashboardApi.revenue(query), dashboardApi.attendance(query)]); return { attendance, revenue }; }, enabled: period !== "custom" || Boolean(range.from && range.to) });
   const coachesQuery = useQuery({ queryKey: ["coaches"], queryFn: classApi.coaches });
@@ -24,14 +26,26 @@ export function ReportsPage() {
   const loading = reportQuery.isLoading;
 
   const dateRange = report ? `${new Date(report.from).toLocaleDateString("vi-VN")} – ${new Date(report.to).toLocaleDateString("vi-VN")}` : "Đang tải…";
-  async function download(type) { try { setError(""); await dashboardApi.exportCsv(type, query); } catch (caught) { setError(caught.message); } }
+  async function download(type) {
+    const label = type === "revenue" ? "doanh thu" : "điểm danh";
+    try {
+      feedback.clear();
+      await dashboardApi.exportCsv(type, query);
+      feedback.setNotice(`Đã tải báo cáo ${label}.`);
+    } catch (caught) {
+      feedback.setError(errorMessageFor(caught, `Không thể tải báo cáo ${label}.`));
+    }
+  }
   return (
     <main className="members-page">
       <header>
         <p>Báo cáo</p>
         <h1>Doanh thu và điểm danh</h1>
       </header>
-      {error && <p className="auth-alert" role="alert">{error}</p>}
+      {feedback.error && <p className="auth-alert" role="alert">{feedback.error}</p>}
+      {feedback.notice && <p className="auth-success" role="status">{feedback.notice}</p>}
+      {reportQuery.isError && <p className="auth-alert" role="alert">{errorMessageFor(reportQuery.error, "Không thể tải số liệu báo cáo.")}</p>}
+      {coachesQuery.isError && <p className="auth-alert" role="alert">{errorMessageFor(coachesQuery.error, "Không thể tải danh sách huấn luyện viên.")}</p>}
       <section className="members-list reports-page__content">
         <section className="report-period">
           <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "16px" }}>

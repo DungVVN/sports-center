@@ -11,7 +11,9 @@ import { usePagination } from "../../components/ui/usePagination.js";
 import { sortTable } from "../../lib/table.js";
 import { hasSessionPermission } from "../../utils/session-permissions.js";
 import { useMutationFeedback } from "../../hooks/useMutationFeedback.js";
+import { errorMessageFor } from "../../api/error-message.js";
 import { useClassesWorkspace } from "./hooks/useClassesWorkspace.js";
+import { TableSkeleton } from "../../components/ui/TableSkeleton.jsx";
 
 const emptyChange = {
   classId: "",
@@ -78,9 +80,10 @@ export function ClassesPage({ session }) {
   } = useClassesWorkspace({ canReview });
   const submitting = createClassMutation.isPending || publishClass.isPending || updateClassMutation.isPending || requestChangeMutation.isPending || reviewChangeMutation.isPending;
   async function run(mutation, variables, success) {
+    if (mutation.isPending) return false;
     feedback.clear();
     try { await mutation.mutateAsync(variables); feedback.setNotice(success); return true; }
-    catch (caught) { feedback.setError(caught.message); return false; }
+    catch (caught) { feedback.setError(errorMessageFor(caught, "Không thể cập nhật lớp học.")); return false; }
   }
   const ownClasses = useMemo(
     () =>
@@ -679,7 +682,7 @@ function ClassListContent({
   );
   const classPagination = usePagination(visibleClassRows);
   return loading ? (
-    <p>Đang tải…</p>
+    <TableSkeleton columns={6} />
   ) : (
     <>
       <DataTableToolbar

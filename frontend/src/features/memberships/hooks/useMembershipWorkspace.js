@@ -1,5 +1,7 @@
 import { useCallback } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useDedupedMutation } from "../../../hooks/useDedupedMutation.js";
+import { errorMessageFor } from "../../../api/error-message.js";
 import { memberApi } from "../../members/member-api.js";
 import { membershipApi } from "../membership-api.js";
 
@@ -16,7 +18,7 @@ export function useMembershipWorkspace({ canAssignMembership, canReviewFreeze, i
   const packagesQuery = useQuery({ queryKey: keys.packages, queryFn: membershipApi.packages, enabled: !isMember });
   const membersQuery = useQuery({ queryKey: keys.members, queryFn: memberApi.list, enabled: !isMember && (!isManager || canAssignMembership) });
   const freezeRequestsQuery = useQuery({ queryKey: keys.freezeRequests, queryFn: () => membershipApi.freezeRequests("pending"), enabled: !isMember && canReviewFreeze });
-  const mineQuery = useQuery({ queryKey: keys.mine, queryFn: membershipApi.mine, enabled: isMember });
+  const mineQuery = useQuery({ queryKey: keys.mine, queryFn: membershipApi.mine, enabled: isMember, refetchInterval: isMember ? 30_000 : false });
   const memberMembershipsQuery = useQuery({ queryKey: keys.byMember(selectedMemberId), queryFn: () => membershipApi.byMember(selectedMemberId), enabled: !isMember && Boolean(selectedMemberId) });
 
   const invalidate = useCallback(async () => {
@@ -38,15 +40,16 @@ export function useMembershipWorkspace({ canAssignMembership, canReviewFreeze, i
     ]);
   }, [canAssignMembership, canReviewFreeze, freezeRequestsQuery, isManager, isMember, memberMembershipsQuery, membersQuery, mineQuery, packagesQuery, selectedMemberId]);
 
-  const createPackage = useMutation({ mutationFn: membershipApi.createPackage, onSuccess: invalidate });
-  const updatePackage = useMutation({ mutationFn: ({ id, input }) => membershipApi.updatePackage(id, input), onSuccess: invalidate });
-  const createMembership = useMutation({ mutationFn: ({ memberId, input }) => membershipApi.create(memberId, input), onSuccess: invalidate });
-  const requestFreeze = useMutation({ mutationFn: ({ id, input }) => membershipApi.requestFreeze(id, input), onSuccess: invalidate });
-  const reviewFreeze = useMutation({ mutationFn: ({ id, approved }) => membershipApi.reviewFreeze(id, approved), onSuccess: invalidate });
-  const cancelPendingRenewal = useMutation({ mutationFn: membershipApi.cancelPendingRenewal, onSuccess: invalidate });
+  const createPackage = useDedupedMutation({ mutationFn: membershipApi.createPackage, onSuccess: invalidate });
+  const updatePackage = useDedupedMutation({ mutationFn: ({ id, input }) => membershipApi.updatePackage(id, input), onSuccess: invalidate });
+  const createMembership = useDedupedMutation({ mutationFn: ({ memberId, input }) => membershipApi.create(memberId, input), onSuccess: invalidate });
+  const requestFreeze = useDedupedMutation({ mutationFn: ({ id, input }) => membershipApi.requestFreeze(id, input), onSuccess: invalidate });
+  const reviewFreeze = useDedupedMutation({ mutationFn: ({ id, approved }) => membershipApi.reviewFreeze(id, approved), onSuccess: invalidate });
+  const cancelPendingRenewal = useDedupedMutation({ mutationFn: membershipApi.cancelPendingRenewal, onSuccess: invalidate });
 
   const queries = [packagesQuery, membersQuery, freezeRequestsQuery, mineQuery, memberMembershipsQuery];
-  const error = queries.find((query) => query.isError)?.error?.message ?? "";
+  const queryError = queries.find((query) => query.isError)?.error;
+  const error = queryError ? errorMessageFor(queryError, "Không tải được dữ liệu gói tập.") : "";
 
   return {
     cancelPendingRenewal,

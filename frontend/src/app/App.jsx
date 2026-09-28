@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ToastProvider } from "../contexts/ToastContext.jsx";
 import { useCallback, useEffect, useState } from "react";
 import { DashboardPlaceholder } from "../features/auth/DashboardPlaceholder.jsx";
 import { AdminLoginPage } from "../features/auth/AdminLoginPage.jsx";
@@ -130,7 +131,9 @@ export function App() {
   }[view];
   return (
     <QueryClientProvider client={queryClient}>
-      {content}
+      <ToastProvider>
+        {content}
+      </ToastProvider>
     </QueryClientProvider>
   );
 }

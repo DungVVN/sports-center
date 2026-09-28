@@ -5,6 +5,8 @@ import { DataTableToolbar, SortableHeader } from "../../components/ui/DataTable.
 import { Pagination } from "../../components/ui/Pagination.jsx";
 import { sortTable } from "../../lib/table.js";
 import { dashboardApi } from "./dashboard-api.js";
+import { TableSkeleton } from "../../components/ui/TableSkeleton.jsx";
+import { errorMessageFor } from "../../api/error-message.js";
 import "./audit-logs.css";
 
 const actionLabels = Object.freeze({
@@ -60,7 +62,7 @@ export function AuditLogsPage() {
       </header>
       {auditQuery.isError && (
         <p className="auth-alert" role="alert">
-          {auditQuery.error.message}
+          {errorMessageFor(auditQuery.error, "Không thể tải nhật kí hoạt động.")}
         </p>
       )}
       <section className="members-list">
@@ -71,7 +73,7 @@ export function AuditLogsPage() {
           </Button>
         </div>
         {auditQuery.isLoading ? (
-          <p>Đang tải…</p>
+          <TableSkeleton columns={4} />
         ) : items.length === 0 ? (
           <p>Chưa có nhật ký phù hợp.</p>
         ) : (

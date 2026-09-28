@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMutationFeedback, useSubmitMutation } from "../../../hooks/useMutationFeedback.js";
 import { supportApi } from "../support-api.js";
+import { errorMessageFor } from "../../../api/error-message.js";
 
 const keys = {
   detail: (id) => ["support-tickets", id],
@@ -45,7 +46,8 @@ export function useSupportWorkspace({ selectedId }) {
     successMessage: "Đã gửi phản hồi cho hội viên.",
     errorMessage: "Không thể gửi phản hồi.",
   });
-  const queryError = [ticketsQuery, detailQuery].find((query) => query.isError)?.error?.message ?? "";
+  const failedQuery = [ticketsQuery, detailQuery].find((query) => query.isError);
+  const queryError = failedQuery ? errorMessageFor(failedQuery.error, "Không thể tải yêu cầu hỗ trợ.") : "";
 
   return {
     assignSelf,

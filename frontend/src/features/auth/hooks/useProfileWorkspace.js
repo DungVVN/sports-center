@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMutationFeedback, useSubmitMutation } from "../../../hooks/useMutationFeedback.js";
 import { authApi } from "../auth-api.js";
+import { errorMessageFor } from "../../../api/error-message.js";
 
 const profileKey = ["auth", "profile"];
 
@@ -28,7 +29,7 @@ export function useProfileWorkspace({ onProfileSaved }) {
   return {
     changePassword,
     clearFeedback: feedback.clear,
-    error: feedback.error || profileQuery.error?.message || "",
+    error: feedback.error || (profileQuery.isError ? errorMessageFor(profileQuery.error, "Không thể tải hồ sơ cá nhân.") : ""),
     loading: profileQuery.isLoading,
     notice: feedback.notice,
     profile: profileQuery.data ?? null,

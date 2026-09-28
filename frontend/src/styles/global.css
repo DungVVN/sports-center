@@ -1,4 +1,5 @@
 *, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-bottom: 20vh; }
 html, body, #root { min-height: 100%; margin: 0; }
 body { background: var(--color-bg); color: var(--color-text); font-family: var(--font-sans); font-size: 14px; font-variant-numeric: tabular-nums; font-weight: var(--font-weight-regular); line-height: 1.5; -webkit-font-smoothing: antialiased; }
 h1 { font-weight: var(--font-weight-bold); }
@@ -13,3 +14,16 @@ button { font-weight: var(--font-weight-semibold); }
 .app-bootstrap p { margin: 0; }
 .app-bootstrap__spinner { animation: app-bootstrap-spin .8s linear infinite; border: 3px solid var(--color-border); border-radius: 50%; border-top-color: var(--color-primary); height: 28px; width: 28px; }
 @keyframes app-bootstrap-spin { to { transform: rotate(360deg); } }
+
+/* Form Validation UI */
+.input-error {
+  border-color: var(--color-danger) !important;
+  background-color: rgba(220, 38, 38, 0.03) !important;
+}
+.field-error {
+  display: block;
+  color: var(--color-danger);
+  font-size: 12px;
+  margin-top: 4px;
+  font-weight: 500;
+}

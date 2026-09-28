@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { MailCheck } from "lucide-react";
-import { ApiError } from "../../api/api-error.js";
+import { errorMessageFor } from "../../api/error-message.js";
+import { useToast } from "../../contexts/useToast.js";
 import { Button } from "../../components/ui/Button.jsx";
 import { authApi } from "./auth-api.js";
 import { AuthLayout } from "./AuthLayout.jsx";
@@ -9,6 +10,7 @@ export function EmailOtpVerificationPage({ challenge, onCompleted, onCancel }) {
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const showToast = useToast();
   async function submit(event) {
     event.preventDefault();
     setError("");
@@ -16,9 +18,12 @@ export function EmailOtpVerificationPage({ challenge, onCompleted, onCancel }) {
     try {
       const session = await authApi.verifyStaffEmailOtp({ challengeId: challenge.challengeId, code });
       const current = await authApi.me();
+      showToast?.("Xác thực email và đăng nhập thành công.", "success");
       onCompleted({ ...session, ...current });
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Không thể xác thực mã email. Vui lòng thử lại.");
+      const message = errorMessageFor(caught, "Không thể xác thực mã email.");
+      setError(message);
+      showToast?.(message, "error");
     } finally {
       setLoading(false);
     }

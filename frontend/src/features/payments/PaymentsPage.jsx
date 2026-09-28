@@ -6,6 +6,8 @@ import { usePagination } from "../../components/ui/usePagination.js";
 import { sortTable } from "../../lib/table.js";
 import { hasSessionPermission } from "../../utils/session-permissions.js";
 import { usePaymentsWorkspace } from "./hooks/usePaymentsWorkspace.js";
+import { TableSkeleton } from "../../components/ui/TableSkeleton.jsx";
+import "./payments-page.css";
 
 const emptyForm = { memberId: "", membershipId: "", amountVnd: "", method: "cash", provider: "payos", notes: "" };
 const paymentStatus = {
@@ -16,10 +18,23 @@ const paymentStatus = {
 };
 const methodLabel = { cash: "Tiền mặt", bank_transfer: "Chuyển khoản", online: "Trực tuyến" };
 
+function validatePaymentForm(form, memberships) {
+  const errors = {};
+  if (!form.memberId) errors.memberId = "Vui lòng chọn hội viên.";
+  const amount = Number(form.amountVnd);
+  if (!String(form.amountVnd).trim()) errors.amountVnd = "Vui lòng nhập số tiền.";
+  else if (!/^\d+$/.test(String(form.amountVnd)) || !Number.isSafeInteger(amount) || amount <= 0) errors.amountVnd = "Số tiền phải là số nguyên dương.";
+  const membership = memberships.find((item) => item.id === form.membershipId);
+  if (membership && amount !== Number(membership.priceVnd)) errors.amountVnd = `Số tiền phải khớp giá gói: ${Number(membership.priceVnd).toLocaleString("vi-VN")} ₫.`;
+  return errors;
+}
+
 export function PaymentsPage({ session }) {
   const [selectedMemberId, setSelectedMemberId] = useState("");
   const [form, setForm] = useState(emptyForm);
+  const [formTouched, setFormTouched] = useState({});
   const [checkoutUrl, setCheckoutUrl] = useState("");
+  const [qrCode, setQrCode] = useState("");
   const [reconciliationNotes, setReconciliationNotes] = useState({});
   const [paymentSearch, setPaymentSearch] = useState("");
   const [paymentStatusFilters, setPaymentStatusFilters] = useState([]);
@@ -30,6 +45,7 @@ export function PaymentsPage({ session }) {
   const isCashier = hasSessionPermission(session, "payment.record");
   const workspace = usePaymentsWorkspace({ isCashier, memberId: selectedMemberId || undefined });
   const { members, memberships, payments: items } = workspace;
+  const formErrors = validatePaymentForm(form, memberships);
   const submitting = workspace.createPayment.isPending || workspace.confirmPayment.isPending;
   const paymentPackages = useMemo(
     () =>
@@ -63,6 +79,7 @@ export function PaymentsPage({ session }) {
     setPaymentSort((value) => ({ key, direction: value.key === key && value.direction === "asc" ? "desc" : "asc" }));
   }
   function selectMember(memberId) {
+    setFormTouched((value) => ({ ...value, memberId: true, amountVnd: false }));
     setForm((value) => ({
       ...value,
       memberId,
@@ -73,6 +90,7 @@ export function PaymentsPage({ session }) {
   }
 
   function selectMembership(membershipId) {
+    setFormTouched((value) => ({ ...value, amountVnd: true }));
     const membership = memberships.find((item) => item.id === membershipId);
     setForm((value) => ({
       ...value,
@@ -81,17 +99,21 @@ export function PaymentsPage({ session }) {
     }));
   }
   function updateForm(event) {
+    setFormTouched((value) => ({ ...value, [event.target.name]: true }));
     setForm((value) => ({ ...value, [event.target.name]: event.target.value }));
   }
 
   async function create(event) {
-    event.preventDefault();
+    event.preventDefault(); if (submitting) return;
+    setFormTouched({ memberId: true, amountVnd: true });
+    if (Object.keys(formErrors).length) { workspace.setError(Object.values(formErrors).join(" ")); return; }
     setCheckoutUrl("");
-    workspace.createPayment.mutate({ ...form, membershipId: form.membershipId || undefined, amountVnd: Number(form.amountVnd) }, { onSuccess: (payment) => { setCheckoutUrl(payment.checkoutUrl ?? ""); setForm(emptyForm); setSelectedMemberId(""); } });
+    setQrCode("");
+    workspace.createPayment.mutate({ ...form, provider: form.method === "online" ? form.provider : undefined, membershipId: form.membershipId || undefined, amountVnd: Number(form.amountVnd) }, { onSuccess: (payment) => { setCheckoutUrl(payment.checkoutUrl ?? ""); setQrCode(payment.qrCode ?? ""); setForm(emptyForm); setFormTouched({}); setSelectedMemberId(""); } });
   }
 
   async function confirm(id, status, method) {
-    workspace.confirmPayment.mutate({ id, status, method, reconciliationNote: method === "bank_transfer" ? reconciliationNotes[id]?.trim() : undefined });
+    if (submitting) return; workspace.confirmPayment.mutate({ id, status, method, reconciliationNote: method === "bank_transfer" ? reconciliationNotes[id]?.trim() : undefined });
   }
 
   return (
@@ -111,7 +133,7 @@ export function PaymentsPage({ session }) {
         </p>
       )}
       <div className="members-workspace-stacked">
-        {isCashier && <form className="members-form members-form--payment-create" onSubmit={create}>
+        {isCashier && <form className="members-form members-form--payment-create" onSubmit={create} noValidate>
           <h2>Lập phiếu thu</h2>
           <label>
             Phương thức
@@ -130,6 +152,8 @@ export function PaymentsPage({ session }) {
           <label>
             Hội viên
             <select
+              aria-label="Hội viên"
+              aria-invalid={Boolean(formTouched.memberId && formErrors.memberId)}
               onChange={(event) => selectMember(event.target.value)}
               required
               value={form.memberId}
@@ -141,6 +165,7 @@ export function PaymentsPage({ session }) {
                 </option>
               ))}
             </select>
+            {formTouched.memberId && formErrors.memberId && <span className="field-error">{formErrors.memberId}</span>}
           </label>
           <label>
             Gói chờ thanh toán
@@ -165,6 +190,9 @@ export function PaymentsPage({ session }) {
           <label>
             Số tiền (VNĐ)
             <input
+              aria-label="Số tiền (VNĐ)"
+              aria-invalid={Boolean(formTouched.amountVnd && formErrors.amountVnd)}
+              className={formTouched.amountVnd && formErrors.amountVnd ? "input-error" : ""}
               min="1"
               name="amountVnd"
               onChange={updateForm}
@@ -172,6 +200,7 @@ export function PaymentsPage({ session }) {
               type="number"
               value={form.amountVnd}
             />
+            {formTouched.amountVnd && formErrors.amountVnd && <span className="field-error">{formErrors.amountVnd}</span>}
           </label>
           <label>
             Ghi chú
@@ -181,7 +210,21 @@ export function PaymentsPage({ session }) {
             Lập phiếu thu
           </Button>
         </form>}
-        {checkoutUrl && <p className="auth-success" role="status">Liên kết thanh toán: <a href={checkoutUrl} rel="noreferrer" target="_blank">Mở trang thanh toán</a></p>}
+        {checkoutUrl && (
+          <div className="auth-success payment-checkout" role="status">
+            <p>Liên kết thanh toán: <a href={checkoutUrl} rel="noreferrer" target="_blank">Mở trang thanh toán</a></p>
+            {qrCode && (
+              <div className="payment-checkout__qr">
+                <img src={qrCode} alt="Mã QR thanh toán" />
+              </div>
+            )}
+            {qrCode && (
+              <p className="payment-checkout__hint">
+                Sử dụng ứng dụng ngân hàng để quét mã QR
+              </p>
+            )}
+          </div>
+        )}
         <section className="members-list">
           <div className="list-heading">
             <h2>{isCashier ? "Phiếu thu tại quầy" : "Danh sách phiếu thu"}</h2>
@@ -194,7 +237,7 @@ export function PaymentsPage({ session }) {
             </Button>
           </div>
           {workspace.loading ? (
-            <p>Đang tải…</p>
+            <TableSkeleton columns={7} />
           ) : items.length === 0 ? (
             <p>Chưa có giao dịch.</p>
           ) : (

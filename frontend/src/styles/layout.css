@@ -316,6 +316,8 @@
   padding-block: var(--space-12);
 }
 
+.member-row-actions { display: flex; flex-wrap: wrap; gap: var(--space-4); white-space: nowrap; }
+
 /* Shared information hierarchy: headers guide scanning, data stays calm. */
 .members-page .members-list th,
 .staff-page .staff-list th {
@@ -1176,15 +1178,19 @@
 
 @media (max-width: 767px) {
   :is(.members-page, .staff-page) > header {
-    margin-bottom: var(--space-20);
+    margin-bottom: var(--space-24);
   }
 
   :is(.members-page, .staff-page) > :not(header) + :not(header) {
-    margin-top: var(--space-20);
+    margin-top: var(--space-24);
   }
 
   :is(.members-grid, .staff-grid) {
-    gap: var(--space-20);
+    gap: var(--space-24);
+  }
+
+  .members-form, .staff-form {
+    gap: var(--space-24);
   }
 
   .members-form--member-create {

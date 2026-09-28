@@ -1,9 +1,18 @@
-import { apiClient } from "../../api/client.js";
+import { apiClient, apiErrorFromResponse } from "../../api/client.js";
 import { apiBaseUrl } from "../../config/runtime.js";
+import { ApiError } from "../../api/api-error.js";
 
 async function exportCsv(type, query) {
-  const response = await fetch(`${apiBaseUrl}/reports/${type}/export?${new URLSearchParams(query)}`, { credentials: "include" });
-  if (!response.ok) throw new Error("Không thể xuất báo cáo.");
+  let response;
+  try {
+    response = await fetch(`${apiBaseUrl}/reports/${type}/export?${new URLSearchParams(query)}`, { credentials: "include" });
+  } catch {
+    throw new ApiError({ code: "NETWORK_ERROR", message: "Không nhận được phản hồi khi tải báo cáo. Kiểm tra kết nối mạng rồi thử lại." });
+  }
+  if (!response.ok) {
+    const payload = response.headers.get("content-type")?.includes("application/json") ? await response.json().catch(() => null) : null;
+    throw apiErrorFromResponse(response, payload);
+  }
   const blob = await response.blob(); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = `bao-cao-${type}.csv`; link.click(); URL.revokeObjectURL(url);
 }
 

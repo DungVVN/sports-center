@@ -15,8 +15,24 @@ export const facilityRepository = {
   createType: (name) => prisma.facility_types.create({ data: { name } }),
   createFacility: (input) => prisma.facilities.create({ data: input }),
   createDay: (input) => prisma.facility_days.create({ data: input }),
-  mine: (userId) => prisma.facility_reservations.findMany({ where: { requester_user_id: userId }, orderBy: { requested_at: "desc" } }),
-  reservations: () => prisma.facility_reservations.findMany({ orderBy: { requested_at: "desc" } }),
+  mine: async (userId) => {
+    const [pending, cancellationRequests, recent] = await Promise.all([
+      prisma.facility_reservations.findMany({ where: { requester_user_id: userId, status: "pending" }, orderBy: { requested_at: "desc" } }),
+      prisma.facility_reservations.findMany({ where: { requester_user_id: userId, cancellation_requested_at: { not: null }, status: { in: ["pending", "approved"] } }, orderBy: { requested_at: "desc" } }),
+      prisma.facility_reservations.findMany({ where: { requester_user_id: userId }, orderBy: { requested_at: "desc" }, take: 100 }),
+    ]);
+    return [...new Map([...pending, ...cancellationRequests, ...recent].map((item) => [item.id, item])).values()]
+      .sort((left, right) => right.requested_at - left.requested_at);
+  },
+  reservations: async () => {
+    const [pending, cancellationRequests, recent] = await Promise.all([
+      prisma.facility_reservations.findMany({ where: { status: "pending" }, orderBy: { requested_at: "desc" } }),
+      prisma.facility_reservations.findMany({ where: { cancellation_requested_at: { not: null }, status: { in: ["pending", "approved"] } }, orderBy: { requested_at: "desc" } }),
+      prisma.facility_reservations.findMany({ orderBy: { requested_at: "desc" }, take: 200 }),
+    ]);
+    return [...new Map([...pending, ...cancellationRequests, ...recent].map((item) => [item.id, item])).values()]
+      .sort((left, right) => right.requested_at - left.requested_at);
+  },
   requesters: (ids) => prisma.users.findMany({ where: { id: { in: ids } }, select: { id: true, display_name: true } }),
   async request({ dayId, requesterUserId, startMinute, endMinute, participantCount, phone, actorUserId }) {
     return prisma.$transaction(async (tx) => {

@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMutationFeedback, useSubmitMutation } from "../../hooks/useMutationFeedback.js";
 import { Button } from "../../components/ui/Button.jsx";
 import { rolePermissionApi } from "./role-permission-api.js";
+import { errorMessageFor } from "../../api/error-message.js";
 import "./role-permissions.css";
 
 const roleOrder = ["manager", "receptionist", "coach", "member"];
@@ -17,7 +18,7 @@ export function RolePermissionPage() {
     let nextRoles = matrix.roles;
     for (const role of roles) { const updated = await rolePermissionApi.replace(role.code, { version: role.version, permissionCodes: draft[role.code] ?? role.permissionCodes ?? [] }); nextRoles = nextRoles.map((item) => item.code === role.code ? { ...item, version: updated.version, permissionCodes: updated.permissionCodes } : item); }
     return nextRoles;
-  }, onSuccess: (roles) => client.setQueryData(["role-permissions"], (previous) => ({ ...previous, roles })), successMessage: "Đã lưu thay đổi quyền.", errorMessage: "Một phần thay đổi có thể đã được lưu. Hãy tải lại bảng trước khi thử lại." });
+  }, onSuccess: (roles) => client.setQueryData(["role-permissions"], (previous) => ({ ...previous, roles })), successMessage: "Đã lưu thay đổi quyền.", errorMessage: (cause) => cause.status === 409 ? "Bảng quyền đã được thay đổi. Hãy tải lại trước khi lưu." : errorMessageFor(cause, "Một phần thay đổi có thể đã được lưu. Hãy tải lại bảng trước khi thử lại.") });
 
   const groups = useMemo(() => {
     if (!matrix) return [];
@@ -61,11 +62,11 @@ export function RolePermissionPage() {
 
   async function saveAll() {
     if (!changedRoles.length) return;
-    await saveMatrix.mutateAsync(changedRoles).catch((cause) => { if (cause.status === 409) feedback.setError("Bảng quyền đã được thay đổi. Hãy tải lại trước khi lưu."); });
+    await saveMatrix.mutateAsync(changedRoles).catch(() => {});
   }
 
   if (matrixQuery.isLoading) return <p role="status">Đang tải bảng phân quyền...</p>;
-  if (!matrix) return <section className="role-permissions"><p role="alert">{feedback.error || matrixQuery.error?.message || "Không tải được bảng phân quyền."}</p><Button onClick={matrixQuery.refetch}>Thử lại</Button></section>;
+  if (!matrix) return <section className="role-permissions"><p role="alert">{feedback.error || errorMessageFor(matrixQuery.error, "Không tải được bảng phân quyền.")}</p><Button onClick={matrixQuery.refetch}>Thử lại</Button></section>;
 
   return (
     <section className="role-permissions">

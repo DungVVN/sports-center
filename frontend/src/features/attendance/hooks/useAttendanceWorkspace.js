@@ -4,6 +4,7 @@ import { useMutationFeedback, useSubmitMutation } from "../../../hooks/useMutati
 import { bookingApi } from "../../bookings/booking-api.js";
 import { classApi } from "../../classes/class-api.js";
 import { attendanceApi } from "../attendance-api.js";
+import { errorMessageFor } from "../../../api/error-message.js";
 
 const keys = { classes: ["classes"], bookings: (classId) => ["classes", classId, "bookings"], records: (classId) => ["classes", classId, "attendance"] };
 
@@ -19,6 +20,7 @@ export function useAttendanceWorkspace({ classId }) {
   }, [classId, queryClient]);
   const submitAttendance = useSubmitMutation({ feedback, mutationFn: ({ classId: targetClassId, entries }) => attendanceApi.submit(targetClassId, entries), onSuccess: invalidateSelected, successMessage: (result) => result.alreadySubmitted ? "Buổi học này đã được lưu trước đó." : `Đã lưu điểm danh và gửi thông báo cho ${result.notificationCount} hội viên.`, errorMessage: "Không thể lưu điểm danh." });
   const correctAttendance = useSubmitMutation({ feedback, mutationFn: ({ id, input }) => attendanceApi.correct(id, input), onSuccess: invalidateSelected, successMessage: "Đã sửa điểm danh và lưu audit.", errorMessage: "Không thể sửa điểm danh." });
-  const queryError = [classesQuery, bookingsQuery, recordsQuery].find((query) => query.isError)?.error?.message ?? "";
+  const failedQuery = [classesQuery, bookingsQuery, recordsQuery].find((query) => query.isError);
+  const queryError = failedQuery ? errorMessageFor(failedQuery.error, "Không thể tải dữ liệu điểm danh.") : "";
   return { bookings: bookingsQuery.data ?? [], classes: classesQuery.data ?? [], classesLoading: classesQuery.isLoading, correctAttendance, detailsLoading: bookingsQuery.isFetching || recordsQuery.isFetching, error: feedback.error || queryError, notice: feedback.notice, records: recordsQuery.data ?? [], reload: invalidateSelected, setError: feedback.setError, setNotice: feedback.setNotice, submitAttendance };
 }
