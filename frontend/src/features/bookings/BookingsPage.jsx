@@ -348,7 +348,7 @@ export function BookingsPage({ session }) {
                           {canCancelBooking && <td>
                             {["confirmed", "waitlisted"].includes(
                               item.status,
-                            ) && (
+                            ) ? (
                               <Button
                                 onClick={() => openCancellation(item)}
                                 size="sm"
@@ -356,7 +356,7 @@ export function BookingsPage({ session }) {
                               >
                                 Hủy
                               </Button>
-                            )}
+                            ) : "—"}
                           </td>}
                         </tr>
                       ))}

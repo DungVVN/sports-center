@@ -11,7 +11,7 @@
 .profile-page__summary,
 .profile-page__contacts { grid-column: 2; grid-row: 1; }
 .profile-page__security-group {
-  align-self: start;
+  align-self: stretch;
   display: flex;
   flex-direction: column;
   gap: var(--space-24);
@@ -19,6 +19,8 @@
   grid-row: 2;
 }
 .profile-page__mfa { grid-column: 2; grid-row: 2; align-self: start; }
+.profile-page__mfa--expanded { align-self: stretch; }
+.profile-page__notifications { flex: 1 1 auto; }
 .profile-page__form {
   gap: var(--space-20);
 }
@@ -61,6 +63,7 @@
 }
 .profile-page__fields label,
 .profile-page__contact-list label {
+  align-content: start;
   color: var(--color-text);
   display: grid;
   font-size: 12px;
@@ -196,10 +199,15 @@
   margin: 0 0 var(--space-16);
   padding: var(--space-12);
 }
-@media (max-width: 1023px) {
+@media (max-width: 1199px) {
   .profile-page__grid {
     grid-template-columns: 1fr;
   }
+  .profile-page__form:first-child { grid-column: 1; grid-row: 1; }
+  .profile-page__summary,
+  .profile-page__contacts { grid-column: 1; grid-row: 2; }
+  .profile-page__security-group { grid-column: 1; grid-row: 3; }
+  .profile-page__mfa { grid-column: 1; grid-row: 4; }
   .profile-page__password-form .profile-page__fields > label:last-child { max-width: none; }
 }
 @media (max-width: 640px) {

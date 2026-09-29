@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "../../api/api-error.js";
 import { classApi } from "../classes/class-api.js";
@@ -41,6 +41,29 @@ describe("MembersPage", () => {
     expect(await screen.findByText("An")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Gửi lại MK" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Sửa" })).not.toBeInTheDocument();
+  });
+
+  it("groups member dates, contact details and package status without losing row actions", async () => {
+    memberApi.list.mockResolvedValue([{
+      id: "member-1", memberCode: "MBR-1", fullName: "An", email: "an@example.test",
+      phone: "0900000000", joinedAt: "2026-09-29", registeredPackageName: "Gói tháng",
+      membershipStatus: "active", membershipExpiresOn: "2026-10-29", coachName: "Coach Bình",
+      hasAccount: true,
+    }]);
+    renderPage({ canResetCredentials: true });
+
+    const row = (await screen.findByText("MBR-1")).closest("tr");
+    expect(screen.getAllByRole("columnheader")).toHaveLength(6);
+    expect(within(row).getAllByRole("cell")).toHaveLength(6);
+    expect(row).toHaveTextContent("Tham gia: 29/9/2026");
+    expect(row).toHaveTextContent("an@example.test");
+    expect(row).toHaveTextContent("0900000000");
+    expect(row).toHaveTextContent("Gói tháng");
+    expect(row).toHaveTextContent("Đang hoạt động · Hết hạn 29/10/2026");
+    expect(row).toHaveTextContent("Coach Bình");
+    expect(within(row).getByRole("button", { name: "Gửi lại MK" })).toBeInTheDocument();
+    expect(within(row).getByRole("button", { name: "Sửa" })).toBeInTheDocument();
+    expect(within(row).getByRole("button", { name: "Coach" })).toBeInTheDocument();
   });
 
   it("creates a member and shows the standardized success feedback", async () => {

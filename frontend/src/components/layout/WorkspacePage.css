@@ -51,6 +51,21 @@
 .members-list tbody tr:hover { background: var(--color-surface-hover); }
 .members-list small { color: var(--color-text-secondary); display: block; }
 .members-list code { font-family: var(--font-mono); font-size: 12px; }
+.members-list__table th,
+.members-list__table td { padding-inline: 12px; }
+.members-list__table th:first-child { min-width: 150px; }
+.members-list__table th:nth-child(2) { min-width: 180px; }
+.members-list__table th:nth-child(3) { min-width: 240px; }
+.members-list__table th:nth-child(4) { min-width: 265px; }
+.members-list__table th:nth-child(5) { min-width: 165px; }
+.members-list__table th:nth-child(6) { min-width: 290px; }
+.members-list__table :is(td, th):first-child { padding-left: 12px; }
+.members-list__table :is(td, th):last-child { padding-right: 12px; }
+.members-list__table td { line-height: 1.4; }
+.members-list__table td small { margin-top: 3px; }
+.members-list__contact { overflow-wrap: anywhere; }
+.members-list__contact span { display: block; }
+.members-list__package { overflow-wrap: anywhere; }
 .list-heading { align-items: center; display: flex; gap: var(--space-12); justify-content: space-between; margin-bottom: var(--space-16); }
 .list-heading h2 { margin-bottom: 0; }
 .list-heading__actions { align-items: center; display: flex; gap: var(--space-8); }

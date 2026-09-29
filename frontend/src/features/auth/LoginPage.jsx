@@ -49,7 +49,7 @@ export function LoginPage({ onLoggedIn, onMfaRequired, onRegister }) {
 
   return (
     <AuthLayout>
-      <div className="auth-card">
+      <div className="auth-card auth-card--login">
         <h2>Đăng nhập</h2>
         <p className="auth-card__subtitle">Nhập thông tin tài khoản để tiếp tục.</p>
         <form className="auth-form" onSubmit={submit} noValidate>

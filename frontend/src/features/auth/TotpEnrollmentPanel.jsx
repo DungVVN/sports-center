@@ -36,7 +36,7 @@ export function TotpEnrollmentPanel({ onEnrollmentCompleted }) {
   }
 
   return (
-    <section className="members-list profile-page__mfa">
+    <section className={`members-list profile-page__mfa${enrollment ? " profile-page__mfa--expanded" : ""}`}>
       <div className="list-heading">
         <div>
           <h2>Authenticator</h2>

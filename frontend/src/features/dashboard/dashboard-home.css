@@ -3,7 +3,7 @@
 .dashboard-metric--interactive:hover{border-color:var(--color-primary);box-shadow:var(--shadow-control);transform:translateY(-2px)}
 .dashboard-alert--interactive{cursor:pointer;transition:background-color .15s,border-color .15s}
 .dashboard-alert--interactive:hover{background:var(--color-surface);border-color:var(--color-primary)!important}
-.dashboard-operations{display:grid;gap:var(--space-24);grid-template-columns:minmax(0,1.45fr) minmax(19rem,1fr)}
+.dashboard-operations{display:grid;gap:var(--space-24);grid-template-columns:minmax(0,1.6fr) minmax(300px,1fr)}
 .dashboard-operations__health{display:grid;gap:var(--space-20)}
 .dashboard-capacity{display:grid;gap:var(--space-16);grid-template-columns:repeat(2,minmax(0,1fr))}
 .dashboard-capacity section{background:var(--color-surface-muted);border-radius:var(--radius-control);display:grid;gap:var(--space-10);padding:var(--space-16)}

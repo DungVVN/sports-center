@@ -71,6 +71,74 @@
 }
 
 /* Training follows its workflow: template first, then plan and progress side by side. */
+.ai-review {
+  container: ai-review / inline-size;
+}
+
+.ai-review__grid {
+  display: grid;
+  gap: var(--space-12);
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.ai-review__item {
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  min-width: 0;
+  padding: var(--space-16);
+}
+
+.ai-review__item > strong {
+  font-size: 14px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.ai-review__item > p {
+  line-height: 1.5;
+  margin: 0;
+  max-width: 65ch;
+  overflow-wrap: anywhere;
+}
+
+.ai-review__item > small {
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+  margin-top: auto;
+}
+
+.ai-review__item > button {
+  align-self: flex-start;
+}
+
+.ai-review > .training-action-form {
+  margin-top: var(--space-20);
+}
+
+@container ai-review (min-width: 48rem) {
+  .ai-review__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ai-review__item:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+}
+
+@container ai-review (min-width: 80rem) {
+  .ai-review__grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .ai-review__item:last-child:nth-child(odd) {
+    grid-column: auto;
+  }
+}
+
 .training-template-form {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -248,6 +316,7 @@
 }
 
 .members-form--booking-create-member > button {
+  align-self: end;
   grid-column: auto;
   min-width: 10rem;
 }

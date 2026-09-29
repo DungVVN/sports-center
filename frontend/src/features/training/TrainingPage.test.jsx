@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "../../api/api-error.js";
 import { trainingApi } from "./training-api.js";
@@ -40,6 +40,22 @@ describe("TrainingPage", () => {
     trainingApi.aiSuggestions.mockResolvedValue([]);
     renderPage({ user: { role: "coach" }, permissions: ["ai.assist.read"] });
     expect(await screen.findByText("Chưa có gợi ý mới.")).toBeInTheDocument();
+  });
+
+  it("keeps each AI suggestion and its review action together in the responsive grid", async () => {
+    trainingApi.aiSuggestions.mockResolvedValue([{ suggestions: [
+      { subject: "Nhắc lịch lớp A", body: "Kiểm tra danh sách trước buổi tập A." },
+      { subject: "Nhắc lịch lớp B", body: "Kiểm tra danh sách trước buổi tập B." },
+    ] }]);
+    renderPage({ user: { role: "coach" }, permissions: ["ai.assist.read", "ai.assist.deliver"] });
+
+    const firstTitle = await screen.findByText("Nhắc lịch lớp A");
+    const firstCard = firstTitle.closest(".ai-review__item");
+    expect(document.querySelectorAll(".ai-review__grid > .ai-review__item")).toHaveLength(2);
+    expect(firstCard).toHaveTextContent("Kiểm tra danh sách trước buổi tập A.");
+    fireEvent.click(within(firstCard).getByRole("button", { name: "Rà soát và gửi" }));
+    expect(screen.getByRole("heading", { name: "Duyệt hướng dẫn trước khi gửi" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Tiêu đề")).toHaveValue("Nhắc lịch lớp A");
   });
 
   it("completes a plan and renders shared success feedback", async () => {

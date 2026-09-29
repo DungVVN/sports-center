@@ -19,10 +19,12 @@ describe("TotpEnrollmentPanel", () => {
     authApi.confirmTotpEnrollment.mockResolvedValue({ enrolled: true });
     const onEnrollmentCompleted = vi.fn();
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    render(<QueryClientProvider client={client}><TotpEnrollmentPanel onEnrollmentCompleted={onEnrollmentCompleted} /></QueryClientProvider>);
+    const { container } = render(<QueryClientProvider client={client}><TotpEnrollmentPanel onEnrollmentCompleted={onEnrollmentCompleted} /></QueryClientProvider>);
+    expect(container.querySelector(".profile-page__mfa")).not.toHaveClass("profile-page__mfa--expanded");
     expect(screen.getByText("Sau khi thiết lập, bạn sẽ dùng mã 6 số từ ứng dụng Authenticator khi đăng nhập.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Thiết lập Authenticator" }));
     expect(await screen.findByRole("img", { name: "Mã QR thiết lập Authenticator" })).toBeInTheDocument();
+    expect(container.querySelector(".profile-page__mfa")).toHaveClass("profile-page__mfa--expanded");
     expect(await screen.findByDisplayValue("JBSWY3DPEHPK3PXP")).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Mã 6 số"), { target: { value: "123456" } });
     fireEvent.click(screen.getByRole("button", { name: "Xác nhận Authenticator" }));
