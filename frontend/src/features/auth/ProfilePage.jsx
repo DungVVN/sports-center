@@ -265,7 +265,10 @@ export function ProfilePage({ onSessionRevoked, onProfileSaved, session }) {
           <div className="profile-page__security-group">
             <form className="members-form profile-page__form profile-page__password-form" onSubmit={changePassword}>
             <div className="list-heading">
-              <h2>Đổi mật khẩu</h2>
+              <div>
+                <h2>Đổi mật khẩu</h2>
+                <p id="profile-new-password-hint">Mật khẩu mới cần ít nhất 8 ký tự, gồm chữ hoa, chữ thường và số.</p>
+              </div>
             </div>
             <div className="profile-page__fields">
               <label>
@@ -300,6 +303,7 @@ export function ProfilePage({ onSessionRevoked, onProfileSaved, session }) {
                 <div className="password-input-wrapper">
                   <input
                     aria-label="Mật khẩu mới"
+                    aria-describedby="profile-new-password-hint"
                     autoComplete="new-password"
                     minLength="8"
                     onChange={(event) =>
@@ -321,7 +325,6 @@ export function ProfilePage({ onSessionRevoked, onProfileSaved, session }) {
                     {showNewPassword ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
                   </button>
                 </div>
-                <small>Ít nhất 8 ký tự, gồm chữ hoa, chữ thường và số.</small>
               </label>
               <label>
                 Xác nhận mật khẩu mới

@@ -5,6 +5,16 @@ import { TableSkeleton } from "../../../components/ui/TableSkeleton.jsx";
 
 const labels = { pending_payment: "Chờ thanh toán", active: "Đang hoạt động", expiring_soon: "Sắp hết hạn", expired: "Đã hết hạn", frozen: "Đang đóng băng", cancelled: "Đã hủy" };
 
+function MemberRowActions({ canResetCredentials, item, onEdit, onIssueAccountCredentials, onOpenAssignment, readOnly }) {
+  return <div aria-label={`Thao tác hội viên ${item.fullName}`} className="member-row-actions" role="group">
+    {!readOnly && <div className="member-row-actions__main">
+      <Button onClick={() => onEdit(item)} size="sm">Sửa</Button>
+      <Button onClick={() => onOpenAssignment(item)} size="sm" variant="outline">Coach</Button>
+    </div>}
+    {canResetCredentials && <Button className="member-row-actions__account" disabled={!item.email} onClick={() => onIssueAccountCredentials(item)} size="sm" variant="ghost">{item.hasAccount ? "Gửi lại MK" : "Tạo tài khoản"}</Button>}
+  </div>;
+}
+
 export function MembersTable({ canResetCredentials, filters, loading, members, onClearFilters, onEdit, onFilterToggle, onIssueAccountCredentials, onOpenAssignment, onReload, onSearchChange, onToggleFilterValue, pagination, readOnly, visibleMembers }) {
   const { coach, isOpen, package: packageFilters, search, status } = filters;
   const coachOptions = [...new Set(members.map((member) => member.coachName ?? "__unassigned"))].sort((a, b) => a.localeCompare(b, "vi-VN"));
@@ -19,7 +29,7 @@ export function MembersTable({ canResetCredentials, filters, loading, members, o
         </FilterMenu>
       </DataTableToolbar>
       {visibleMembers.length === 0 ? <p>Không tìm thấy hội viên phù hợp.</p> : <div className="table-scroll"><table className="members-list__table"><thead><tr><th scope="col">Mã hội viên</th><th scope="col">Hội viên</th><th scope="col">Liên hệ</th><th scope="col">Gói đăng ký</th><th scope="col">Coach phụ trách</th>{(!readOnly || canResetCredentials) && <th scope="col">Thao tác</th>}</tr></thead><tbody>
-        {pagination.pageItems.map((item) => <tr key={item.id}><td><code>{item.memberCode}</code></td><td><strong>{item.fullName}</strong><small>Tham gia: {item.joinedAt ? new Date(item.joinedAt).toLocaleDateString("vi-VN") : "—"}</small></td><td className="members-list__contact"><span>{item.email ?? "Chưa có email"}</span><small>{item.phone ?? "Chưa có số điện thoại"}</small></td><td className="members-list__package"><strong>{item.registeredPackageName ?? "Chưa đăng ký"}</strong><small>{item.membershipStatus ? labels[item.membershipStatus] ?? item.membershipStatus : "Chưa có gói"}{item.membershipExpiresOn && ` · Hết hạn ${new Date(item.membershipExpiresOn).toLocaleDateString("vi-VN")}`}</small></td><td>{item.coachName ?? "Chưa phân công"}</td>{(!readOnly || canResetCredentials) && <td><div className="member-row-actions">{canResetCredentials && <Button disabled={!item.email} onClick={() => onIssueAccountCredentials(item)} size="sm" variant="outline">{item.hasAccount ? "Gửi lại MK" : "Tạo tài khoản"}</Button>}{!readOnly && <><Button onClick={() => onEdit(item)} size="sm">Sửa</Button><Button onClick={() => onOpenAssignment(item)} size="sm" variant="outline">Coach</Button></>}</div></td>}</tr>)}
+        {pagination.pageItems.map((item) => <tr key={item.id}><td><code>{item.memberCode}</code></td><td><strong>{item.fullName}</strong><small>Tham gia: {item.joinedAt ? new Date(item.joinedAt).toLocaleDateString("vi-VN") : "—"}</small></td><td className="members-list__contact"><span>{item.email ?? "Chưa có email"}</span><small>{item.phone ?? "Chưa có số điện thoại"}</small></td><td className="members-list__package"><strong>{item.registeredPackageName ?? "Chưa đăng ký"}</strong><small>{item.membershipStatus ? labels[item.membershipStatus] ?? item.membershipStatus : "Chưa có gói"}{item.membershipExpiresOn && ` · Hết hạn ${new Date(item.membershipExpiresOn).toLocaleDateString("vi-VN")}`}</small></td><td>{item.coachName ?? "Chưa phân công"}</td>{(!readOnly || canResetCredentials) && <td><MemberRowActions canResetCredentials={canResetCredentials} item={item} onEdit={onEdit} onIssueAccountCredentials={onIssueAccountCredentials} onOpenAssignment={onOpenAssignment} readOnly={readOnly} /></td>}</tr>)}
       </tbody></table></div>}
       <Pagination {...pagination} />
     </>}

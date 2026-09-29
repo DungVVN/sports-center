@@ -21,7 +21,7 @@ vi.mock("../features/auth/LoginPage.jsx", () => ({
     <button onClick={() => onLoggedIn({ user: { id: "coach-2", role: "coach", mustChangePassword: true, profileSetupRequired: true }, permissions: [] })}>Coach login</button>
   </div>,
 }));
-vi.mock("../features/auth/AdminLoginPage.jsx", () => ({ AdminLoginPage: () => null }));
+vi.mock("../features/auth/AdminLoginPage.jsx", () => ({ AdminLoginPage: () => <div>Admin login page</div> }));
 vi.mock("../features/auth/DashboardPlaceholder.jsx", () => ({ DashboardPlaceholder: ({ initialView, onProfileSaved, session }) => <div>Dashboard view: {initialView}; account: {session.user.id}<button onClick={onProfileSaved}>Save profile</button></div> }));
 vi.mock("../features/auth/InitialPasswordChangePage.jsx", () => ({ InitialPasswordChangePage: ({ onCompleted }) => <button onClick={onCompleted}>Change temporary password</button> }));
 vi.mock("../features/auth/PendingApprovalPage.jsx", () => ({ PendingApprovalPage: () => null }));
@@ -77,6 +77,36 @@ describe("first login routing", () => {
     mockAuthMe.mockResolvedValue({ user: { id: "admin-1", role: "admin", mustChangePassword: false, profileSetupRequired: false }, permissions: [] });
     render(<App />);
     expect(await screen.findByText("Dashboard view: dashboard; account: admin-1")).toBeInTheDocument();
+  });
+
+  it("restores an Admin session on a deep workspace route after refresh", async () => {
+    window.history.replaceState({}, "", "/members");
+    mockPortalSurface.mockReturnValue("admin");
+    mockAuthMe.mockResolvedValue({ user: { id: "admin-1", role: "admin", mustChangePassword: false, profileSetupRequired: false }, permissions: [] });
+
+    render(<App />);
+
+    expect(await screen.findByText("Dashboard view: members; account: admin-1")).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/members");
+  });
+
+  it("shows Admin login instead of 404 on a deep route without a session", async () => {
+    window.history.replaceState({}, "", "/admin/permissions");
+    mockPortalSurface.mockReturnValue("admin");
+
+    render(<App />);
+
+    expect(await screen.findByText("Admin login page")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Không tìm thấy trang" })).not.toBeInTheDocument();
+  });
+
+  it("keeps unknown Admin routes as 404", async () => {
+    window.history.replaceState({}, "", "/khong-ton-tai");
+    mockPortalSurface.mockReturnValue("admin");
+
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: "Không tìm thấy trang" })).toBeInTheDocument();
   });
 
   it("switches an existing main-portal tab to the account logged in by another tab", async () => {

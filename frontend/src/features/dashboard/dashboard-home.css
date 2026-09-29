@@ -6,7 +6,7 @@
 .dashboard-operations{display:grid;gap:var(--space-24);grid-template-columns:minmax(0,1.6fr) minmax(300px,1fr)}
 .dashboard-operations__health{display:grid;gap:var(--space-20)}
 .dashboard-capacity{display:grid;gap:var(--space-16);grid-template-columns:repeat(2,minmax(0,1fr))}
-.dashboard-capacity section{background:var(--color-surface-muted);border-radius:var(--radius-control);display:grid;gap:var(--space-10);padding:var(--space-16)}
+.dashboard-capacity section{background:var(--color-surface-muted);border-radius:var(--radius-control);display:grid;gap:var(--space-8);padding:var(--space-16)}
 .dashboard-capacity__heading{align-items:baseline;display:flex;gap:var(--space-12);justify-content:space-between}
 .dashboard-capacity__heading span{font-size:12px;font-weight:600}
 .dashboard-capacity__heading strong{font-size:16px;font-variant-numeric:tabular-nums}
@@ -20,7 +20,7 @@
 .dashboard-detail-metrics dd{font-size:18px;font-variant-numeric:tabular-nums;font-weight:700;margin:var(--space-4) 0 0}
 .dashboard-operations__actions{display:grid;gap:var(--space-16)}
 .dashboard-action-list{display:grid;gap:var(--space-8)}
-.dashboard-action-list button{align-items:center;background:var(--color-surface-muted);border:1px solid transparent;border-radius:var(--radius-control);color:var(--color-text);cursor:pointer;display:grid;font:600 12px/1.2 var(--font-sans);gap:var(--space-10);grid-template-columns:auto 1fr auto;min-height:44px;padding:0 var(--space-12);text-align:left;transition:background-color .15s,border-color .15s,transform .15s}
+.dashboard-action-list button{align-items:center;background:var(--color-surface-muted);border:1px solid transparent;border-radius:var(--radius-control);color:var(--color-text);cursor:pointer;display:grid;font:600 12px/1.2 var(--font-sans);gap:var(--space-8);grid-template-columns:auto 1fr auto;min-height:44px;padding:0 var(--space-12);text-align:left;transition:background-color .15s,border-color .15s,transform .15s}
 .dashboard-action-list button svg:first-child{color:var(--color-primary)}
 .dashboard-action-list button svg:last-child{color:var(--color-text-muted)}
 .dashboard-action-list button:hover{background:var(--color-surface);border-color:#93C5FD;transform:translateX(2px)}

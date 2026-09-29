@@ -31,3 +31,6 @@
 
 /* The standard reCAPTCHA widget is 19rem wide; keep login controls on that edge. */
 .auth-card--login:has(.captcha-field) { max-width: 19rem; }
+
+.auth-form { gap: var(--form-row-gap); }
+.auth-form .field { gap: var(--field-gap); }

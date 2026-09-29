@@ -64,6 +64,17 @@ describe("MembersPage", () => {
     expect(within(row).getByRole("button", { name: "Gửi lại MK" })).toBeInTheDocument();
     expect(within(row).getByRole("button", { name: "Sửa" })).toBeInTheDocument();
     expect(within(row).getByRole("button", { name: "Coach" })).toBeInTheDocument();
+    const actions = within(row).getByRole("group", { name: "Thao tác hội viên An" });
+    expect(actions.querySelector(".member-row-actions__main")).toContainElement(within(row).getByRole("button", { name: "Sửa" }));
+    expect(actions.querySelector(".member-row-actions__account")).toHaveTextContent("Gửi lại MK");
+  });
+
+  it("keeps account creation in the secondary action slot", async () => {
+    memberApi.list.mockResolvedValue([{ id: "member-2", memberCode: "MBR-2", fullName: "Bình", email: "binh@example.test", hasAccount: false }]);
+    renderPage({ canResetCredentials: true });
+    const actions = await screen.findByRole("group", { name: "Thao tác hội viên Bình" });
+    expect(actions.querySelector(".member-row-actions__account")).toHaveTextContent("Tạo tài khoản");
+    expect(within(actions).getByRole("button", { name: "Tạo tài khoản" })).toBeEnabled();
   });
 
   it("creates a member and shows the standardized success feedback", async () => {

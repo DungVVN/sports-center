@@ -23,7 +23,10 @@
 .members-workspace-stacked {
   display: grid;
   gap: var(--space-24);
+  min-width: 0;
 }
+
+.members-workspace-stacked > * { min-width: 0; }
 
 .attendance-monitor { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-card); display: grid; overflow: hidden; }
 .attendance-monitor__picker { align-items: start; display: grid; gap: var(--space-20); grid-template-columns: minmax(15rem, .7fr) minmax(20rem, 1.3fr); padding: var(--space-20) var(--space-24); }
@@ -375,7 +378,7 @@
 
 .members-form,
 .staff-form {
-  gap: var(--space-16);
+  gap: var(--form-row-gap);
 }
 
 .members-list th,
@@ -385,7 +388,11 @@
   padding-block: var(--space-12);
 }
 
-.member-row-actions { display: flex; flex-wrap: wrap; gap: var(--space-4); white-space: nowrap; }
+.member-row-actions { display: grid; gap: var(--space-4); width: 11rem; }
+.member-row-actions__main { display: grid; gap: var(--space-8); grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.member-row-actions__main .button { width: 100%; }
+.member-row-actions__account { background: var(--color-surface-muted); color: var(--color-primary); justify-content: flex-start; padding-inline: var(--space-8); width: 100%; }
+.member-row-actions__account:not(:disabled):hover { color: var(--color-primary-hover); }
 
 /* Shared information hierarchy: headers guide scanning, data stays calm. */
 .members-page .members-list th,
@@ -820,7 +827,7 @@
   display: grid;
   font-size: 12px;
   font-weight: 600;
-  gap: 6px;
+  gap: var(--field-gap);
   margin-top: var(--space-16);
   max-width: 420px;
 }
@@ -1093,7 +1100,7 @@
   font-weight: 600;
   line-height: 1;
   min-height: 28px;
-  padding: 0 var(--space-10);
+  padding: 0 var(--space-12);
   white-space: nowrap;
 }
 

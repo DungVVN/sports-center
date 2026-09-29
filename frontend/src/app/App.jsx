@@ -39,7 +39,7 @@ export function App() {
 
   const getInitialView = () => {
     const path = window.location.pathname;
-    if (isAdminPortal) return path === "/" || path === "/login" ? "login" : "notFound";
+    if (isAdminPortal) return path === "/" || path === "/login" || dashboardView(path) ? "login" : "notFound";
     if (path === "/") return "landing";
     if (path === "/login") return "login";
     if (path === "/register") return "register";

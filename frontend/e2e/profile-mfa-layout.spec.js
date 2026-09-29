@@ -21,6 +21,13 @@ test("expanded Authenticator aligns with the security cards without hiding the Q
 
   await page.goto("/profile");
   await expect(page.getByRole("heading", { name: "Đổi mật khẩu" })).toBeVisible();
+  const passwordFields = page.locator(".profile-page__password-form .profile-page__fields label");
+  const currentPassword = await passwordFields.nth(0).boundingBox();
+  const newPassword = await passwordFields.nth(1).boundingBox();
+  const confirmation = await passwordFields.nth(2).boundingBox();
+  expect(Math.abs(currentPassword.y - newPassword.y)).toBeLessThanOrEqual(1);
+  expect(Math.abs(confirmation.y - currentPassword.y - currentPassword.height - 16)).toBeLessThanOrEqual(1);
+  await expect(page.locator('input[aria-label="Mật khẩu mới"]')).toHaveAttribute("aria-describedby", "profile-new-password-hint");
   const collapsedSecurity = await page.locator(".profile-page__security-group").boundingBox();
   const collapsedAuthenticator = await page.locator(".profile-page__mfa").boundingBox();
   expect(collapsedAuthenticator.height).toBeLessThan(collapsedSecurity.height);

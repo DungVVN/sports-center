@@ -11,18 +11,18 @@
 .members-page { min-height: 100vh; padding: 32px 5vw; }
 .members-page header p { color: var(--color-primary); font-size: 12px; font-weight: 700; letter-spacing: .06em; margin: 0; text-transform: uppercase; }
 .members-page h1 { font-size: 26px; letter-spacing: -.03em; margin: 4px 0 28px; }
-.members-grid { display: grid; gap: 24px; grid-template-columns: 320px minmax(0, 1fr); }
+.members-grid { display: grid; gap: var(--section-gap); grid-template-columns: 320px minmax(0, 1fr); }
 .members-grid > * { min-width: 0; }
 .membership-workspace--single { grid-template-columns: minmax(0, 760px); }
 .membership-workspace--catalog { grid-template-columns: minmax(0, 1fr); }
 .members-form,
-.members-list { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-card); box-shadow: var(--shadow-card); padding: 20px; }
-.members-form { align-content: start; display: grid; gap: 14px; }
+.members-list { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-card); box-shadow: var(--shadow-card); padding: var(--panel-padding); }
+.members-form { align-content: start; display: grid; gap: var(--form-row-gap); }
 .members-form > button[type="submit"],
 .members-form > .button { justify-self: start; min-width: 120px; }
 .members-form h2,
 .members-list h2 { font-size: 16px; letter-spacing: -.015em; margin: 0 0 4px; }
-.members-form label { color: var(--color-text); display: grid; font-size: 12px; font-weight: 600; gap: 6px; }
+.members-form label { align-content: start; color: var(--color-text); display: grid; font-size: 12px; font-weight: 600; gap: var(--field-gap); }
 .members-form input,
 .members-form select,
 .members-form textarea { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-control); color: var(--color-text); min-height: var(--control-height); padding: 0 12px; transition: border-color .15s, box-shadow .15s, background-color .15s; width: 100%; }
@@ -58,7 +58,7 @@
 .members-list__table th:nth-child(3) { min-width: 240px; }
 .members-list__table th:nth-child(4) { min-width: 265px; }
 .members-list__table th:nth-child(5) { min-width: 165px; }
-.members-list__table th:nth-child(6) { min-width: 290px; }
+.members-list__table th:nth-child(6) { min-width: 200px; }
 .members-list__table :is(td, th):first-child { padding-left: 12px; }
 .members-list__table :is(td, th):last-child { padding-right: 12px; }
 .members-list__table td { line-height: 1.4; }
