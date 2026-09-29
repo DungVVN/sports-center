@@ -90,10 +90,24 @@ For every slice: preserve existing path and payload contracts; move one owning m
 - [x] Frontend feature-local API/UI folder migration.
 - [x] Authenticated browser regression on an isolated PostgreSQL 18.6 QA database: manager, receptionist, coach and member portal navigation across mobile/tablet/desktop (12/12), member history/deep-link/back/forward/reload, separate Admin portal, role access, Support, package/member assignment, cash payment, booking, class, facility and registration journeys passed. Seven additional public/layout checks passed after the feature folder migration.
 - [x] PostgreSQL 18.6 integration checks passed for role-permission optimistic concurrency, booking capacity/waitlist and duplicate suppression, facility approval/duplicate suppression, and PayOS callback race. The callback race exposed a stale `pending` response on the losing request; the service now re-reads committed payment state and has unit regression coverage. These are isolated database tests, not external PayOS settlement proof.
-- [ ] Full feature contract ownership review: read-model projections and cross-module transactional writes remain in existing repositories, with behavior preserved for this migration.
+- [x] Source ownership review completed. Cross-module read projections and atomic writes are inventoried below; no transaction was split merely to make folder boundaries look pure.
 - [ ] Staging candidate verification and external integration/UAT proof. No deployment or production database migration was performed.
 
 Latest local aggregate gate: backend 234/234 tests, frontend 123/123 tests, architecture checks, lint and both builds passed. All 42 existing migrations were applied only to disposable PostgreSQL 18.6 instances. The configured database version was independently read as 18.6; the architecture work does not downgrade it to PostgreSQL 16.
+
+### Data ownership decisions
+
+The modular monolith retains one PostgreSQL database. Public `index.js` contracts and application injection govern source dependencies, while a few repositories still join or atomically update tables owned by other capabilities. This is an explicit compatibility boundary, not independent database ownership:
+
+| Capability repository | Existing cross-capability work | Decision before staging |
+|---|---|---|
+| Insights, Audit, AI Assist, dashboard-oriented reads | Project member, booking, class, membership and attendance data | Retain read-model projections; do not replace them with sequential API calls that change consistency or latency. |
+| Payments | Atomically records payment event, activates membership and creates notification | Retain one database transaction; the duplicate webhook race is covered on PostgreSQL 18.6. External PayOS settlement remains unverified. |
+| Bookings, Attendance, Facilities, Role Permissions | Reads related member/class/permission state and writes notifications or audit entries in the same workflow | Retain atomic write boundaries; booking, facility and permission races have isolated database proof. |
+| Auth, Staff, Members | Creates or updates user/profile/member records and revokes auth sessions together | Retain atomic identity lifecycle; do not split credentials or session revocation into eventual asynchronous steps. |
+| Classes, Memberships, AI Assist | Creates operational notifications from owner workflows | Preserve current delivery and response behavior; a future outbox requires its own migration and replay tests. |
+
+These are deliberate monolith coupling points. Turning them into independently owned stores or asynchronous events would change transaction semantics and is outside this behavior-preserving migration. The remaining release gate is a deployed staging candidate against its configured PostgreSQL 18 environment, real external PayOS/email integrations and user acceptance checks; local tests cannot certify those.
 
 ## Gate for each slice
 
