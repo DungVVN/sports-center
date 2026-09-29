@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMutationFeedback } from "../../hooks/useMutationFeedback.js";
-import { errorMessageFor } from "../../api/error-message.js";
+import { useMutationFeedback } from "../../shared/lib/useMutationFeedback.js";
+import { errorMessageFor } from "../../shared/api/error-message.js";
 import { facilityApi } from "./facility-api.js";
 import "./facilities.css";
 

@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { Button } from "../../components/ui/Button.jsx";
-import { Pagination } from "../../components/ui/Pagination.jsx";
-import { usePagination } from "../../components/ui/usePagination.js";
+import { Button } from "../../shared/ui/Button.jsx";
+import { Pagination } from "../../shared/ui/Pagination.jsx";
+import { usePagination } from "../../shared/ui/usePagination.js";
 import { trainingApi } from "./training-api.js";
-import { errorMessageFor } from "../../api/error-message.js";
+import { errorMessageFor } from "../../shared/api/error-message.js";
 
 const formatDate = (value) => value ? new Date(value).toLocaleDateString("vi-VN") : "—";
 

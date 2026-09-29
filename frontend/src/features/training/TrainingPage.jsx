@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
-import { Button } from "../../components/ui/Button.jsx";
-import { Pagination } from "../../components/ui/Pagination.jsx";
-import { usePagination } from "../../components/ui/usePagination.js";
-import { hasSessionPermission } from "../../utils/session-permissions.js";
+import { Button } from "../../shared/ui/Button.jsx";
+import { Pagination } from "../../shared/ui/Pagination.jsx";
+import { usePagination } from "../../shared/ui/usePagination.js";
+import { hasSessionPermission } from "../auth/index.js";
 import { trainingApi } from "./training-api.js";
 import { useTrainingWorkspace } from "./hooks/useTrainingWorkspace.js";
 

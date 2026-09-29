@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { BadgeCheck } from "lucide-react";
-import { useMutationFeedback, useSubmitMutation } from "../../hooks/useMutationFeedback.js";
-import { Button } from "../../components/ui/Button.jsx";
+import { useMutationFeedback, useSubmitMutation } from "../../shared/lib/useMutationFeedback.js";
+import { Button } from "../../shared/ui/Button.jsx";
 import { authApi } from "./auth-api.js";
 import { AuthLayout } from "./AuthLayout.jsx";
 

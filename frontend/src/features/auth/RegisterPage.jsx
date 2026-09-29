@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Eye, EyeOff, UserPlus } from "lucide-react";
-import { errorMessageFor, fieldErrorsFor } from "../../api/error-message.js";
-import { Button } from "../../components/ui/Button.jsx";
+import { errorMessageFor, fieldErrorsFor } from "../../shared/api/error-message.js";
+import { Button } from "../../shared/ui/Button.jsx";
 import { authApi } from "./auth-api.js";
 import { AuthLayout } from "./AuthLayout.jsx";
 import { CaptchaField } from "./CaptchaField.jsx";
 import { validateRegistration } from "./auth-validation.js";
-import { useToast } from "../../contexts/useToast.js";
+import { useToast } from "../../shared/ui/useToast.js";
 
 export function RegisterPage({ onLogin, onRegistered }) {
   const [input, setInput] = useState({ fullName: "", email: "", phone: "", password: "", confirmPassword: "" });

@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMutationFeedback, useSubmitMutation } from "../../hooks/useMutationFeedback.js";
-import { Button } from "../../components/ui/Button.jsx";
+import { useMutationFeedback, useSubmitMutation } from "../../shared/lib/useMutationFeedback.js";
+import { Button } from "../../shared/ui/Button.jsx";
 import { rolePermissionApi } from "./role-permission-api.js";
-import { errorMessageFor } from "../../api/error-message.js";
+import { errorMessageFor } from "../../shared/api/error-message.js";
 import "./role-permissions.css";
 
 const roleOrder = ["manager", "receptionist", "coach", "member"];

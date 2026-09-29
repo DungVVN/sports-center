@@ -1,8 +1,9 @@
-import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { readFileSync } from "node:fs";
+import { basename } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { openApiSpec } from "../src/openapi/spec.js";
+import { routeSourceFiles } from "./helpers/route-source-files.js";
 
 const modulesDirectory = fileURLToPath(new URL("../src/modules/", import.meta.url));
 const mounts = { "auth.routes.js": "/auth", "staff.routes.js": "/staff", "member.routes.js": "/members" };
@@ -10,14 +11,11 @@ const methods = ["get", "post", "patch", "put", "delete"];
 
 function backendOperations() {
   const operations = ["GET /health"];
-  for (const moduleName of readdirSync(modulesDirectory)) {
-    const moduleDirectory = join(modulesDirectory, moduleName);
-    for (const filename of readdirSync(moduleDirectory).filter((name) => name.endsWith(".routes.js"))) {
-      const source = readFileSync(join(moduleDirectory, filename), "utf8");
-      for (const match of source.matchAll(/router\.(get|post|patch|put|delete)\(\s*"([^"]+)"/g)) {
-        const route = `${mounts[filename] ?? ""}${match[2]}`.replace(/:([A-Za-z]+)/g, "{$1}").replace(/\/$/, "");
-        operations.push(`${match[1].toUpperCase()} ${route}`);
-      }
+  for (const path of routeSourceFiles(modulesDirectory)) {
+    const source = readFileSync(path, "utf8");
+    for (const match of source.matchAll(/router\.(get|post|patch|put|delete)\(\s*"([^"]+)"/g)) {
+      const route = `${mounts[basename(path)] ?? ""}${match[2]}`.replace(/:([A-Za-z]+)/g, "{$1}").replace(/\/$/, "");
+      operations.push(`${match[1].toUpperCase()} ${route}`);
     }
   }
   return operations.sort();

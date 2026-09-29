@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ApiError } from "../../api/api-error.js";
+import { ApiError } from "../../shared/api/api-error.js";
 import { authApi } from "./auth-api.js";
 import { LoginPage } from "./LoginPage.jsx";
 

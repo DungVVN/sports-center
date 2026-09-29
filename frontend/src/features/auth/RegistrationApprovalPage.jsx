@@ -1,11 +1,11 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMutationFeedback, useSubmitMutation } from "../../hooks/useMutationFeedback.js";
-import { Button } from "../../components/ui/Button.jsx";
-import { Pagination } from "../../components/ui/Pagination.jsx";
-import { usePagination } from "../../components/ui/usePagination.js";
+import { useMutationFeedback, useSubmitMutation } from "../../shared/lib/useMutationFeedback.js";
+import { Button } from "../../shared/ui/Button.jsx";
+import { Pagination } from "../../shared/ui/Pagination.jsx";
+import { usePagination } from "../../shared/ui/usePagination.js";
 import { authApi } from "./auth-api.js";
-import { TableSkeleton } from "../../components/ui/TableSkeleton.jsx";
-import { errorMessageFor } from "../../api/error-message.js";
+import { TableSkeleton } from "../../shared/ui/TableSkeleton.jsx";
+import { errorMessageFor } from "../../shared/api/error-message.js";
 
 export function RegistrationApprovalPage() {
   const client = useQueryClient();

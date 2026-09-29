@@ -1,4 +1,4 @@
-import { apiClient } from "../../api/client.js";
+import { apiClient } from "../../shared/api/client.js";
 
 export const facilityApi = Object.freeze({
   calendar: ({ from, to, typeId }) => apiClient.get(`/public/facility-calendar?${new URLSearchParams({ from, to, ...(typeId && { typeId }) })}`),

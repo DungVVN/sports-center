@@ -1,4 +1,4 @@
-import { Button } from "../../../components/ui/Button.jsx";
+import { Button } from "../../../shared/ui/Button.jsx";
 
 export function MemberCreateForm({ form, onChange, onSubmit, submitting }) {
   return <form className="members-form members-form--member-create" onSubmit={onSubmit}>

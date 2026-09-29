@@ -10,6 +10,7 @@
     "start": "node src/server.js",
     "postinstall": "prisma generate",
     "test": "vitest run",
+    "check": "npm run lint && npm test && npm run build",
     "lint": "eslint .",
     "build": "node scripts/build-check.js",
     "backup:restore-verify": "node scripts/backup-restore-verify.js",

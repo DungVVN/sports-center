@@ -1,9 +1,9 @@
 import { useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMutationFeedback, useSubmitMutation } from "../../../hooks/useMutationFeedback.js";
+import { useMutationFeedback, useSubmitMutation } from "../../../shared/lib/useMutationFeedback.js";
 import { classApi } from "../../classes/class-api.js";
 import { memberApi } from "../member-api.js";
-import { errorMessageFor } from "../../../api/error-message.js";
+import { errorMessageFor } from "../../../shared/api/error-message.js";
 
 const keys = {
   assignmentHistory: (memberId) => ["members", memberId, "coach-assignments"],

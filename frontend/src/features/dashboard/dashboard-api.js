@@ -1,6 +1,6 @@
-import { apiClient, apiErrorFromResponse } from "../../api/client.js";
+import { apiClient, apiErrorFromResponse } from "../../shared/api/client.js";
 import { apiBaseUrl } from "../../config/runtime.js";
-import { ApiError } from "../../api/api-error.js";
+import { ApiError } from "../../shared/api/api-error.js";
 
 async function exportCsv(type, query) {
   let response;

@@ -5,7 +5,7 @@ import { AppErrorBoundary } from "./app/AppErrorBoundary.jsx";
 import "./styles/tokens.css";
 import "./styles/global.css";
 import "./styles/layout.css";
-import "./components/layout/WorkspacePage.css";
+import "./app/layouts/WorkspacePage.css";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>

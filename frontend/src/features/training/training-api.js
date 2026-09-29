@@ -1,4 +1,4 @@
-import { apiClient } from "../../api/client.js";
+import { apiClient } from "../../shared/api/client.js";
 
 const optionalId = (value) => typeof value === "string" && value.trim() ? encodeURIComponent(value.trim()) : "";
 

@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMutationFeedback, useSubmitMutation } from "../../../hooks/useMutationFeedback.js";
-import { errorMessageFor } from "../../../api/error-message.js";
+import { useMutationFeedback, useSubmitMutation } from "../../../shared/lib/useMutationFeedback.js";
+import { errorMessageFor } from "../../../shared/api/error-message.js";
 import { trainingApi } from "../training-api.js";
 
 const keys = { ai: ["ai-assist", "suggestions"], members: ["training-members"], plans: ["training-plans"], sessions: (planId) => ["training-plans", planId, "sessions"], templates: ["training-templates"] };

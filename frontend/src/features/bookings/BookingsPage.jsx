@@ -1,18 +1,18 @@
 import { useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { Button } from "../../components/ui/Button.jsx";
+import { Button } from "../../shared/ui/Button.jsx";
 import {
   DataTableToolbar,
   FilterMenu,
   SortableHeader,
-} from "../../components/ui/DataTable.jsx";
-import { Dialog } from "../../components/ui/Dialog.jsx";
-import { Pagination } from "../../components/ui/Pagination.jsx";
-import { usePagination } from "../../components/ui/usePagination.js";
-import { sortTable } from "../../lib/table.js";
-import { hasSessionPermission } from "../../utils/session-permissions.js";
+} from "../../shared/ui/DataTable.jsx";
+import { Dialog } from "../../shared/ui/Dialog.jsx";
+import { Pagination } from "../../shared/ui/Pagination.jsx";
+import { usePagination } from "../../shared/ui/usePagination.js";
+import { sortTable } from "../../shared/lib/table.js";
+import { hasSessionPermission } from "../auth/index.js";
 import { useBookingsWorkspace } from "./hooks/useBookingsWorkspace.js";
-import { TableSkeleton } from "../../components/ui/TableSkeleton.jsx";
+import { TableSkeleton } from "../../shared/ui/TableSkeleton.jsx";
 
 const emptyForm = { memberId: "", classId: "" };
 const labels = {

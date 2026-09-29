@@ -1,7 +1,7 @@
-import { Button } from "../../../components/ui/Button.jsx";
-import { DataTableToolbar, FilterMenu } from "../../../components/ui/DataTable.jsx";
-import { Pagination } from "../../../components/ui/Pagination.jsx";
-import { TableSkeleton } from "../../../components/ui/TableSkeleton.jsx";
+import { Button } from "../../../shared/ui/Button.jsx";
+import { DataTableToolbar, FilterMenu } from "../../../shared/ui/DataTable.jsx";
+import { Pagination } from "../../../shared/ui/Pagination.jsx";
+import { TableSkeleton } from "../../../shared/ui/TableSkeleton.jsx";
 
 const labels = { pending_payment: "Chờ thanh toán", active: "Đang hoạt động", expiring_soon: "Sắp hết hạn", expired: "Đã hết hạn", frozen: "Đang đóng băng", cancelled: "Đã hủy" };
 

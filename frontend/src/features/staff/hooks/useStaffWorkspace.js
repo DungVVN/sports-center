@@ -1,8 +1,8 @@
 import { useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMutationFeedback, useSubmitMutation } from "../../../hooks/useMutationFeedback.js";
+import { useMutationFeedback, useSubmitMutation } from "../../../shared/lib/useMutationFeedback.js";
 import { staffApi } from "../staff-api.js";
-import { errorMessageFor } from "../../../api/error-message.js";
+import { errorMessageFor } from "../../../shared/api/error-message.js";
 
 const keys = { detail: (id) => ["staff", id], list: ["staff"] };
 

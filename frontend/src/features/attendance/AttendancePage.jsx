@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { ClipboardCheck, Users } from "lucide-react";
-import { Button } from "../../components/ui/Button.jsx";
-import { Dialog } from "../../components/ui/Dialog.jsx";
-import { Pagination } from "../../components/ui/Pagination.jsx";
-import { usePagination } from "../../components/ui/usePagination.js";
-import { hasSessionPermission } from "../../utils/session-permissions.js";
+import { Button } from "../../shared/ui/Button.jsx";
+import { Dialog } from "../../shared/ui/Dialog.jsx";
+import { Pagination } from "../../shared/ui/Pagination.jsx";
+import { usePagination } from "../../shared/ui/usePagination.js";
+import { hasSessionPermission } from "../auth/index.js";
 import { useAttendanceWorkspace } from "./hooks/useAttendanceWorkspace.js";
 
 const statusLabels = {

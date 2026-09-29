@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useMutationFeedback, useSubmitMutation } from "../../hooks/useMutationFeedback.js";
+import { useMutationFeedback, useSubmitMutation } from "../../shared/lib/useMutationFeedback.js";
 import { Bell, Mail } from "lucide-react";
-import { Button } from "../../components/ui/Button.jsx";
-import { apiClient } from "../../api/client.js";
-import { errorMessageFor } from "../../api/error-message.js";
+import { Button } from "../../shared/ui/Button.jsx";
+import { apiClient } from "../../shared/api/client.js";
+import { errorMessageFor } from "../../shared/api/error-message.js";
 import "./notification-preferences.css";
 
 export function NotificationPreferencesPanel({ className = "" }) {

@@ -1,12 +1,12 @@
 import { useMemo, useState } from "react";
 import { Check, Copy } from "lucide-react";
-import { Button } from "../../components/ui/Button.jsx";
-import { usePagination } from "../../components/ui/usePagination.js";
+import { Button } from "../../shared/ui/Button.jsx";
+import { usePagination } from "../../shared/ui/usePagination.js";
 import { CoachAssignmentDialog } from "./dialogs/CoachAssignmentDialog.jsx";
 import { MemberEditorDialog } from "./dialogs/MemberEditorDialog.jsx";
 import { MemberCreateForm } from "./forms/MemberCreateForm.jsx";
 import { useMembersWorkspace } from "./hooks/useMembersWorkspace.js";
-import { useToast } from "../../contexts/useToast.js";
+import { useToast } from "../../shared/ui/useToast.js";
 import { MembersTable } from "./tables/MembersTable.jsx";
 
 const emptyMember = { fullName: "", email: "", phone: "", createAccount: true };

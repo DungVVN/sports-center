@@ -1,14 +1,14 @@
 import { useMemo, useState } from "react";
-import { Button } from "../../components/ui/Button.jsx";
-import { DataTableToolbar, FilterMenu, SortableHeader } from "../../components/ui/DataTable.jsx";
-import { Dialog } from "../../components/ui/Dialog.jsx";
-import { Pagination } from "../../components/ui/Pagination.jsx";
-import { TableSkeleton } from "../../components/ui/TableSkeleton.jsx";
-import { usePagination } from "../../components/ui/usePagination.js";
-import { sortTable } from "../../lib/table.js";
-import { hasSessionPermission } from "../../utils/session-permissions.js";
-import { useMutationFeedback } from "../../hooks/useMutationFeedback.js";
-import { errorMessageFor, fieldErrorsFor } from "../../api/error-message.js";
+import { Button } from "../../shared/ui/Button.jsx";
+import { DataTableToolbar, FilterMenu, SortableHeader } from "../../shared/ui/DataTable.jsx";
+import { Dialog } from "../../shared/ui/Dialog.jsx";
+import { Pagination } from "../../shared/ui/Pagination.jsx";
+import { TableSkeleton } from "../../shared/ui/TableSkeleton.jsx";
+import { usePagination } from "../../shared/ui/usePagination.js";
+import { sortTable } from "../../shared/lib/table.js";
+import { hasSessionPermission } from "../auth/index.js";
+import { useMutationFeedback } from "../../shared/lib/useMutationFeedback.js";
+import { errorMessageFor, fieldErrorsFor } from "../../shared/api/error-message.js";
 import { useMembershipWorkspace } from "./hooks/useMembershipWorkspace.js";
 import "./membership-layout.css";
 

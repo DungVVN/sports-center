@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Button } from "../../components/ui/Button.jsx";
-import { Dialog } from "../../components/ui/Dialog.jsx";
-import { Pagination } from "../../components/ui/Pagination.jsx";
-import { usePagination } from "../../components/ui/usePagination.js";
+import { Button } from "../../shared/ui/Button.jsx";
+import { Dialog } from "../../shared/ui/Dialog.jsx";
+import { Pagination } from "../../shared/ui/Pagination.jsx";
+import { usePagination } from "../../shared/ui/usePagination.js";
 import { paymentApi } from "./payment-api.js";
-import { errorMessageFor } from "../../api/error-message.js";
+import { errorMessageFor } from "../../shared/api/error-message.js";
 
 const statusLabels = {
   pending: "Chờ xác nhận",

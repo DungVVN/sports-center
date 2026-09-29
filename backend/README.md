@@ -2,6 +2,8 @@
 
 This folder contains the Node.js/Express API, Prisma database layer, OpenAPI contract, validation, permission middleware and domain modules for the Sports Center MVP. The `project/` folder at the repository root is only the original Figma UI reference and is not a deployment source.
 
+`src/app/create-services.js` owns service composition and `src/app/register-routes.js` owns route order. Each module is moving toward presentation, application, domain (where needed), and infrastructure folders; Support is the first migrated module. See [the migration plan](../ARCHITECTURE_MIGRATION.md). Run `npm run check` for lint, unit/contract tests and build validation; database and browser acceptance remain separate gates.
+
 ## Database
 
 - Prisma schema: `database/prisma/schema.prisma`

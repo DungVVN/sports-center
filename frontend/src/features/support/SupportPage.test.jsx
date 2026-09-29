@@ -1,12 +1,12 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ApiError } from "../../api/api-error.js";
-import { SupportPage } from "./SupportPage.jsx";
-import { SupportStaffPage } from "./SupportStaffPage.jsx";
-import { supportApi } from "./support-api.js";
+import { ApiError } from "../../shared/api/api-error.js";
+import { SupportPage } from "./ui/SupportPage.jsx";
+import { SupportStaffPage } from "./ui/SupportStaffPage.jsx";
+import { supportApi } from "./api/support-api.js";
 
-vi.mock("./support-api.js", () => ({
+vi.mock("./api/support-api.js", () => ({
   supportApi: {
     assignSelf: vi.fn(),
     create: vi.fn(),

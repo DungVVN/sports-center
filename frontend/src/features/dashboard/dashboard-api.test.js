@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { dashboardApi } from "./dashboard-api.js";
-import { errorMessageFor } from "../../api/error-message.js";
+import { errorMessageFor } from "../../shared/api/error-message.js";
 
 afterEach(() => vi.unstubAllGlobals());
 

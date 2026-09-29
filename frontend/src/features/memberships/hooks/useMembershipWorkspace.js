@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useDedupedMutation } from "../../../hooks/useDedupedMutation.js";
-import { errorMessageFor } from "../../../api/error-message.js";
+import { useDedupedMutation } from "../../../shared/lib/useDedupedMutation.js";
+import { errorMessageFor } from "../../../shared/api/error-message.js";
 import { memberApi } from "../../members/member-api.js";
 import { membershipApi } from "../membership-api.js";
 

@@ -1,4 +1,4 @@
-import { apiClient } from "../../api/client.js";
+import { apiClient } from "../../shared/api/client.js";
 
 export const authApi = Object.freeze({
   login: (input) => apiClient.post("/auth/login", input),

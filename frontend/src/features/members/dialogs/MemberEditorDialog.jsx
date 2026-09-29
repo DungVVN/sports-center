@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Button } from "../../../components/ui/Button.jsx";
-import { Dialog } from "../../../components/ui/Dialog.jsx";
+import { Button } from "../../../shared/ui/Button.jsx";
+import { Dialog } from "../../../shared/ui/Dialog.jsx";
 
 export function MemberEditorDialog({ detail, loading, memberId, onClose, onSubmit }) {
   const close = () => { if (!loading) onClose(); };

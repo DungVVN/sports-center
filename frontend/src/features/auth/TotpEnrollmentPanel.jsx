@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { Check, Copy, ShieldCheck } from "lucide-react";
 import QRCode from "qrcode";
-import { useMutationFeedback, useSubmitMutation } from "../../hooks/useMutationFeedback.js";
-import { Button } from "../../components/ui/Button.jsx";
+import { useMutationFeedback, useSubmitMutation } from "../../shared/lib/useMutationFeedback.js";
+import { Button } from "../../shared/ui/Button.jsx";
 import { authApi } from "./auth-api.js";
-import { useToast } from "../../contexts/useToast.js";
+import { useToast } from "../../shared/ui/useToast.js";
 
 export function TotpEnrollmentPanel({ onEnrollmentCompleted }) {
   const [enrollment, setEnrollment] = useState(null);

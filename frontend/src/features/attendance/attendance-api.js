@@ -1,4 +1,4 @@
-import { apiClient } from "../../api/client.js";
+import { apiClient } from "../../shared/api/client.js";
 export const attendanceApi = Object.freeze({
   mine: () => apiClient.get("/members/me/attendance"),
   byClass: (classId) => apiClient.get(`/classes/${classId}/attendance`),

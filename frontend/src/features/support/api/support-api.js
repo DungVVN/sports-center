@@ -1,0 +1,2 @@
+import { apiClient } from "../../../shared/api/client.js";
+export const supportApi = Object.freeze({ list: () => apiClient.get("/support-tickets"), detail: (id) => apiClient.get(`/support-tickets/${id}`), create: (input) => apiClient.post("/support-tickets", input), assignSelf: (id) => apiClient.post(`/support-tickets/${id}/assign-self`), respond: (id, input) => apiClient.post(`/support-tickets/${id}/responses`, input) });

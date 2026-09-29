@@ -1,12 +1,12 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Button } from "../../components/ui/Button.jsx";
-import { DataTableToolbar, SortableHeader } from "../../components/ui/DataTable.jsx";
-import { Pagination } from "../../components/ui/Pagination.jsx";
-import { sortTable } from "../../lib/table.js";
+import { Button } from "../../shared/ui/Button.jsx";
+import { DataTableToolbar, SortableHeader } from "../../shared/ui/DataTable.jsx";
+import { Pagination } from "../../shared/ui/Pagination.jsx";
+import { sortTable } from "../../shared/lib/table.js";
 import { dashboardApi } from "./dashboard-api.js";
-import { TableSkeleton } from "../../components/ui/TableSkeleton.jsx";
-import { errorMessageFor } from "../../api/error-message.js";
+import { TableSkeleton } from "../../shared/ui/TableSkeleton.jsx";
+import { errorMessageFor } from "../../shared/api/error-message.js";
 import "./audit-logs.css";
 
 const actionLabels = Object.freeze({

@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ApiError } from "../../api/api-error.js";
+import { ApiError } from "../../shared/api/api-error.js";
 import { staffApi } from "./staff-api.js";
 import { StaffPage } from "./StaffPage.jsx";
 

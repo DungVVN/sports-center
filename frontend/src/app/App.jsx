@@ -1,20 +1,10 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ToastProvider } from "../contexts/ToastContext.jsx";
+import { ToastProvider } from "../shared/ui/ToastContext.jsx";
 import { useCallback, useEffect, useState } from "react";
-import { DashboardPlaceholder } from "../features/auth/DashboardPlaceholder.jsx";
-import { AdminLoginPage } from "../features/auth/AdminLoginPage.jsx";
-import { LoginPage } from "../features/auth/LoginPage.jsx";
-import { TotpVerificationPage } from "../features/auth/TotpVerificationPage.jsx";
-import { PendingApprovalPage } from "../features/auth/PendingApprovalPage.jsx";
-import { RegisterPage } from "../features/auth/RegisterPage.jsx";
-import { VerificationPage } from "../features/auth/VerificationPage.jsx";
-import { InitialPasswordChangePage } from "../features/auth/InitialPasswordChangePage.jsx";
-import { authenticationExpiredEvent, permissionsChangedEvent } from "../api/client.js";
-import { authApi } from "../features/auth/auth-api.js";
-import { LandingPage } from "../pages/LandingPage/LandingPage.jsx";
-import { GalleryPage } from "../pages/GalleryPage/GalleryPage.jsx";
-import { CalendarPage } from "../pages/CalendarPage/CalendarPage.jsx";
-import { NotFoundPage } from "../pages/NotFoundPage/NotFoundPage.jsx";
+import { AdminLoginPage, LoginPage, TotpVerificationPage, PendingApprovalPage, RegisterPage, VerificationPage, InitialPasswordChangePage, authApi } from "../features/auth/index.js";
+import { DashboardPlaceholder } from "./composition/DashboardPlaceholder.jsx";
+import { authenticationExpiredEvent, permissionsChangedEvent } from "../shared/api/client.js";
+import { LandingPage, GalleryPage, CalendarPage, NotFoundPage } from "../features/site/index.js";
 import { dashboardPath, dashboardView, isDashboardView } from "./dashboard-routes.js";
 import { portalSurface } from "../config/portal.js";
 

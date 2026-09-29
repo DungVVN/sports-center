@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { ArrowRight, CalendarDays, CircleAlert, ClipboardCheck, CreditCard, ReceiptText, UsersRound } from "lucide-react";
 import { dashboardApi } from "./dashboard-api.js";
-import { errorMessageFor } from "../../api/error-message.js";
+import { errorMessageFor } from "../../shared/api/error-message.js";
 import "./dashboard-home.css";
 import "./dashboard-typography.css";
 

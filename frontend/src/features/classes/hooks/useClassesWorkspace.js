@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { classApi } from "../class-api.js";
-import { errorMessageFor } from "../../../api/error-message.js";
+import { errorMessageFor } from "../../../shared/api/error-message.js";
 
 const queryKeys = {
   classes: ["classes"],

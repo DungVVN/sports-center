@@ -22,7 +22,7 @@ vi.mock("../features/auth/LoginPage.jsx", () => ({
   </div>,
 }));
 vi.mock("../features/auth/AdminLoginPage.jsx", () => ({ AdminLoginPage: () => <div>Admin login page</div> }));
-vi.mock("../features/auth/DashboardPlaceholder.jsx", () => ({ DashboardPlaceholder: ({ initialView, onProfileSaved, session }) => <div>Dashboard view: {initialView}; account: {session.user.id}<button onClick={onProfileSaved}>Save profile</button></div> }));
+vi.mock("./composition/DashboardPlaceholder.jsx", () => ({ DashboardPlaceholder: ({ initialView, onProfileSaved, session }) => <div>Dashboard view: {initialView}; account: {session.user.id}<button onClick={onProfileSaved}>Save profile</button></div> }));
 vi.mock("../features/auth/InitialPasswordChangePage.jsx", () => ({ InitialPasswordChangePage: ({ onCompleted }) => <button onClick={onCompleted}>Change temporary password</button> }));
 vi.mock("../features/auth/PendingApprovalPage.jsx", () => ({ PendingApprovalPage: () => null }));
 vi.mock("../features/auth/RegisterPage.jsx", () => ({ RegisterPage: () => null }));

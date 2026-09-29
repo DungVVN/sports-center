@@ -1,14 +1,14 @@
 import { useMemo, useRef, useState } from "react";
 import { Check, Copy } from "lucide-react";
-import { Button } from "../../components/ui/Button.jsx";
-import { DataTableToolbar, FilterMenu, SortableHeader } from "../../components/ui/DataTable.jsx";
-import { Dialog } from "../../components/ui/Dialog.jsx";
-import { Pagination } from "../../components/ui/Pagination.jsx";
-import { usePagination } from "../../components/ui/usePagination.js";
-import { sortTable } from "../../lib/table.js";
+import { Button } from "../../shared/ui/Button.jsx";
+import { DataTableToolbar, FilterMenu, SortableHeader } from "../../shared/ui/DataTable.jsx";
+import { Dialog } from "../../shared/ui/Dialog.jsx";
+import { Pagination } from "../../shared/ui/Pagination.jsx";
+import { usePagination } from "../../shared/ui/usePagination.js";
+import { sortTable } from "../../shared/lib/table.js";
 import { useStaffWorkspace } from "./hooks/useStaffWorkspace.js";
-import { TableSkeleton } from "../../components/ui/TableSkeleton.jsx";
-import { useToast } from "../../contexts/useToast.js";
+import { TableSkeleton } from "../../shared/ui/TableSkeleton.jsx";
+import { useToast } from "../../shared/ui/useToast.js";
 import "./staff.css";
 
 const empty = {

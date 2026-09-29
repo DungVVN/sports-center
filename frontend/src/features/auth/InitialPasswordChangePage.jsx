@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Eye, EyeOff, KeyRound } from "lucide-react";
-import { useSubmitMutation, useMutationFeedback } from "../../hooks/useMutationFeedback.js";
-import { Button } from "../../components/ui/Button.jsx";
+import { useSubmitMutation, useMutationFeedback } from "../../shared/lib/useMutationFeedback.js";
+import { Button } from "../../shared/ui/Button.jsx";
 import { authApi } from "./auth-api.js";
 import { AuthLayout } from "./AuthLayout.jsx";
 

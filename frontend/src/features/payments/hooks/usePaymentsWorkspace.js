@@ -1,10 +1,10 @@
 import { useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMutationFeedback, useSubmitMutation } from "../../../hooks/useMutationFeedback.js";
+import { useMutationFeedback, useSubmitMutation } from "../../../shared/lib/useMutationFeedback.js";
 import { memberApi } from "../../members/member-api.js";
 import { membershipApi } from "../../memberships/membership-api.js";
 import { paymentApi } from "../payment-api.js";
-import { errorMessageFor } from "../../../api/error-message.js";
+import { errorMessageFor } from "../../../shared/api/error-message.js";
 
 const keys = { members: ["members"], memberships: (memberId) => ["memberships", "member", memberId], payments: (memberId) => ["payments", memberId ?? "all"] };
 

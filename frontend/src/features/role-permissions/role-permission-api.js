@@ -1,4 +1,4 @@
-import { apiClient } from "../../api/client.js";
+import { apiClient } from "../../shared/api/client.js";
 
 export const rolePermissionApi = Object.freeze({
   matrix: () => apiClient.get("/admin/permissions/matrix"),

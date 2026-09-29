@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Eye, EyeOff, LockKeyhole, ShieldCheck } from "lucide-react";
-import { errorMessageFor } from "../../api/error-message.js";
-import { Button } from "../../components/ui/Button.jsx";
+import { errorMessageFor } from "../../shared/api/error-message.js";
+import { Button } from "../../shared/ui/Button.jsx";
 import { authApi } from "./auth-api.js";
 import { AuthLayout } from "./AuthLayout.jsx";
 import { CaptchaField } from "./CaptchaField.jsx";
 import { validateCredentials } from "./auth-validation.js";
-import { useToast } from "../../contexts/useToast.js";
+import { useToast } from "../../shared/ui/useToast.js";
 
 export function AdminLoginPage({ onLoggedIn, onMfaRequired }) {
   const [input, setInput] = useState({ email: "", password: "" });

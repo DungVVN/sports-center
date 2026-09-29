@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import { Button } from "../../../components/ui/Button.jsx";
-import { Dialog } from "../../../components/ui/Dialog.jsx";
+import { Button } from "../../../shared/ui/Button.jsx";
+import { Dialog } from "../../../shared/ui/Dialog.jsx";
 
 const emptyAssignment = { coachUserId: "", effectiveFrom: new Date().toISOString().slice(0, 10), reason: "" };
 
