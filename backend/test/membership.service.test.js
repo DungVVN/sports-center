@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createMembershipService } from "../src/modules/memberships/membership.service.js";
+import { createMembershipService } from "../src/modules/memberships/index.js";
 
 describe("public membership packages", () => {
   it("identifies a duplicate package code for the form", async () => {

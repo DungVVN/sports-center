@@ -7,7 +7,7 @@ import { ProfilePage } from "./ProfilePage.jsx";
 
 vi.mock("./auth-api.js", () => ({ authApi: { changePassword: vi.fn(), profile: vi.fn(), updateProfile: vi.fn() } }));
 vi.mock("./TotpEnrollmentPanel.jsx", () => ({ TotpEnrollmentPanel: () => <div>MFA mock</div> }));
-vi.mock("../notifications/NotificationPreferencesPage.jsx", () => ({ NotificationPreferencesPanel: () => <div>Thông báo mock</div> }));
+vi.mock("../notifications/index.js", () => ({ NotificationPreferencesPanel: () => <div>Thông báo mock</div> }));
 
 const memberProfile = {
   id: "user-1",

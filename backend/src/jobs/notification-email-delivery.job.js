@@ -1,5 +1,4 @@
-import { notificationEmailDeliveryRepository } from "../modules/notifications/notification-email-delivery.repository.js";
-import { createNotificationEmailDeliveryService } from "../modules/notifications/notification-email-delivery.service.js";
+import { notificationEmailDeliveryRepository, createNotificationEmailDeliveryService } from "../modules/notifications/index.js";
 
 const service = createNotificationEmailDeliveryService({ repository: notificationEmailDeliveryRepository });
 

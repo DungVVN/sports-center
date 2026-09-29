@@ -2,13 +2,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "../../shared/api/api-error.js";
-import { memberApi } from "../members/member-api.js";
-import { membershipApi } from "../memberships/membership-api.js";
+import { memberApi } from "../members/index.js";
+import { membershipApi } from "../memberships/index.js";
 import { paymentApi } from "./payment-api.js";
 import { PaymentsPage } from "./PaymentsPage.jsx";
 
-vi.mock("../members/member-api.js", () => ({ memberApi: { list: vi.fn() } }));
-vi.mock("../memberships/membership-api.js", () => ({ membershipApi: { byMember: vi.fn() } }));
+vi.mock("../members/index.js", () => ({ memberApi: { list: vi.fn() } }));
+vi.mock("../memberships/index.js", () => ({ membershipApi: { byMember: vi.fn() } }));
 vi.mock("./payment-api.js", () => ({ paymentApi: { list: vi.fn(), create: vi.fn(), confirm: vi.fn() } }));
 
 const cashier = { user: { role: "receptionist" }, permissions: ["payment.read", "payment.record"] };

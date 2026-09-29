@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createPaymentService } from "../src/modules/payments/payment.service.js";
+import { createPaymentService } from "../src/modules/payments/index.js";
 
 const memberId = "member-1";
 const membershipId = "membership-1";

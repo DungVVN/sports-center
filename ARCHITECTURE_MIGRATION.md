@@ -69,6 +69,12 @@ For every slice: preserve existing path and payload contracts; move one owning m
 - [x] Source baseline and aggregate `npm run check` command.
 - [x] Backend service composition and ordered route registration extracted from `app.js` into `src/app/`.
 - [x] Notification preferences and publisher moved behind the Notifications module contract. Service defaults, actor scoping and the disabled push behavior are covered by focused tests; no schema or endpoint change.
+- [x] Insights and Audit read-model modules moved behind public entrypoints and presentation/application/infrastructure folders. Their cross-table projection queries remain deliberately inside their existing read repositories; no query or response contract was rewritten.
+- [x] AI Assist and Role Permissions moved behind public contracts without rewriting their existing database transactions. Permission catalog now lives in `role-permissions/domain`; its transaction and audit behavior are retained.
+- [x] All 42 existing Prisma migrations applied successfully to a disposable localhost PostgreSQL 16 database; this is schema compatibility evidence, not yet a write-flow or concurrency result.
+- [x] Auth, Staff, Members, Memberships, Assignments, Classes, Training, Bookings, Facilities, Attendance and Payments now expose module entrypoints and layered folders. Existing route paths, repository operations and transaction bodies were not changed; the app composition injects credential delivery and PayOS adapters instead of application code importing them.
+- [x] Support's real PostgreSQL create/scope/assign/respond/notification/audit/preferences flow passed on an isolated database, including two concurrent ticket creates. Its test records were removed afterward.
+- [x] Architecture check now covers all backend module roots and import direction, plus cross-feature imports on the frontend. Backend 233/233 and frontend 123/123 unit tests, lint and builds passed after the structural slices.
 - [x] Support backend and frontend pilot folder boundaries. Support now reaches Members and Notifications through injected capabilities instead of querying their tables.
 - [x] OpenAPI and permission inventories updated to discover nested route files.
 - [x] Backend 231/231, frontend 123/123, lint and builds passed after the Support pilot. After Notifications migration, backend 233/233 passed.
@@ -79,8 +85,10 @@ For every slice: preserve existing path and payload contracts; move one owning m
 - [x] Toast provider, mutation hooks and table helpers moved into `shared`; session permission policy moved to `auth/domain` and is exposed through Auth's root entrypoint. All frontend consumers now use `shared/api` directly, so the old `src/api` shims are gone. The architecture gate rejects product files reappearing in the old generic roots.
 - [x] Workspace pages load through feature root contracts. Dashboard shell composition moved from Auth to `app/composition`, eliminating the Auth-to-App dependency while retaining lazy-loaded workspace content. Frontend 123/123 tests, lint and build passed after the move.
 - [x] Public navigation browser test passed on the local preview at mobile, tablet and desktop sizes (2/2 tests). The navigation test now waits for document readiness and asserts visible UI instead of waiting for global network idleness.
-- [ ] Support write journey against an isolated QA database.
-- [ ] Remaining module migration and expansion of architecture import gates with each owner.
+- [x] Support write journey against an isolated QA database.
+- [ ] Frontend feature-local API/UI folder migration and browser regression of authenticated routes.
+- [ ] Database-backed booking/facility/payment concurrency and PayOS callback checks.
+- [ ] Full feature contract ownership review: read-model projections and cross-module transactional writes remain in existing repositories, with behavior preserved for this migration.
 - [ ] Full authenticated browser suite, database-backed concurrency checks and staging candidate verification.
 
 ## Gate for each slice

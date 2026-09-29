@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { classApi } from "../classes/class-api.js";
+import { classApi } from "../classes/index.js";
 import { dashboardApi } from "./dashboard-api.js";
 import { errorMessageFor } from "../../shared/api/error-message.js";
 import { useMutationFeedback } from "../../shared/lib/useMutationFeedback.js";

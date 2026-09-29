@@ -2,13 +2,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "../../shared/api/api-error.js";
-import { classApi } from "../classes/class-api.js";
-import { memberApi } from "../members/member-api.js";
+import { classApi } from "../classes/index.js";
+import { memberApi } from "../members/index.js";
 import { bookingApi } from "./booking-api.js";
 import { BookingsPage } from "./BookingsPage.jsx";
 
-vi.mock("../classes/class-api.js", () => ({ classApi: { list: vi.fn() } }));
-vi.mock("../members/member-api.js", () => ({ memberApi: { list: vi.fn() } }));
+vi.mock("../classes/index.js", () => ({ classApi: { list: vi.fn() } }));
+vi.mock("../members/index.js", () => ({ memberApi: { list: vi.fn() } }));
 vi.mock("./booking-api.js", () => ({ bookingApi: { list: vi.fn(), create: vi.fn(), cancel: vi.fn() } }));
 
 const memberSession = { user: { role: "member", id: "member-1" }, permissions: ["booking.read", "booking.write"] };

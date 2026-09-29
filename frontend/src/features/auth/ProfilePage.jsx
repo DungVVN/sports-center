@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { Button } from "../../shared/ui/Button.jsx";
 import { TotpEnrollmentPanel } from "./TotpEnrollmentPanel.jsx";
-import { NotificationPreferencesPanel } from "../notifications/NotificationPreferencesPage.jsx";
+import { NotificationPreferencesPanel } from "../notifications/index.js";
 import { hasSessionPermission } from "./domain/session-permissions.js";
 import { useProfileWorkspace } from "./hooks/useProfileWorkspace.js";
 import "./profile.css";

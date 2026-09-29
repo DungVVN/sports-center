@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createStaffService } from "../src/modules/staff/staff.service.js";
+import { createStaffService } from "../src/modules/staff/index.js";
 
 const input = { fullName: "Nguyen Van A", email: "STAFF@example.com", phone: "0900000000", role: "receptionist" };
 const createdStaff = { id: "staff-1", email: "staff@example.com", display_name: "Nguyen Van A", role: "receptionist", status: "active", staff_profiles: { employee_code: "STF-1234", phone: "0900000000" } };

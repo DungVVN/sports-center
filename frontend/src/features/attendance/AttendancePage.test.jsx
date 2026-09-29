@@ -2,13 +2,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "../../shared/api/api-error.js";
-import { bookingApi } from "../bookings/booking-api.js";
-import { classApi } from "../classes/class-api.js";
+import { bookingApi } from "../bookings/index.js";
+import { classApi } from "../classes/index.js";
 import { attendanceApi } from "./attendance-api.js";
 import { AttendancePage } from "./AttendancePage.jsx";
 
-vi.mock("../bookings/booking-api.js", () => ({ bookingApi: { byClass: vi.fn() } }));
-vi.mock("../classes/class-api.js", () => ({ classApi: { list: vi.fn() } }));
+vi.mock("../bookings/index.js", () => ({ bookingApi: { byClass: vi.fn() } }));
+vi.mock("../classes/index.js", () => ({ classApi: { list: vi.fn() } }));
 vi.mock("./attendance-api.js", () => ({ attendanceApi: { byClass: vi.fn(), submit: vi.fn(), correct: vi.fn(), checkOut: vi.fn() } }));
 
 const activeClass = { id: "class-1", code: "CLS-1", name: "Yoga", status: "published", starts_at: new Date(Date.now() - 60_000).toISOString(), ends_at: new Date(Date.now() + 3_600_000).toISOString(), capacity: 12, type: "group" };

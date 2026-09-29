@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createStaffCredentialsDeliveryService } from "../src/modules/staff/staff-credentials-delivery.service.js";
+import { createStaffCredentialsDeliveryService } from "../src/modules/staff/index.js";
 
 const config = {
   verificationDeliveryMode: "provider",

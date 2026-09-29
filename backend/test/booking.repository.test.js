@@ -25,7 +25,7 @@ const prisma = {
 
 vi.mock("../src/database.js", () => ({ prisma }));
 
-const { bookingRepository } = await import("../src/modules/bookings/booking.repository.js");
+const { bookingRepository } = await import("../src/modules/bookings/index.js");
 
 describe("booking repository entitlement inheritance", () => {
   beforeEach(() => {

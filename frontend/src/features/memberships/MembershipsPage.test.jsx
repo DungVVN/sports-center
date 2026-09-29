@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "../../shared/api/api-error.js";
 import { membershipApi } from "./membership-api.js";
-import { memberApi } from "../members/member-api.js";
+import { memberApi } from "../members/index.js";
 import { MembershipsPage } from "./MembershipsPage.jsx";
 
 vi.mock("./membership-api.js", () => ({
@@ -20,7 +20,7 @@ vi.mock("./membership-api.js", () => ({
     cancelPendingRenewal: vi.fn(),
   },
 }));
-vi.mock("../members/member-api.js", () => ({ memberApi: { list: vi.fn() } }));
+vi.mock("../members/index.js", () => ({ memberApi: { list: vi.fn() } }));
 
 const manager = { user: { role: "manager" }, permissions: ["membership.package.manage"] };
 

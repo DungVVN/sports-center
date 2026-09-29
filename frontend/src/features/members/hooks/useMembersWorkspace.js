@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMutationFeedback, useSubmitMutation } from "../../../shared/lib/useMutationFeedback.js";
-import { classApi } from "../../classes/class-api.js";
+import { classApi } from "../../classes/index.js";
 import { memberApi } from "../member-api.js";
 import { errorMessageFor } from "../../../shared/api/error-message.js";
 

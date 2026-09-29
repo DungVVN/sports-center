@@ -8,7 +8,7 @@ const prisma = {
 
 vi.mock("../src/database.js", () => ({ prisma }));
 
-const { classRepository } = await import("../src/modules/classes/class.repository.js");
+const { classRepository } = await import("../src/modules/classes/index.js");
 
 describe("class change notifications", () => {
   beforeEach(() => vi.clearAllMocks());

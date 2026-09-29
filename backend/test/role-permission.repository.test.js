@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "../src/database.js";
-import { rolePermissionRepository } from "../src/modules/role-permissions/role-permission.repository.js";
+import { rolePermissionRepository } from "../src/modules/role-permissions/index.js";
 
 vi.mock("../src/database.js", () => ({ prisma: { $transaction: vi.fn() } }));
 

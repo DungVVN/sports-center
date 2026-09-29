@@ -3,10 +3,10 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ReportsPage } from "./ReportsPage.jsx";
 import { dashboardApi } from "./dashboard-api.js";
-import { classApi } from "../classes/class-api.js";
+import { classApi } from "../classes/index.js";
 
 vi.mock("./dashboard-api.js", () => ({ dashboardApi: { revenue: vi.fn(), attendance: vi.fn(), exportCsv: vi.fn() } }));
-vi.mock("../classes/class-api.js", () => ({ classApi: { coaches: vi.fn() } }));
+vi.mock("../classes/index.js", () => ({ classApi: { coaches: vi.fn() } }));
 
 describe("ReportsPage custom date range", () => {
   beforeEach(() => {

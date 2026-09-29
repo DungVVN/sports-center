@@ -3,8 +3,8 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
 import { createApp } from "../src/app.js";
-import { createRolePermissionService } from "../src/modules/role-permissions/role-permission.service.js";
-import { assignablePermissionCodes } from "../src/modules/role-permissions/permission-catalog.js";
+import { createRolePermissionService } from "../src/modules/role-permissions/index.js";
+import { assignablePermissionCodes } from "../src/modules/role-permissions/domain/permission-catalog.js";
 import { routeSourceFiles } from "./helpers/route-source-files.js";
 
 const matrix = {

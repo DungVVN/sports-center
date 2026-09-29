@@ -2,11 +2,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "../../shared/api/api-error.js";
-import { classApi } from "../classes/class-api.js";
+import { classApi } from "../classes/index.js";
 import { memberApi } from "./member-api.js";
 import { MembersPage } from "./MembersPage.jsx";
 
-vi.mock("../classes/class-api.js", () => ({ classApi: { coaches: vi.fn() } }));
+vi.mock("../classes/index.js", () => ({ classApi: { coaches: vi.fn() } }));
 vi.mock("./member-api.js", () => ({ memberApi: { list: vi.fn(), create: vi.fn(), issueAccountCredentials: vi.fn(), get: vi.fn(), update: vi.fn(), replaceContacts: vi.fn(), coachAssignments: vi.fn(), assignCoach: vi.fn() } }));
 
 function renderPage(props) {
