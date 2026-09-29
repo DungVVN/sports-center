@@ -31,6 +31,11 @@ const staffStatusOptions = [
 ];
 const staffRoleLabels = Object.fromEntries(staffRoleOptions);
 const staffStatusLabels = Object.fromEntries(staffStatusOptions);
+const phoneLengthError = "Số điện thoại phải từ 9 đến 20 ký tự.";
+const hasValidPhoneLength = (phone) => {
+  const length = phone.trim().length;
+  return length >= 9 && length <= 20;
+};
 
 export function StaffPage({ session }) {
   const [form, setForm] = useState(empty);
@@ -77,9 +82,9 @@ export function StaffPage({ session }) {
   };
   function create(event) {
     event.preventDefault();
-    if (form.phone.trim().length < 9 || form.phone.trim().length > 20) {
+    if (!hasValidPhoneLength(form.phone)) {
       workspace.clearFeedback();
-      setValidationError("Số điện thoại phải từ 9 đến 20 ký tự.");
+      setValidationError(phoneLengthError);
       phoneInputRef.current?.focus();
       return;
     }
@@ -309,9 +314,9 @@ function StaffEditForm({ clearFeedback, detail, loading, onClose, onSubmit }) {
   const phoneInputRef = useRef(null);
   function submit(event) {
     event.preventDefault();
-    if (form.phone.trim().length < 9 || form.phone.trim().length > 20) {
+    if (!hasValidPhoneLength(form.phone)) {
       clearFeedback();
-      setValidationError("Số điện thoại phải từ 9 đến 20 ký tự.");
+      setValidationError(phoneLengthError);
       phoneInputRef.current?.focus();
       return;
     }

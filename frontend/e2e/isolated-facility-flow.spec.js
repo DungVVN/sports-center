@@ -1,9 +1,10 @@
 import { expect, test } from "@playwright/test";
+import { isolatedQaPassword } from "./isolated-qa-password.js";
 
 const login = async (page, role) => {
   await page.goto("/login");
   await page.locator("#login-email").fill(`qa-${role}@localhost.test`);
-  await page.locator("#login-password").fill("QaPass-2026-Local!");
+  await page.locator("#login-password").fill(isolatedQaPassword());
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
   await expect(page.locator(".app-header strong")).toBeVisible();
 };

@@ -6,7 +6,12 @@ if (databaseUrl.hostname !== "127.0.0.1" || databaseUrl.port !== "54329" || data
   throw new Error("Refusing to seed a database other than the isolated local QA database.");
 }
 
-const passwordHash = await hashPassword("QaPass-2026-Local!");
+const qaPassword = process.env.QA_SEED_PASSWORD;
+if (!qaPassword || qaPassword.length < 8) {
+  throw new Error("QA_SEED_PASSWORD must be at least 8 characters for isolated QA accounts.");
+}
+
+const passwordHash = await hashPassword(qaPassword);
 const staff = [
   ["manager", "QA Manager", "STF-QA-MGR"],
   ["receptionist", "QA Receptionist", "STF-QA-REC"],

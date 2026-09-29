@@ -1,11 +1,12 @@
 import { expect, test } from "@playwright/test";
+import { isolatedQaPassword } from "./isolated-qa-password.js";
 
 test("receptionist records a dummy cash receipt and activates a QA membership", async ({ page }) => {
   test.skip(process.env.E2E_QA_WRITE !== "1" || process.env.E2E_BASE_URL !== "http://localhost:5175", "Financial simulation is restricted to isolated QA.");
   test.setTimeout(90_000);
   await page.goto("/login");
   await page.locator("#login-email").fill("qa-receptionist@localhost.test");
-  await page.locator("#login-password").fill("QaPass-2026-Local!");
+  await page.locator("#login-password").fill(isolatedQaPassword());
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
   await expect(page.locator(".app-header strong")).toBeVisible();
   await page.goto("/payments");

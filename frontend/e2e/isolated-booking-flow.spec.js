@@ -1,11 +1,12 @@
 import { expect, test } from "@playwright/test";
+import { isolatedQaPassword } from "./isolated-qa-password.js";
 
 test("member books a published class with an active QA entitlement", async ({ page }) => {
   test.skip(process.env.E2E_QA_WRITE !== "1" || process.env.E2E_BASE_URL !== "http://localhost:5175", "Bookings are restricted to isolated QA.");
   const className = `Lớp QA đặt chỗ ${Date.now().toString(36).toUpperCase()}`;
   await page.goto("/login");
   await page.locator("#login-email").fill("qa-manager@localhost.test");
-  await page.locator("#login-password").fill("QaPass-2026-Local!");
+  await page.locator("#login-password").fill(isolatedQaPassword());
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
   await expect(page.locator(".app-header strong")).toBeVisible();
   await page.goto("/classes");
@@ -31,7 +32,7 @@ test("member books a published class with an active QA entitlement", async ({ pa
 
   await page.goto("/login");
   await page.locator("#login-email").fill("qa-member@localhost.test");
-  await page.locator("#login-password").fill("QaPass-2026-Local!");
+  await page.locator("#login-password").fill(isolatedQaPassword());
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
   await expect(page.locator(".app-header strong")).toBeVisible();
   await page.goto("/bookings");

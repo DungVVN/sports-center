@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { isolatedQaPassword } from "./isolated-qa-password.js";
 
 test("manager creates a package and assigns it to a member in the isolated database", async ({ page }) => {
   test.skip(process.env.E2E_QA_WRITE !== "1" || process.env.E2E_BASE_URL !== "http://localhost:5175", "Writes are restricted to the isolated QA stack.");
@@ -6,7 +7,7 @@ test("manager creates a package and assigns it to a member in the isolated datab
 
   await page.goto("/login");
   await page.locator("#login-email").fill("qa-manager@localhost.test");
-  await page.locator("#login-password").fill("QaPass-2026-Local!");
+  await page.locator("#login-password").fill(isolatedQaPassword());
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
   await expect(page.locator(".app-header strong")).toBeVisible();
 
@@ -33,7 +34,7 @@ test("manager creates a package and assigns it to a member in the isolated datab
 
   await page.getByRole("button", { name: "Đăng xuất" }).click();
   await page.locator("#login-email").fill("qa-receptionist@localhost.test");
-  await page.locator("#login-password").fill("QaPass-2026-Local!");
+  await page.locator("#login-password").fill(isolatedQaPassword());
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
   await expect(page.locator(".app-header strong")).toBeVisible();
 
@@ -58,7 +59,7 @@ test("membership assignment remains usable after selecting data on mobile", asyn
   const page = await context.newPage();
   await page.goto("/login");
   await page.locator("#login-email").fill("qa-receptionist@localhost.test");
-  await page.locator("#login-password").fill("QaPass-2026-Local!");
+  await page.locator("#login-password").fill(isolatedQaPassword());
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
   await expect(page.locator(".app-header strong")).toBeVisible();
   await page.goto("/memberships/assign");

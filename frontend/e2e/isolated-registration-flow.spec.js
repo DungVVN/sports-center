@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { isolatedQaPassword } from "./isolated-qa-password.js";
 
 test("member registers, verifies development email code, gets approved and signs in", async ({ page }) => {
   test.skip(process.env.E2E_QA_WRITE !== "1" || process.env.E2E_BASE_URL !== "http://localhost:5175", "Registration writes are restricted to isolated QA.");
@@ -6,7 +7,7 @@ test("member registers, verifies development email code, gets approved and signs
   const suffix = String(Date.now());
   const email = `qa-registration-${suffix}@localhost.test`;
   const phone = `09${suffix.slice(-8)}`;
-  const password = "QaPass-2026-Local!";
+  const password = isolatedQaPassword();
 
   await page.goto("/register");
   await page.getByRole("button", { name: "Đăng ký", exact: true }).click();

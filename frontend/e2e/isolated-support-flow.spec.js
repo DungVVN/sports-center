@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { isolatedQaPassword } from "./isolated-qa-password.js";
 
 test("member ticket reaches receptionist, receives a reply and returns to member", async ({ page }) => {
   test.skip(process.env.E2E_QA_WRITE !== "1" || process.env.E2E_BASE_URL !== "http://localhost:5175", "Support writes require isolated QA.");
@@ -8,7 +9,7 @@ test("member ticket reaches receptionist, receives a reply and returns to member
   const login = async (email) => {
     await page.goto("/login");
     await page.locator("#login-email").fill(email);
-    await page.locator("#login-password").fill("QaPass-2026-Local!");
+    await page.locator("#login-password").fill(isolatedQaPassword());
     await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
     await expect(page.locator(".app-header strong")).toBeVisible();
   };
