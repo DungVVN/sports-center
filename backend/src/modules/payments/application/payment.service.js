@@ -42,7 +42,10 @@ export function createPaymentService({ repository, auditService, payosGateway })
     if (!payment || payment.provider !== "payos" || payment.amount_vnd !== BigInt(data.amount)) throw new AppError({ statusCode: 422, code: "PAYOS_CALLBACK_MISMATCH", message: "Webhook PayOS không khớp giao dịch." });
     const succeeded = data.code === "00";
     const result = await repository.complete({ id: payment.id, status: succeeded ? "paid" : "failed", paidAt: succeeded ? new Date(data.transactionDateTime) : null, eventType: "payos_webhook", actorUserId: null, membershipId: payment.membership_id });
-    return result ? output(result) : output(payment);
+    // Another callback may have completed the pending-to-final transition while
+    // this request waited for the row lock. Return the committed state, not the
+    // stale pending snapshot read before that transaction.
+    return output(result ?? await repository.payment(payment.id));
   },
   async confirm(id, status, actorUserId, reconciliationNote) {
     const payment = await repository.payment(id);

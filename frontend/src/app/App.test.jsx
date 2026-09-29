@@ -7,7 +7,7 @@ const mockPortalSurface = vi.hoisted(() => vi.fn(() => "main"));
 
 vi.mock("../config/portal.js", () => ({ portalSurface: mockPortalSurface }));
 
-vi.mock("../features/auth/auth-api.js", () => ({
+vi.mock("../features/auth/api/auth-api.js", () => ({
   authApi: {
     me: mockAuthMe,
     verifyAdminTotpLogin: vi.fn(),
@@ -15,19 +15,19 @@ vi.mock("../features/auth/auth-api.js", () => ({
   },
 }));
 
-vi.mock("../features/auth/LoginPage.jsx", () => ({
+vi.mock("../features/auth/ui/LoginPage.jsx", () => ({
   LoginPage: ({ onLoggedIn }) => <div>
     <button onClick={() => onLoggedIn({ user: { id: "member-1", role: "member", mustChangePassword: false, profileSetupRequired: true }, permissions: [] })}>Member login</button>
     <button onClick={() => onLoggedIn({ user: { id: "coach-2", role: "coach", mustChangePassword: true, profileSetupRequired: true }, permissions: [] })}>Coach login</button>
   </div>,
 }));
-vi.mock("../features/auth/AdminLoginPage.jsx", () => ({ AdminLoginPage: () => <div>Admin login page</div> }));
+vi.mock("../features/auth/ui/AdminLoginPage.jsx", () => ({ AdminLoginPage: () => <div>Admin login page</div> }));
 vi.mock("./composition/DashboardPlaceholder.jsx", () => ({ DashboardPlaceholder: ({ initialView, onProfileSaved, session }) => <div>Dashboard view: {initialView}; account: {session.user.id}<button onClick={onProfileSaved}>Save profile</button></div> }));
-vi.mock("../features/auth/InitialPasswordChangePage.jsx", () => ({ InitialPasswordChangePage: ({ onCompleted }) => <button onClick={onCompleted}>Change temporary password</button> }));
-vi.mock("../features/auth/PendingApprovalPage.jsx", () => ({ PendingApprovalPage: () => null }));
-vi.mock("../features/auth/RegisterPage.jsx", () => ({ RegisterPage: () => null }));
-vi.mock("../features/auth/VerificationPage.jsx", () => ({ VerificationPage: () => null }));
-vi.mock("../features/auth/TotpVerificationPage.jsx", () => ({ TotpVerificationPage: () => null }));
+vi.mock("../features/auth/ui/InitialPasswordChangePage.jsx", () => ({ InitialPasswordChangePage: ({ onCompleted }) => <button onClick={onCompleted}>Change temporary password</button> }));
+vi.mock("../features/auth/ui/PendingApprovalPage.jsx", () => ({ PendingApprovalPage: () => null }));
+vi.mock("../features/auth/ui/RegisterPage.jsx", () => ({ RegisterPage: () => null }));
+vi.mock("../features/auth/ui/VerificationPage.jsx", () => ({ VerificationPage: () => null }));
+vi.mock("../features/auth/ui/TotpVerificationPage.jsx", () => ({ TotpVerificationPage: () => null }));
 
 describe("first login routing", () => {
   beforeEach(() => {

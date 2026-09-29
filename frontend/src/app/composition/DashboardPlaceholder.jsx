@@ -5,7 +5,7 @@ import { dashboardApi } from "../../features/dashboard/index.js";
 import { authApi } from "../../features/auth/index.js";
 import { useToast } from "../../shared/ui/useToast.js";
 import { errorMessageFor } from "../../shared/api/error-message.js";
-import "../../features/auth/auth.css";
+import "../../features/auth/ui/auth.css";
 
 const WorkspaceContent = lazy(() => import("../WorkspaceContent.jsx").then(({ WorkspaceContent: Component }) => ({ default: Component })));
 

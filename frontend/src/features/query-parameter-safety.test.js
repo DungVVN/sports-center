@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiClient } from "../shared/api/client.js";
-import { bookingApi } from "./bookings/booking-api.js";
-import { classApi } from "./classes/class-api.js";
-import { membershipApi } from "./memberships/membership-api.js";
-import { paymentApi } from "./payments/payment-api.js";
-import { trainingApi } from "./training/training-api.js";
+import { bookingApi } from "./bookings/api/booking-api.js";
+import { classApi } from "./classes/api/class-api.js";
+import { membershipApi } from "./memberships/api/membership-api.js";
+import { paymentApi } from "./payments/api/payment-api.js";
+import { trainingApi } from "./training/api/training-api.js";
 
 vi.mock("../shared/api/client.js", () => ({ apiClient: { get: vi.fn() } }));
 

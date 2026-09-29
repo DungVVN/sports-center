@@ -1,2 +1,2 @@
-export const loadMembersPage = () => import("./MembersPage.jsx");
-export { memberApi } from "./member-api.js";
+export const loadMembersPage = () => import("./ui/MembersPage.jsx");
+export { memberApi } from "./api/member-api.js";

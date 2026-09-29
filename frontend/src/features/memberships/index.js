@@ -1,2 +1,2 @@
-export { publicMembershipPackages, membershipApi } from "./membership-api.js";
-export const loadMembershipsPage = () => import("./MembershipsPage.jsx");
+export { publicMembershipPackages, membershipApi } from "./api/membership-api.js";
+export const loadMembershipsPage = () => import("./ui/MembershipsPage.jsx");

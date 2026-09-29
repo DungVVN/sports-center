@@ -1,1 +1,1 @@
-export { NotificationPreferencesPanel, NotificationPreferencesPage } from "./NotificationPreferencesPage.jsx";
+export { NotificationPreferencesPanel, NotificationPreferencesPage } from "./ui/NotificationPreferencesPage.jsx";

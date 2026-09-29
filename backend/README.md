@@ -9,6 +9,7 @@ This folder contains the Node.js/Express API, Prisma database layer, OpenAPI con
 - Prisma schema: `database/prisma/schema.prisma`
 - Versioned migration: `database/prisma/migrations/`
 - Production database: Neon PostgreSQL, Singapore
+- The configured database reported PostgreSQL 18.6 during the migration audit; isolated QA checks should use the same major version.
 - Runtime config: `DATABASE_URL`
 - Migration config: `MIGRATE_DATABASE_URL` (falls back to `DATABASE_URL`)
 

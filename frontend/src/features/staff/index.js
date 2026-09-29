@@ -1,1 +1,1 @@
-export const loadStaffPage = () => import("./StaffPage.jsx");
+export const loadStaffPage = () => import("./ui/StaffPage.jsx");

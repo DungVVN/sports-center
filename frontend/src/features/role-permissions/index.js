@@ -1,1 +1,1 @@
-export const loadRolePermissionPage = () => import("./RolePermissionPage.jsx");
+export const loadRolePermissionPage = () => import("./ui/RolePermissionPage.jsx");

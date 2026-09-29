@@ -1,2 +1,2 @@
-export const loadTrainingPage = () => import("./TrainingPage.jsx");
-export const loadMemberTrainingPage = () => import("./MemberTrainingPage.jsx");
+export const loadTrainingPage = () => import("./ui/TrainingPage.jsx");
+export const loadMemberTrainingPage = () => import("./ui/MemberTrainingPage.jsx");

@@ -1,2 +1,2 @@
-export const loadBookingsPage = () => import("./BookingsPage.jsx");
-export { bookingApi } from "./booking-api.js";
+export const loadBookingsPage = () => import("./ui/BookingsPage.jsx");
+export { bookingApi } from "./api/booking-api.js";

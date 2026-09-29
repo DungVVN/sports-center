@@ -1,2 +1,2 @@
-export const loadAttendancePage = () => import("./AttendancePage.jsx");
-export const loadMemberAttendancePage = () => import("./MemberAttendancePage.jsx");
+export const loadAttendancePage = () => import("./ui/AttendancePage.jsx");
+export const loadMemberAttendancePage = () => import("./ui/MemberAttendancePage.jsx");

@@ -34,6 +34,13 @@ for (const file of sourceRoots.flatMap(filesUnder)) {
       errors.push(`${file}: module root may only expose index.js`);
     }
   }
+  const frontendFeaturesRoot = join(root, "frontend", "src", "features") + sep;
+  if (file.startsWith(frontendFeaturesRoot)) {
+    const featureRoot = join(frontendFeaturesRoot, file.slice(frontendFeaturesRoot.length).split(sep)[0]);
+    if (dirname(file) === featureRoot && basename(file) !== "index.js") {
+      errors.push(`${file}: feature root may only expose index.js`);
+    }
+  }
   const supportInfrastructure = join(root, "backend", "src", "modules", "support", "infrastructure") + sep;
   if (file.startsWith(supportInfrastructure) && /\bprisma\.(?:members|notifications)\b/.test(source)) {
     errors.push(`${file}: Support repository accesses another module's table`);
