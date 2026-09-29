@@ -31,3 +31,14 @@ docs/
 # Keep local test reports out of Git without hiding project documentation.
 /TEST_REPORT.md
 /TEST_REPORT_recovered.md
+
+# Local QA artifacts and editor state
+/qa-evidence/
+/.cursor/
+
+# Requirements workbooks are maintained locally, outside deploy and CI
+/backend/docs/
+/frontend/docs/
+
+# Empty-directory placeholders are not needed in populated source trees
+**/.gitkeep

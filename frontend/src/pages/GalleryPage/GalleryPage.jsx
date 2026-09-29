@@ -12,7 +12,7 @@ export function GalleryPage({ onLoginClick, onHomeClick }) {
         </header>
         <div className="gallery-grid">
             <div className="gallery-item large">
-              <img src="/images/gym.jpg" alt="Gym" />
+              <img src="/assets/images/gym.jpg" alt="Gym" />
               <div className="gallery-overlay"><span>Phòng Thể Lực</span></div>
             </div>
             <div className="gallery-item">
