@@ -1,9 +1,9 @@
 import { Router } from "express";
 import { z } from "zod";
-import { env } from "../../config/env.js";
 import { authenticate, requirePermission } from "../../shared/auth/authentication.middleware.js";
 import { sendSuccess } from "../../shared/http/response.js";
 import { validateRequest } from "../../shared/validation/validate-request.js";
+import { portalSurfaceFromRequest, sessionCookieNames, sessionCookieOptions } from "../../shared/auth/portal-session.js";
 
 const id = z.string().uuid();
 const registrationSchema = z.object({ body: z.object({
@@ -30,15 +30,8 @@ const ownProfileSchema = z.object({ body: z.object({
   contacts: z.array(z.object({ fullName: z.string().trim().min(2).max(120), relationship: z.string().trim().min(2).max(60), phone: z.string().trim().regex(/^(?:\+84|0)\d{9,10}$/, "Số điện thoại Việt Nam chưa hợp lệ."), isPrimary: z.boolean() })).max(3).optional(),
 }).refine((input) => !input.contacts || input.contacts.filter((contact) => contact.isPrimary).length <= 1, { message: "Chỉ được chọn một liên hệ khẩn cấp chính.", path: ["contacts"] }) });
 
-function sessionCookie(response, token) {
-  response.cookie("sports_center_session", token, {
-    httpOnly: true,
-    // Vercel and Render have different sites. Browsers only attach this
-    // cross-site session cookie to fetch requests when it is SameSite=None.
-    sameSite: env.nodeEnv === "production" ? "none" : "lax",
-    secure: env.nodeEnv === "production",
-    path: env.apiBasePath,
-  });
+function sessionCookie(response, token, surface = "main") {
+  response.cookie(sessionCookieNames[surface], token, sessionCookieOptions());
 }
 
 export function createAuthRouter(authService) {
@@ -70,7 +63,7 @@ export function createAuthRouter(authService) {
       if (session.mfaRequired) {
         return sendSuccess(response, { data: { mfaRequired: true, challengeId: session.mfaChallengeId, expiresAt: session.expiresAt } });
       }
-      sessionCookie(response, session.token);
+      sessionCookie(response, session.token, "admin");
       sendSuccess(response, { data: { user: session.user, permissions: session.permissions, expiresAt: session.expiresAt } });
     } catch (error) { next(error); }
   });
@@ -90,7 +83,7 @@ export function createAuthRouter(authService) {
   router.post("/admin/mfa/totp/verify", validateRequest(mfaLoginSchema), async (request, response, next) => {
     try {
       const session = await authService.verifyMfaLogin({ ...request.validated.body, loginSurface: "admin" });
-      sessionCookie(response, session.token);
+      sessionCookie(response, session.token, "admin");
       sendSuccess(response, { data: { user: session.user, permissions: session.permissions, expiresAt: session.expiresAt } });
     } catch (error) { next(error); }
   });
@@ -104,7 +97,7 @@ export function createAuthRouter(authService) {
   router.post("/logout", authRequired, async (request, response, next) => {
     try {
       await authService.logout(request.auth.token);
-      response.clearCookie("sports_center_session", { httpOnly: true, sameSite: env.nodeEnv === "production" ? "none" : "lax", secure: env.nodeEnv === "production", path: env.apiBasePath });
+      response.clearCookie(sessionCookieNames[portalSurfaceFromRequest(request)], sessionCookieOptions());
       sendSuccess(response, { data: { loggedOut: true } });
     } catch (error) { next(error); }
   });

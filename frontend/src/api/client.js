@@ -1,5 +1,6 @@
 import { ApiError } from "./api-error.js";
 import { apiBaseUrl } from "../config/runtime.js";
+import { portalSurface } from "../config/portal.js";
 
 export const authenticationExpiredEvent = "sports-center:authentication-expired";
 export const permissionsChangedEvent = "sports-center:permissions-changed";
@@ -43,6 +44,7 @@ export async function request(path, { method = "GET", body, headers, signal, sup
       signal,
       headers: {
         accept: "application/json",
+        "x-sports-center-portal": portalSurface(),
         ...(body ? { "content-type": "application/json" } : {}),
         ...headers,
       },

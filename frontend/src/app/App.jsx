@@ -16,15 +16,26 @@ import { GalleryPage } from "../pages/GalleryPage/GalleryPage.jsx";
 import { CalendarPage } from "../pages/CalendarPage/CalendarPage.jsx";
 import { NotFoundPage } from "../pages/NotFoundPage/NotFoundPage.jsx";
 import { dashboardPath, dashboardView, isDashboardView } from "./dashboard-routes.js";
+import { portalSurface } from "../config/portal.js";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: { retry: 1, refetchOnWindowFocus: false },
   },
 });
+const sessionChangeStorageKey = "sports-center:session-change";
+
+function notifyOtherTabsOfSessionChange() {
+  try {
+    // Storage events stay on this origin; no credentials or account data are stored.
+    window.localStorage.setItem(sessionChangeStorageKey, `${Date.now()}-${Math.random()}`);
+  } catch {
+    // Cookie-based authentication still works when browser storage is unavailable.
+  }
+}
 
 export function App() {
-  const isAdminPortal = window.location.hostname === "admin.kineticsports.io.vn" || import.meta.env.VITE_ADMIN_PORTAL === "true";
+  const isAdminPortal = portalSurface() === "admin";
 
   const getInitialView = () => {
     const path = window.location.pathname;
@@ -84,7 +95,7 @@ export function App() {
 
     void authApi.me({ suppressAuthenticationExpiredEvent: true })
       .then((currentSession) => {
-        if (isCurrent && currentSession) setSession(currentSession);
+        if (isCurrent && currentSession && (currentSession.user.role === "admin") === isAdminPortal) setSession(currentSession);
       })
       .catch(() => {
         // A missing or expired cookie is the normal anonymous state on a fresh load.
@@ -94,22 +105,56 @@ export function App() {
       });
 
     return () => { isCurrent = false; };
-  }, []);
+  }, [isAdminPortal]);
   useEffect(() => {
     if (!session) return undefined;
-    const refreshSession = () => { void authApi.me().then(setSession).catch(() => {}); };
+    const refreshSession = () => { void authApi.me().then((currentSession) => {
+      if ((currentSession.user.role === "admin") === isAdminPortal) {
+        if (currentSession.user.id !== session.user.id) {
+          queryClient.clear();
+          navigate("dashboard");
+        }
+        setSession(currentSession);
+      }
+      else setSession(null);
+    }).catch(() => {}); };
     window.addEventListener("focus", refreshSession);
     window.addEventListener(permissionsChangedEvent, refreshSession);
     return () => {
       window.removeEventListener("focus", refreshSession);
       window.removeEventListener(permissionsChangedEvent, refreshSession);
     };
-  }, [session]);
+  }, [session, isAdminPortal, navigate]);
+  useEffect(() => {
+    let currentRequest = 0;
+    const handleSessionChange = (event) => {
+      if (event.key !== sessionChangeStorageKey) return;
+      const requestId = ++currentRequest;
+      queryClient.clear();
+      setSession(null);
+      setIsRestoringSession(true);
+      void authApi.me({ suppressAuthenticationExpiredEvent: true })
+        .then((currentSession) => {
+          if (requestId !== currentRequest) return;
+          if ((currentSession.user.role === "admin") === isAdminPortal) {
+            setSession(currentSession);
+            navigate("dashboard");
+          } else navigate("login");
+        })
+        .catch(() => { if (requestId === currentRequest) navigate("login"); })
+        .finally(() => { if (requestId === currentRequest) setIsRestoringSession(false); });
+    };
+    window.addEventListener("storage", handleSessionChange);
+    return () => { currentRequest += 1; window.removeEventListener("storage", handleSessionChange); };
+  }, [isAdminPortal, navigate]);
   useEffect(() => { document.title = isAdminPortal ? "Kinetic Admin" : "Kinetic Sports Center"; }, [isAdminPortal]);
   const onMfaRequired = (challenge) => { setMfaChallenge(challenge); navigate("mfa"); };
   const onLoggedIn = (currentSession) => {
+    if ((currentSession.user.role === "admin") !== isAdminPortal) return;
+    queryClient.clear();
     setSession(currentSession);
     navigate(currentSession.user.profileSetupRequired ? "profile" : "dashboard");
+    notifyOtherTabsOfSessionChange();
   };
   const loginPage = isAdminPortal
     ? <AdminLoginPage onLoggedIn={onLoggedIn} onMfaRequired={onMfaRequired} />
@@ -118,7 +163,7 @@ export function App() {
     ? <main className="app-loading-state" aria-live="polite">Đang khôi phục phiên đăng nhập...</main>
     : session?.user.mustChangePassword
     ? <InitialPasswordChangePage onCompleted={() => { setSession((current) => ({ ...current, user: { ...current.user, mustChangePassword: false } })); }} />
-    : session && view !== "notFound" ? <DashboardPlaceholder initialView={dashboardView(window.location.pathname) ?? (session.user.profileSetupRequired ? "profile" : "dashboard")} session={session} onProfileSaved={() => setSession((current) => ({ ...current, user: { ...current.user, profileSetupRequired: false } }))} onLogout={() => { setSession(null); navigate("login"); }} /> : {
+    : session && view !== "notFound" ? <DashboardPlaceholder key={session.user.id} initialView={dashboardView(window.location.pathname) ?? (session.user.profileSetupRequired ? "profile" : "dashboard")} session={session} onProfileSaved={() => setSession((current) => ({ ...current, user: { ...current.user, profileSetupRequired: false } }))} onLogout={() => { queryClient.clear(); setSession(null); navigate("login"); notifyOtherTabsOfSessionChange(); }} /> : {
     login: loginPage,
     landing: <LandingPage onLoginClick={() => navigate("login")} onRegisterClick={() => navigate("register")} onGalleryClick={() => navigate("gallery")} onCalendarClick={() => navigate("calendar")} />,
     gallery: <GalleryPage onLoginClick={() => navigate("login")} onHomeClick={() => navigate("landing")} />,
@@ -127,7 +172,7 @@ export function App() {
     register: isAdminPortal ? loginPage : <RegisterPage onLogin={() => navigate("login")} onRegistered={(value) => { setRegistration(value); navigate("verify"); }} />,
     verify: registration ? <VerificationPage registration={registration} onCompleted={() => navigate("pending")} /> : loginPage,
     pending: <PendingApprovalPage onLogin={() => navigate("login")} />,
-    mfa: mfaChallenge ? <TotpVerificationPage challenge={mfaChallenge} onCancel={() => { setMfaChallenge(null); navigate("login"); }} onCompleted={setSession} verifyLogin={isAdminPortal ? authApi.verifyAdminTotpLogin : authApi.verifyTotpLogin} portalName={isAdminPortal ? "cổng quản trị" : "hệ thống"} /> : loginPage,
+    mfa: mfaChallenge ? <TotpVerificationPage challenge={mfaChallenge} onCancel={() => { setMfaChallenge(null); navigate("login"); }} onCompleted={onLoggedIn} verifyLogin={isAdminPortal ? authApi.verifyAdminTotpLogin : authApi.verifyTotpLogin} portalName={isAdminPortal ? "cổng quản trị" : "hệ thống"} /> : loginPage,
   }[view];
   return (
     <QueryClientProvider client={queryClient}>
