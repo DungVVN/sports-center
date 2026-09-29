@@ -1,28 +1,40 @@
 import { lazy, Suspense } from "react";
-import { hasSessionPermission } from "../utils/session-permissions.js";
+import { loadAttendancePage, loadMemberAttendancePage } from "../features/attendance/index.js";
+import { loadProfilePage, loadRegistrationApprovalPage, hasSessionPermission } from "../features/auth/index.js";
+import { loadBookingsPage } from "../features/bookings/index.js";
+import { loadClassesPage } from "../features/classes/index.js";
+import { loadAuditLogsPage, loadDashboardHome, loadReportsPage } from "../features/dashboard/index.js";
+import { loadFacilityCalendarPage } from "../features/facilities/index.js";
+import { loadMembersPage } from "../features/members/index.js";
+import { loadMembershipsPage } from "../features/memberships/index.js";
+import { loadMemberPaymentsPage, loadPaymentsPage } from "../features/payments/index.js";
+import { loadRolePermissionPage } from "../features/role-permissions/index.js";
+import { loadStaffPage } from "../features/staff/index.js";
+import { loadSupportPage, loadSupportStaffPage } from "../features/support/index.js";
+import { loadMemberTrainingPage, loadTrainingPage } from "../features/training/index.js";
 
 const lazyPage = (load, exportName) => lazy(() => load().then((module) => ({ default: module[exportName] })));
 
-const AttendancePage = lazyPage(() => import("../features/attendance/AttendancePage.jsx"), "AttendancePage");
-const AuditLogsPage = lazyPage(() => import("../features/dashboard/AuditLogsPage.jsx"), "AuditLogsPage");
-const BookingsPage = lazyPage(() => import("../features/bookings/BookingsPage.jsx"), "BookingsPage");
-const ClassesPage = lazyPage(() => import("../features/classes/ClassesPage.jsx"), "ClassesPage");
-const DashboardHome = lazyPage(() => import("../features/dashboard/DashboardHome.jsx"), "DashboardHome");
-const FacilityCalendarPage = lazyPage(() => import("../features/facilities/FacilityCalendarPage.jsx"), "FacilityCalendarPage");
-const MemberAttendancePage = lazyPage(() => import("../features/attendance/MemberAttendancePage.jsx"), "MemberAttendancePage");
-const MemberPaymentsPage = lazyPage(() => import("../features/payments/MemberPaymentsPage.jsx"), "MemberPaymentsPage");
-const MembersPage = lazyPage(() => import("../features/members/MembersPage.jsx"), "MembersPage");
-const MembershipsPage = lazyPage(() => import("../features/memberships/MembershipsPage.jsx"), "MembershipsPage");
-const MemberTrainingPage = lazyPage(() => import("../features/training/MemberTrainingPage.jsx"), "MemberTrainingPage");
-const PaymentsPage = lazyPage(() => import("../features/payments/PaymentsPage.jsx"), "PaymentsPage");
-const ProfilePage = lazyPage(() => import("../features/auth/ProfilePage.jsx"), "ProfilePage");
-const RegistrationApprovalPage = lazyPage(() => import("../features/auth/RegistrationApprovalPage.jsx"), "RegistrationApprovalPage");
-const ReportsPage = lazyPage(() => import("../features/dashboard/ReportsPage.jsx"), "ReportsPage");
-const RolePermissionPage = lazyPage(() => import("../features/role-permissions/RolePermissionPage.jsx"), "RolePermissionPage");
-const StaffPage = lazyPage(() => import("../features/staff/StaffPage.jsx"), "StaffPage");
-const SupportPage = lazyPage(() => import("../features/support/SupportPage.jsx"), "SupportPage");
-const SupportStaffPage = lazyPage(() => import("../features/support/SupportStaffPage.jsx"), "SupportStaffPage");
-const TrainingPage = lazyPage(() => import("../features/training/TrainingPage.jsx"), "TrainingPage");
+const AttendancePage = lazyPage(loadAttendancePage, "AttendancePage");
+const AuditLogsPage = lazyPage(loadAuditLogsPage, "AuditLogsPage");
+const BookingsPage = lazyPage(loadBookingsPage, "BookingsPage");
+const ClassesPage = lazyPage(loadClassesPage, "ClassesPage");
+const DashboardHome = lazyPage(loadDashboardHome, "DashboardHome");
+const FacilityCalendarPage = lazyPage(loadFacilityCalendarPage, "FacilityCalendarPage");
+const MemberAttendancePage = lazyPage(loadMemberAttendancePage, "MemberAttendancePage");
+const MemberPaymentsPage = lazyPage(loadMemberPaymentsPage, "MemberPaymentsPage");
+const MembersPage = lazyPage(loadMembersPage, "MembersPage");
+const MembershipsPage = lazyPage(loadMembershipsPage, "MembershipsPage");
+const MemberTrainingPage = lazyPage(loadMemberTrainingPage, "MemberTrainingPage");
+const PaymentsPage = lazyPage(loadPaymentsPage, "PaymentsPage");
+const ProfilePage = lazyPage(loadProfilePage, "ProfilePage");
+const RegistrationApprovalPage = lazyPage(loadRegistrationApprovalPage, "RegistrationApprovalPage");
+const ReportsPage = lazyPage(loadReportsPage, "ReportsPage");
+const RolePermissionPage = lazyPage(loadRolePermissionPage, "RolePermissionPage");
+const StaffPage = lazyPage(loadStaffPage, "StaffPage");
+const SupportPage = lazyPage(loadSupportPage, "SupportPage");
+const SupportStaffPage = lazyPage(loadSupportStaffPage, "SupportStaffPage");
+const TrainingPage = lazyPage(loadTrainingPage, "TrainingPage");
 
 export function WorkspaceContent({ onNavigate, onProfileSaved, onSessionRevoked, session, view, dashboardRole = "manager" }) {
   const pages = {

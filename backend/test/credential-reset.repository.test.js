@@ -8,8 +8,8 @@ const prisma = {
 };
 vi.mock("../src/database.js", () => ({ prisma }));
 
-const { memberRepository } = await import("../src/modules/members/member.repository.js");
-const { staffRepository } = await import("../src/modules/staff/staff.repository.js");
+const { memberRepository } = await import("../src/modules/members/index.js");
+const { staffRepository } = await import("../src/modules/staff/index.js");
 
 describe("credential reset session revocation", () => {
   beforeEach(() => {

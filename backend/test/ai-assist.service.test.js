@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createAiAssistService } from "../src/modules/ai-assist/ai-assist.service.js";
+import { createAiAssistService } from "../src/modules/ai-assist/index.js";
 
 describe("AI assist", () => {
   it("uses the operator's context for labelled drafts when the route grants permission", async () => {

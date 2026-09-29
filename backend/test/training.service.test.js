@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createTrainingService } from "../src/modules/training/training.service.js";
+import { createTrainingService } from "../src/modules/training/index.js";
 
 function dependencies() {
   return {

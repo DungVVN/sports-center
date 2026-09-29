@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createPaymentService } from "../src/modules/payments/payment.service.js";
+import { createPaymentService } from "../src/modules/payments/index.js";
 
 const memberId = "member-1";
 const membershipId = "membership-1";
@@ -87,5 +87,15 @@ describe("Payment service", () => {
     await expect(createPaymentService({ repository, auditService, payosGateway }).create({ ...input, method: "online", provider: "payos" }, "receptionist-1")).rejects.toThrow("PayOS unavailable");
     expect(repository.complete).toHaveBeenCalledWith(expect.objectContaining({ status: "failed", eventType: "payos_link_creation_failed" }));
     expect(auditService.record).toHaveBeenCalledWith(expect.objectContaining({ action: "payment.payos_link_failed" }));
+  });
+
+  it("returns the committed status when a duplicate PayOS callback loses the race", async () => {
+    const { repository, auditService } = dependencies();
+    repository.paymentByProviderOrderCode = vi.fn().mockResolvedValue({ id: "payment-1", provider: "payos", amount_vnd: 500000n, status: "pending" });
+    repository.complete.mockResolvedValue(null);
+    repository.payment.mockResolvedValue({ id: "payment-1", provider: "payos", amount_vnd: 500000n, status: "paid" });
+    const payosGateway = { verifyWebhook: vi.fn().mockResolvedValue({ orderCode: "123", amount: 500000, code: "00", transactionDateTime: "2026-09-30T00:00:00.000Z" }) };
+    await expect(createPaymentService({ repository, auditService, payosGateway }).payosCallback({})).resolves.toMatchObject({ id: "payment-1", status: "paid" });
+    expect(repository.payment).toHaveBeenCalledExactlyOnceWith("payment-1");
   });
 });

@@ -1,22 +1,22 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ClassesPage } from "./classes/ClassesPage.jsx";
-import { BookingsPage } from "./bookings/BookingsPage.jsx";
-import { AttendancePage } from "./attendance/AttendancePage.jsx";
-import { MembershipsPage } from "./memberships/MembershipsPage.jsx";
-import { PaymentsPage } from "./payments/PaymentsPage.jsx";
-import { bookingApi } from "./bookings/booking-api.js";
-import { classApi } from "./classes/class-api.js";
-import { memberApi } from "./members/member-api.js";
-import { membershipApi } from "./memberships/membership-api.js";
-import { paymentApi } from "./payments/payment-api.js";
+import { ClassesPage } from "./classes/ui/ClassesPage.jsx";
+import { BookingsPage } from "./bookings/ui/BookingsPage.jsx";
+import { AttendancePage } from "./attendance/ui/AttendancePage.jsx";
+import { MembershipsPage } from "./memberships/ui/MembershipsPage.jsx";
+import { PaymentsPage } from "./payments/ui/PaymentsPage.jsx";
+import { bookingApi } from "./bookings/api/booking-api.js";
+import { classApi } from "./classes/api/class-api.js";
+import { memberApi } from "./members/api/member-api.js";
+import { membershipApi } from "./memberships/api/membership-api.js";
+import { paymentApi } from "./payments/api/payment-api.js";
 
-vi.mock("./classes/class-api.js", () => ({ classApi: { list: vi.fn(), rooms: vi.fn(), coaches: vi.fn(), changeRequests: vi.fn() } }));
-vi.mock("./bookings/booking-api.js", () => ({ bookingApi: { list: vi.fn() } }));
-vi.mock("./memberships/membership-api.js", () => ({ membershipApi: { packages: vi.fn(), freezeRequests: vi.fn() } }));
-vi.mock("./payments/payment-api.js", () => ({ paymentApi: { list: vi.fn() } }));
-vi.mock("./members/member-api.js", () => ({ memberApi: { list: vi.fn() } }));
+vi.mock("./classes/api/class-api.js", () => ({ classApi: { list: vi.fn(), rooms: vi.fn(), coaches: vi.fn(), changeRequests: vi.fn() } }));
+vi.mock("./bookings/api/booking-api.js", () => ({ bookingApi: { list: vi.fn() } }));
+vi.mock("./memberships/api/membership-api.js", () => ({ membershipApi: { packages: vi.fn(), freezeRequests: vi.fn() } }));
+vi.mock("./payments/api/payment-api.js", () => ({ paymentApi: { list: vi.fn() } }));
+vi.mock("./members/api/member-api.js", () => ({ memberApi: { list: vi.fn() } }));
 
 function renderWorkspace(ui) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });

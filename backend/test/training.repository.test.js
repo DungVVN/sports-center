@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 const prisma = vi.hoisted(() => ({ $transaction: vi.fn() }));
 vi.mock("../src/database.js", () => ({ prisma }));
-import { trainingRepository } from "../src/modules/training/training.repository.js";
+import { trainingRepository } from "../src/modules/training/index.js";
 
 describe("training repository atomic creation", () => {
   it("does not report a created plan if its exercises fail in the same transaction", async () => {

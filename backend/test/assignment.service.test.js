@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createAssignmentService } from "../src/modules/assignments/assignment.service.js";
+import { createAssignmentService } from "../src/modules/assignments/index.js";
 
 describe("coach assignment service", () => {
   it("rejects an effective date in the past", async () => {

@@ -1,11 +1,11 @@
 import request from "supertest";
-import { readFileSync, readdirSync } from "node:fs";
-import { join } from "node:path";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
 import { createApp } from "../src/app.js";
-import { createRolePermissionService } from "../src/modules/role-permissions/role-permission.service.js";
-import { assignablePermissionCodes } from "../src/modules/role-permissions/permission-catalog.js";
+import { createRolePermissionService } from "../src/modules/role-permissions/index.js";
+import { assignablePermissionCodes } from "../src/modules/role-permissions/domain/permission-catalog.js";
+import { routeSourceFiles } from "./helpers/route-source-files.js";
 
 const matrix = {
   permissions: [{ code: "class.read", description: "Xem lớp học" }, { code: "payment.read", description: "Xem thanh toán" }],
@@ -22,11 +22,9 @@ describe("role permission configuration", () => {
   it("lists exactly the permission codes enforced by mounted routes", () => {
     const modules = fileURLToPath(new URL("../src/modules/", import.meta.url));
     const enforced = new Set();
-    for (const name of readdirSync(modules)) {
-      for (const file of readdirSync(join(modules, name)).filter((item) => item.endsWith(".routes.js"))) {
-        const source = readFileSync(join(modules, name, file), "utf8");
-        for (const match of source.matchAll(/requirePermission\("([^"]+)"\)/g)) enforced.add(match[1]);
-      }
+    for (const path of routeSourceFiles(modules)) {
+      const source = readFileSync(path, "utf8");
+      for (const match of source.matchAll(/requirePermission\("([^"]+)"\)/g)) enforced.add(match[1]);
     }
     expect([...assignablePermissionCodes].sort()).toEqual([...enforced].sort());
   });

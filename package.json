@@ -1,0 +1,8 @@
+{
+  "name": "sports-center",
+  "private": true,
+  "scripts": {
+    "check:architecture": "node scripts/check-architecture.mjs",
+    "check": "npm run check:architecture && npm --prefix backend run check && npm --prefix frontend run check"
+  }
+}

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { prisma } from "../src/database.js";
-import { authRepository } from "../src/modules/auth/auth.repository.js";
+import { authRepository } from "../src/modules/auth/index.js";
 
 vi.mock("../src/database.js", () => ({ prisma: {
   permissions: { findMany: vi.fn() },

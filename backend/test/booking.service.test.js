@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createBookingService } from "../src/modules/bookings/booking.service.js";
+import { createBookingService } from "../src/modules/bookings/index.js";
 
 describe("booking service", () => {
   it("limits a Coach booking list to classes they are assigned to", async () => {

@@ -1,0 +1,27 @@
+import { prisma } from "../../../database.js";
+
+export const membershipRepository = {
+  packages: () => prisma.membership_packages.findMany({ orderBy: { tier_rank: "asc" } }),
+  publicPackages: () => prisma.membership_packages.findMany({
+    where: { code: { in: ["BASIC", "STANDARD", "PREMIUM"] }, is_active: true },
+    orderBy: { tier_rank: "asc" },
+    select: { code: true, name: true, price_vnd: true, duration_days: true, benefits: true },
+  }),
+  packageById: (id) => prisma.membership_packages.findUnique({ where: { id } }),
+  entitlements: (packageId) => prisma.membership_package_entitlements.findMany({ where: { package_id: packageId } }),
+  memberExists: (id) => prisma.members.findUnique({ where: { id } }), memberByUser: (userId) => prisma.members.findUnique({ where: { user_id: userId } }),
+  createPackage: (data) => prisma.membership_packages.create({ data }),
+  updatePackage: (id, data) => prisma.membership_packages.update({ where: { id }, data }),
+  replaceEntitlements: async (packageId, entitlements) => prisma.$transaction(async (tx) => { await tx.membership_package_entitlements.deleteMany({ where: { package_id: packageId } }); if (entitlements.length) await tx.membership_package_entitlements.createMany({ data: entitlements.map((item) => ({ package_id: packageId, entitlement: item.code, usage_limit: item.usageLimit ?? null, limit_period: item.limitPeriod ?? null })) }); }),
+  createMembership: (data) => prisma.member_memberships.create({ data }), membership: (id) => prisma.member_memberships.findUnique({ where: { id } }),
+  memberships: (memberId) => prisma.member_memberships.findMany({ where: { member_id: memberId }, orderBy: { created_at: "desc" } }),
+  createFreeze: (data) => prisma.membership_freeze_requests.create({ data }), freezeRequests: (membershipId) => prisma.membership_freeze_requests.findMany({ where: { membership_id: membershipId }, orderBy: { created_at: "desc" } }), reviewQueue: async (status) => { const requests = await prisma.membership_freeze_requests.findMany({ where: status ? { status } : undefined, orderBy: { created_at: "asc" } }); const memberships = await prisma.member_memberships.findMany({ where: { id: { in: requests.map((item) => item.membership_id) } }, select: { id: true, member_id: true, package_name_snapshot: true, expires_on: true } }); const members = await prisma.members.findMany({ where: { id: { in: memberships.map((item) => item.member_id) } }, select: { id: true, full_name: true, member_code: true } }); const membershipById = new Map(memberships.map((item) => [item.id, item])); const memberById = new Map(members.map((item) => [item.id, item])); return requests.map((item) => ({ ...item, membership: membershipById.get(item.membership_id), member: memberById.get(membershipById.get(item.membership_id)?.member_id) })); }, freezeRequest: (id) => prisma.membership_freeze_requests.findUnique({ where: { id } }),
+  approveFreeze: (id, reviewer) => prisma.membership_freeze_requests.update({ where: { id }, data: { status: "approved", reviewed_by: reviewer, reviewed_at: new Date() } }), rejectFreeze: (id, reviewer) => prisma.membership_freeze_requests.update({ where: { id }, data: { status: "rejected", reviewed_by: reviewer, reviewed_at: new Date() } }),
+  extendForFreeze: (id, expiresOn, days) => prisma.member_memberships.update({ where: { id }, data: { frozen_days: { increment: days }, expires_on: expiresOn } }), cancelPendingRenewal: (id) => prisma.member_memberships.update({ where: { id }, data: { status: "cancelled" } }),
+  async notifyMember(membershipId, title, body) {
+    const membership = await prisma.member_memberships.findUnique({ where: { id: membershipId }, select: { member_id: true } });
+    if (!membership) return;
+    const member = await prisma.members.findUnique({ where: { id: membership.member_id }, select: { user_id: true } });
+    if (member?.user_id) await prisma.notifications.create({ data: { recipient_user_id: member.user_id, category: "member", title, body, link_path: `/memberships/${membershipId}` } });
+  },
+};

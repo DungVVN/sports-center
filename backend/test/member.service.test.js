@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createMemberService } from "../src/modules/members/member.service.js";
+import { createMemberService } from "../src/modules/members/index.js";
 
 describe("Member service contacts", () => {
   it("returns an actionable conflict when an updated phone is already used", async () => {

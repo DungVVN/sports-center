@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createAttendanceService } from "../src/modules/attendance/attendance.service.js";
+import { createAttendanceService } from "../src/modules/attendance/index.js";
 
 const coach = { id: "coach-1", role: "coach" };
 const admin = { id: "admin-1", role: "admin" };

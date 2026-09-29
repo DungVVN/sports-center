@@ -1,0 +1,16 @@
+import { Router } from "express";
+import { z } from "zod";
+import { authenticate, requirePermission } from "../../../shared/auth/authentication.middleware.js";
+import { sendSuccess } from "../../../shared/http/response.js";
+import { validateRequest } from "../../../shared/validation/validate-request.js";
+const id = z.string().uuid();
+export function createPaymentRouter(service, authService) { const router = Router(); const read = [authenticate(authService), requirePermission("payment.read")]; const secure = [authenticate(authService), requirePermission("payment.record")]; const payload = z.object({ memberId: id, membershipId: id.optional(), amountVnd: z.coerce.number().int().positive(), method: z.enum(["cash", "bank_transfer", "online"]).optional(), provider: z.enum(["payos"]).optional(), notes: z.string().trim().max(500).optional() }).strict().superRefine((value, context) => { if (value.method === "online" && !value.provider) context.addIssue({ code: "custom", path: ["provider"], message: "Cần chọn cổng thanh toán." }); if (value.method !== "online" && value.provider) context.addIssue({ code: "custom", path: ["provider"], message: "Chỉ thanh toán trực tuyến mới chọn cổng thanh toán." }); });
+  router.get("/members/me/payments", authenticate(authService), requirePermission("payment.self.read"), async (req, res, next) => { try { sendSuccess(res, { data: await service.ownPayments(req.auth.user) }); } catch (error) { next(error); } });
+  router.get("/members/me/payments/:id", authenticate(authService), requirePermission("payment.self.read"), validateRequest(z.object({ params: z.object({ id }) })), async (req, res, next) => { try { sendSuccess(res, { data: await service.ownReceipt(req.validated.params.id, req.auth.user) }); } catch (error) { next(error); } });
+  router.get("/payments", ...read, async (req, res, next) => { try { sendSuccess(res, { data: await service.list(req.query.memberId ? { member_id: req.query.memberId } : undefined) }); } catch (error) { next(error); } });
+  router.post("/payments", ...secure, validateRequest(z.object({ body: payload })), async (req, res, next) => { try { sendSuccess(res, { statusCode: 201, data: await service.create(req.validated.body, req.auth.user.id) }); } catch (error) { next(error); } });
+  router.get("/payments/:id", ...read, validateRequest(z.object({ params: z.object({ id }) })), async (req, res, next) => { try { sendSuccess(res, { data: await service.get(req.validated.params.id) }); } catch (error) { next(error); } });
+  router.post("/payments/:id/confirm", ...secure, validateRequest(z.object({ params: z.object({ id }), body: z.object({ status: z.enum(["paid", "failed"]), reconciliationNote: z.string().trim().min(10).max(500).optional() }) })), async (req, res, next) => { try { const { status, reconciliationNote } = req.validated.body; const args = [req.validated.params.id, status, req.auth.user.id, ...(reconciliationNote ? [reconciliationNote] : [])]; sendSuccess(res, { data: await service.confirm(...args) }); } catch (error) { next(error); } });
+  router.post("/payments/callbacks/payos", async (req, res, next) => { try { sendSuccess(res, { data: await service.payosCallback(req.body) }); } catch (error) { next(error); } });
+  return router;
+}

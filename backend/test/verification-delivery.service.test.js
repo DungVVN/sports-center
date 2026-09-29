@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createVerificationDeliveryService } from "../src/modules/auth/verification-delivery.service.js";
+import { createVerificationDeliveryService } from "../src/modules/auth/index.js";
 
 describe("Resend verification delivery", () => {
   it("sends an email verification code through Resend", async () => {

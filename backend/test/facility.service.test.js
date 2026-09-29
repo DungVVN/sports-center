@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createFacilityService } from "../src/modules/facilities/facility.service.js";
+import { createFacilityService } from "../src/modules/facilities/index.js";
 
 const date = new Date(Date.now() + 24 * 60 * 60 * 1000);
 const dateText = date.toISOString().slice(0, 10);

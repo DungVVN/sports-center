@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createAuthService } from "../src/modules/auth/auth.service.js";
+import { createAuthService } from "../src/modules/auth/index.js";
 import { createLoginAttemptLimiter } from "../src/shared/security/login-attempt-limiter.js";
 import { hashPassword } from "../src/shared/auth/password.js";
 import { hashVerificationCode } from "../src/shared/auth/session-token.js";

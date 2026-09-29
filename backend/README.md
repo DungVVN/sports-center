@@ -2,11 +2,14 @@
 
 This folder contains the Node.js/Express API, Prisma database layer, OpenAPI contract, validation, permission middleware and domain modules for the Sports Center MVP. The `project/` folder at the repository root is only the original Figma UI reference and is not a deployment source.
 
+`src/app/create-services.js` owns service composition and `src/app/register-routes.js` owns route order. Each module exposes `index.js` and separates presentation, application, domain (where needed), and infrastructure. See [the migration plan](../ARCHITECTURE_MIGRATION.md). Run `npm run check` for lint, unit/contract tests and build validation; database and browser acceptance remain separate gates. `scripts/integration/support-flow.mjs` runs a write-flow check only when `TEST_DATABASE_URL` points to a localhost database named `sports_center_arch_qa*`.
+
 ## Database
 
 - Prisma schema: `database/prisma/schema.prisma`
 - Versioned migration: `database/prisma/migrations/`
 - Production database: Neon PostgreSQL, Singapore
+- The configured database reported PostgreSQL 18.6 during the migration audit; isolated QA checks should use the same major version.
 - Runtime config: `DATABASE_URL`
 - Migration config: `MIGRATE_DATABASE_URL` (falls back to `DATABASE_URL`)
 

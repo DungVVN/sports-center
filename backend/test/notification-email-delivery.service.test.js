@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createNotificationEmailDeliveryService } from "../src/modules/notifications/notification-email-delivery.service.js";
+import { createNotificationEmailDeliveryService } from "../src/modules/notifications/index.js";
 
 const config = { verificationDeliveryMode: "provider", resendApiKey: "re_test", resendFromEmail: "no-reply@example.com", resendFromName: "Kinetic Sports", corsOrigins: ["https://www.example.com"] };
 const notification = { id: "notification-1", title: "Đã có chỗ trong lớp", body: "Bạn đã được xác nhận.", link_path: "/bookings/booking-1", recipient: { email: "member@example.com" }, emailEnabled: true };

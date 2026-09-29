@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createClassService } from "../src/modules/classes/class.service.js";
+import { createClassService } from "../src/modules/classes/index.js";
 
 const input = { name: "Yoga sáng", type: "group", coachUserId: "coach-1", roomId: "room-1", startsAt: "2026-09-15T01:00:00.000Z", endsAt: "2026-09-15T02:00:00.000Z", capacity: 20 };
 

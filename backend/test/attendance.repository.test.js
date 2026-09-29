@@ -5,7 +5,7 @@ const prisma = vi.hoisted(() => ({
   $transaction: vi.fn(),
 }));
 vi.mock("../src/database.js", () => ({ prisma }));
-import { attendanceRepository } from "../src/modules/attendance/attendance.repository.js";
+import { attendanceRepository } from "../src/modules/attendance/index.js";
 
 describe("attendance repository timestamps", () => {
   beforeEach(() => vi.clearAllMocks());
