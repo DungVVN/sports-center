@@ -1,6 +1,6 @@
 # Sports Center architecture migration
 
-Status: local structural migration and isolated QA passed; staging promotion is pending. Preserve existing API behavior and business rules while migrating one capability at a time.
+Status: architecture adaptation complete in Sports Center, with local verification passed. Scope is to apply the reference architecture while preserving existing behavior; deployment, staging, external-provider acceptance and UAT are not part of this work.
 
 Implementation branch: `codex/architecture-migration`. Baseline at `217edbb`: backend 231 tests, frontend 123 tests, both lint and build checks passed. This file describes the destination now implemented locally; optional layer directories are created only where owned code exists.
 
@@ -45,10 +45,10 @@ The directories above are destinations, not empty scaffolding requirements. Crea
 2. Add one aggregate quality command and architecture boundary checks. It must report each gate separately and not imply database or browser acceptance.
 3. Extract backend service composition from `app.js`, then route registration. Keep the same route order and dependency injection hooks. Verify app, route and service tests before and after.
 4. Migrate a small backend capability (Support) into presentation/application/infrastructure, retaining its public behavior. Add only meaningful missing contract tests.
-5. Migrate remaining backend modules in risk order: read-oriented modules first, then identity/staff/membership, then bookings/facilities/payments/attendance. For transactions, preserve atomicity and audit behavior; add integration proof against a disposable database before promotion.
+5. Migrate remaining backend modules in risk order: read-oriented modules first, then identity/staff/membership, then bookings/facilities/payments/attendance. For transactions, preserve atomicity and audit behavior; add integration proof against a disposable database before closing the architecture work.
 6. Consolidate frontend transport and domain-neutral UI under `shared`, then migrate one feature at a time behind root `index.js` contracts. Keep existing imports working until all consumers move.
 7. Separate app routing, session lifecycle and layouts. Introduce a router only after deep-link, back/forward, login, admin/member portal and permission regression coverage exists.
-8. Run full unit, lint, build and browser suites; compare API/OpenAPI contracts and test real PostgreSQL flows. Stage and verify the exact candidate before product promotion.
+8. Run full unit, lint, build and local browser suites; compare API/OpenAPI contracts and test real PostgreSQL flows. Close the architecture work after local verification; deployment is a separate decision.
 
 ## Delivery slices and order
 
@@ -60,7 +60,7 @@ The directories above are destinations, not empty scaffolding requirements. Crea
 | People and access | Identity/Auth, Staff, Members, Assignments, Roles/Permissions | Auth, Staff, Members, Roles/Permissions | Login, MFA, reset, permission change and session regression |
 | Membership and training | Memberships, Classes, Training, Notifications | Corresponding features | Lifecycle, scheduled jobs, entitlement and attendance-adjacent contracts |
 | Reservation and money | Bookings, Facilities, Attendance, Payments | Corresponding features | Serializable/concurrent transactions, PayOS callback idempotency, audit and isolated browser journeys |
-| Routing and release | HTTP entrypoint, OpenAPI, migrations | Router, layouts, shared UI | Deep links, back/forward, mobile/admin/member portals, migrated PostgreSQL and staging smoke |
+| Routing and verification | HTTP entrypoint, OpenAPI, migrations | Router, layouts, shared UI | Deep links, back/forward, mobile/admin/member portals and isolated PostgreSQL 18 smoke |
 
 For every slice: preserve existing path and payload contracts; move one owning module at a time; run the local gate; record changed imports and any missing integration evidence. A passing source gate is not a deployed or concurrent-load result.
 
@@ -91,7 +91,7 @@ For every slice: preserve existing path and payload contracts; move one owning m
 - [x] Authenticated browser regression on an isolated PostgreSQL 18.6 QA database: manager, receptionist, coach and member portal navigation across mobile/tablet/desktop (12/12), member history/deep-link/back/forward/reload, separate Admin portal, role access, Support, package/member assignment, cash payment, booking, class, facility and registration journeys passed. Seven additional public/layout checks passed after the feature folder migration.
 - [x] PostgreSQL 18.6 integration checks passed for role-permission optimistic concurrency, booking capacity/waitlist and duplicate suppression, facility approval/duplicate suppression, and PayOS callback race. The callback race exposed a stale `pending` response on the losing request; the service now re-reads committed payment state and has unit regression coverage. These are isolated database tests, not external PayOS settlement proof.
 - [x] Source ownership review completed. Cross-module read projections and atomic writes are inventoried below; no transaction was split merely to make folder boundaries look pure.
-- [ ] Staging candidate verification and external integration/UAT proof. No deployment or production database migration was performed.
+- [x] Architecture-only scope closed after local checks. No deployment or production database migration was requested or performed; external-provider acceptance and UAT are separate work, not remaining gates for this conversion.
 
 Latest local aggregate gate: backend 234/234 tests, frontend 123/123 tests, architecture checks, lint and both builds passed. All 42 existing migrations were applied only to disposable PostgreSQL 18.6 instances. The configured database version was independently read as 18.6; the architecture work does not downgrade it to PostgreSQL 16.
 
@@ -99,7 +99,7 @@ Latest local aggregate gate: backend 234/234 tests, frontend 123/123 tests, arch
 
 The modular monolith retains one PostgreSQL database. Public `index.js` contracts and application injection govern source dependencies, while a few repositories still join or atomically update tables owned by other capabilities. This is an explicit compatibility boundary, not independent database ownership:
 
-| Capability repository | Existing cross-capability work | Decision before staging |
+| Capability repository | Existing cross-capability work | Architecture decision |
 |---|---|---|
 | Insights, Audit, AI Assist, dashboard-oriented reads | Project member, booking, class, membership and attendance data | Retain read-model projections; do not replace them with sequential API calls that change consistency or latency. |
 | Payments | Atomically records payment event, activates membership and creates notification | Retain one database transaction; the duplicate webhook race is covered on PostgreSQL 18.6. External PayOS settlement remains unverified. |
@@ -107,7 +107,7 @@ The modular monolith retains one PostgreSQL database. Public `index.js` contract
 | Auth, Staff, Members | Creates or updates user/profile/member records and revokes auth sessions together | Retain atomic identity lifecycle; do not split credentials or session revocation into eventual asynchronous steps. |
 | Classes, Memberships, AI Assist | Creates operational notifications from owner workflows | Preserve current delivery and response behavior; a future outbox requires its own migration and replay tests. |
 
-These are deliberate monolith coupling points. Turning them into independently owned stores or asynchronous events would change transaction semantics and is outside this behavior-preserving migration. The remaining release gate is a deployed staging candidate against its configured PostgreSQL 18 environment, real external PayOS/email integrations and user acceptance checks; local tests cannot certify those.
+These are deliberate monolith coupling points. Turning them into independently owned stores or asynchronous events would change transaction semantics and is outside this behavior-preserving migration. Local architecture verification is complete; it does not claim real PayOS/email acceptance or production readiness.
 
 ## Gate for each slice
 
