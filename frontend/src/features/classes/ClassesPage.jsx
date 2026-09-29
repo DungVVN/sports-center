@@ -215,7 +215,7 @@ export function ClassesPage({ session }) {
   async function review(id, approved) {
     await run(reviewChangeMutation, { id, approved },
         approved
-          ? "Đã duyệt thay đổi lớp và gửi thông báo cho hội viên."
+          ? "Đã duyệt thay đổi lớp; các booking còn hiệu lực đã được xử lý."
           : "Đã từ chối yêu cầu thay đổi lớp.",
       );
   }

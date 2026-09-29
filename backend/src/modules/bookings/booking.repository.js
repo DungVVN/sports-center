@@ -19,6 +19,21 @@ async function bookingEntitlement(database, packageId) {
   return entitlements.sort((left, right) => (tiersByPackageId.get(right.package_id) ?? 0) - (tiersByPackageId.get(left.package_id) ?? 0))[0] ?? null;
 }
 
+async function eligibleMembership(database, memberId, accessAt) {
+  const memberships = await database.member_memberships.findMany({
+    where: { member_id: memberId, status: { in: ["active", "expiring_soon"] }, starts_on: { lte: accessAt }, OR: [{ expires_on: { gte: accessAt } }, { grace_expires_at: { gte: accessAt } }] },
+    orderBy: { expires_on: "desc" },
+  });
+  if (memberships.length === 0) return null;
+  const accessDay = new Date(Date.UTC(accessAt.getUTCFullYear(), accessAt.getUTCMonth(), accessAt.getUTCDate()));
+  const frozen = await database.membership_freeze_requests.findMany({
+    where: { membership_id: { in: memberships.map((membership) => membership.id) }, status: "approved", starts_on: { lte: accessDay }, ends_on: { gt: accessDay } },
+    select: { membership_id: true },
+  });
+  const frozenIds = new Set(frozen.map((request) => request.membership_id));
+  return memberships.find((membership) => !frozenIds.has(membership.id)) ?? null;
+}
+
 export const bookingRepository = {
   list: async ({ memberId, coachUserId } = {}) => {
     const classIds = coachUserId
@@ -67,7 +82,7 @@ export const bookingRepository = {
   class: (id) => prisma.class_sessions.findUnique({ where: { id } }),
   member: (id) => prisma.members.findUnique({ where: { id } }),
   memberByUser: (userId) => prisma.members.findUnique({ where: { user_id: userId } }),
-  activeMembership: (memberId, accessAt) => prisma.member_memberships.findFirst({ where: { member_id: memberId, status: { in: ["active", "expiring_soon"] }, starts_on: { lte: accessAt }, OR: [{ expires_on: { gte: accessAt } }, { grace_expires_at: { gte: accessAt } }] }, orderBy: { expires_on: "desc" } }),
+  activeMembership: (memberId, accessAt) => eligibleMembership(prisma, memberId, accessAt),
   entitlement: (packageId) => bookingEntitlement(prisma, packageId),
   createWithCapacity: ({ bookingCode, memberId, classId, bookedBy }) => serializable(async (tx) => {
     const existing = await tx.bookings.findFirst({ where: { member_id: memberId, class_session_id: classId, status: { in: ["confirmed", "waitlisted"] } } });
@@ -88,7 +103,7 @@ export const bookingRepository = {
     if (!session) return null;
     const waitlisted = await tx.bookings.findMany({ where: { class_session_id: classId, status: "waitlisted" }, orderBy: { booked_at: "asc" } });
     for (const candidate of waitlisted) {
-      const membership = await tx.member_memberships.findFirst({ where: { member_id: candidate.member_id, status: { in: ["active", "expiring_soon"] }, starts_on: { lte: session.starts_at }, OR: [{ expires_on: { gte: session.starts_at } }, { grace_expires_at: { gte: session.starts_at } }] }, orderBy: { expires_on: "desc" } });
+      const membership = await eligibleMembership(tx, candidate.member_id, session.starts_at);
       if (!membership || !await bookingEntitlement(tx, membership.package_id)) continue;
       const booking = await tx.bookings.update({ where: { id: candidate.id }, data: { status: "confirmed" } });
       const member = await tx.members.findUnique({ where: { id: candidate.member_id }, select: { user_id: true } });

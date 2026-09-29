@@ -9,7 +9,7 @@ import { AttendancePage } from "./AttendancePage.jsx";
 
 vi.mock("../bookings/booking-api.js", () => ({ bookingApi: { byClass: vi.fn() } }));
 vi.mock("../classes/class-api.js", () => ({ classApi: { list: vi.fn() } }));
-vi.mock("./attendance-api.js", () => ({ attendanceApi: { byClass: vi.fn(), submit: vi.fn(), correct: vi.fn() } }));
+vi.mock("./attendance-api.js", () => ({ attendanceApi: { byClass: vi.fn(), submit: vi.fn(), correct: vi.fn(), checkOut: vi.fn() } }));
 
 const activeClass = { id: "class-1", code: "CLS-1", name: "Yoga", status: "published", starts_at: new Date(Date.now() - 60_000).toISOString(), ends_at: new Date(Date.now() + 3_600_000).toISOString(), capacity: 12, type: "group" };
 const session = { user: { role: "admin", id: "admin-1" }, permissions: ["attendance.read", "attendance.write"] };
@@ -36,11 +36,13 @@ describe("AttendancePage", () => {
   });
 
   it("keeps attendance mutation controls hidden without attendance.write", async () => {
+    attendanceApi.byClass.mockResolvedValue([{ id: "attendance-1", member_id: "member-1", status: "present", checked_in_at: new Date().toISOString(), checked_out_at: null, member: booking.member }]);
     renderPage({ session: { user: { role: "receptionist" }, permissions: ["attendance.read"] } });
     await screen.findByText("Yoga");
     fireEvent.click(screen.getByRole("button", { name: "Xem điểm danh" }));
     expect(await screen.findByText("Bình")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Lưu điểm danh" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Check-out" })).not.toBeInTheDocument();
   });
 
   it("submits attendance and shows success feedback", async () => {
@@ -62,5 +64,21 @@ describe("AttendancePage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Lưu điểm danh" }));
     fireEvent.click(await screen.findByRole("button", { name: "Xác nhận lưu" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Buổi học đã bị khóa.");
+  });
+
+  it("confirms check-out, refreshes the row, and hides repeat action", async () => {
+    const checkedIn = { id: "attendance-1", member_id: "member-1", status: "present", checked_in_at: new Date().toISOString(), checked_out_at: null, member: booking.member };
+    const checkedOut = { ...checkedIn, checked_out_at: new Date().toISOString() };
+    attendanceApi.byClass.mockResolvedValueOnce([checkedIn]).mockResolvedValue([checkedOut]);
+    attendanceApi.checkOut.mockResolvedValue(checkedOut);
+    renderPage();
+    fireEvent.click(await screen.findByRole("button", { name: "Xem điểm danh" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Check-out" }));
+    expect(screen.getByText("Check-out cho Bình?")).toBeInTheDocument();
+    expect(attendanceApi.checkOut).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Xác nhận check-out" }));
+    await waitFor(() => expect(attendanceApi.checkOut).toHaveBeenCalledWith("attendance-1"));
+    expect(await screen.findByRole("status")).toHaveTextContent("Đã check-out buổi học.");
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Check-out" })).not.toBeInTheDocument());
   });
 });

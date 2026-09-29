@@ -47,6 +47,18 @@ describe("facility calendar", () => {
     expect(facilityApi.request).toHaveBeenCalledWith({ dayId: "day-1", startMinute: 420, endMinute: 480, participantCount: 1, phone: "0901234567" });
   });
 
+  it("rejects reversed request times before calling the API", async () => {
+    mount({ session: { user: { role: "member", displayName: "Nguyễn Minh" }, permissions: ["facility.booking.request"] } });
+    expect(await screen.findByText("Sân A")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Yêu cầu đặt ngày này" }));
+    fireEvent.change(screen.getByLabelText("Giờ bắt đầu"), { target: { value: "12:00" } });
+    fireEvent.change(screen.getByLabelText("Giờ kết thúc"), { target: { value: "11:00" } });
+    fireEvent.change(screen.getByLabelText("Số điện thoại"), { target: { value: "0901234567" } });
+    fireEvent.click(screen.getByRole("button", { name: "Gửi yêu cầu" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Giờ kết thúc phải sau giờ bắt đầu.");
+    expect(facilityApi.request).not.toHaveBeenCalled();
+  });
+
   it("shows requester details and sends a cancellation request from a permitted account", async () => {
     facilityApi.reservations.mockResolvedValue([{ id: "booking-1", requesterName: "Nguyễn Minh", phone: "0901234567", participantCount: 4, facilityName: "Sân A", date: "2099-09-25", requestedStartMinute: 420, requestedEndMinute: 480, status: "pending" }]);
     facilityApi.cancel.mockResolvedValue({ id: "booking-1", cancellationPending: true });
@@ -67,5 +79,13 @@ describe("facility calendar", () => {
     fireEvent.click(screen.getByRole("button", { name: "Xác nhận hủy" }));
     expect(await screen.findByText("Đã xác nhận hủy đơn.")).toBeInTheDocument();
     expect(facilityApi.confirmCancellation).toHaveBeenCalledWith("booking-1");
+  });
+
+  it("does not offer confirmation for an already cancelled reservation with retained audit metadata", async () => {
+    facilityApi.mine.mockResolvedValue([{ id: "booking-1", facilityName: "Sân A", date: "2099-09-25", requestedStartMinute: 420, requestedEndMinute: 480, status: "cancelled", cancellationPending: true, cancellationReason: "Đổi lịch sân" }]);
+    mount({ session: { user: { role: "member", displayName: "Nguyễn Minh" }, permissions: ["facility.booking.self.read"] } });
+    expect(await screen.findByText(/Đã hủy/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Xác nhận hủy" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Có yêu cầu hủy/)).not.toBeInTheDocument();
   });
 });

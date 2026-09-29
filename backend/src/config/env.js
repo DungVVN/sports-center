@@ -1,6 +1,13 @@
 import "dotenv/config";
 import { z } from "zod";
 
+export function parseEnvBoolean(value) {
+  if (typeof value !== "string") return value;
+  if (value === "true" || value === "1") return true;
+  if (value === "false" || value === "0") return false;
+  return value;
+}
+
 const environmentSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().int().min(1).max(65535).default(8880),
@@ -15,7 +22,7 @@ const environmentSchema = z.object({
   AUTH_MFA_ENCRYPTION_KEY: z.string().min(32).default("development-only-mfa-encryption-key-change-before-production"),
   AUTH_MFA_ENROLLMENT_TTL_MINUTES: z.coerce.number().int().min(1).max(60).default(10),
   AUTH_MFA_CHALLENGE_TTL_MINUTES: z.coerce.number().int().min(1).max(30).default(5),
-  CAPTCHA_ENABLED: z.coerce.boolean().default(false),
+  CAPTCHA_ENABLED: z.preprocess(parseEnvBoolean, z.boolean()).default(false),
   RECAPTCHA_SECRET_KEY: z.string().min(1).optional(),
   VERIFICATION_CODE_SECRET: z.string().min(32).default("development-only-verification-secret-change-before-production"),
   VERIFICATION_CODE_TTL_MINUTES: z.coerce.number().int().min(1).max(60).default(10),
@@ -23,7 +30,7 @@ const environmentSchema = z.object({
   RESEND_API_KEY: z.string().startsWith("re_").optional(),
   RESEND_FROM_EMAIL: z.string().email().optional(),
   RESEND_FROM_NAME: z.string().trim().min(1).max(100).default("Kinetic Sports"),
-  JOBS_ENABLED: z.coerce.boolean().default(true),
+  JOBS_ENABLED: z.preprocess(parseEnvBoolean, z.boolean()).default(true),
   JOB_INTERVAL_MINUTES: z.coerce.number().int().min(15).max(1440).default(60),
   PAYOS_CLIENT_ID: z.string().min(1).optional(),
   PAYOS_API_KEY: z.string().min(1).optional(),

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Bell,
   CalendarDays,
@@ -115,6 +115,8 @@ export function AppShell({ children, currentView, navigation, notifications, onL
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState({});
+  const mobileMenuTriggerRef = useRef(null);
+  const mobileNavPanelRef = useRef(null);
   const unreadCount = notifications.filter((item) => !item.read_at).length;
 
   function toggleGroup(id) {
@@ -135,9 +137,39 @@ export function AppShell({ children, currentView, navigation, notifications, onL
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [notificationsOpen]);
 
+  useEffect(() => {
+    if (!mobileNavOpen) return undefined;
+    const panel = mobileNavPanelRef.current;
+    const trigger = mobileMenuTriggerRef.current;
+    panel?.querySelector("button")?.focus();
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setMobileNavOpen(false);
+        return;
+      }
+      if (event.key !== "Tab" || !panel) return;
+      const focusable = [...panel.querySelectorAll("button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled])")];
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable.at(-1);
+      if (event.shiftKey && (document.activeElement === first || !panel.contains(document.activeElement))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || !panel.contains(document.activeElement))) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      trigger?.focus();
+    };
+  }, [mobileNavOpen]);
+
   return (
     <div className="app-shell">
-      <aside className="app-sidebar">
+      <aside className="app-sidebar" inert={mobileNavOpen}>
         <div className="app-sidebar__brand"><span>SC</span><div><strong>Sports Center</strong><small>Quản lý vận hành</small></div></div>
         <div className="app-sidebar__navigation">
           <nav aria-label="Điều hướng chính">
@@ -148,11 +180,11 @@ export function AppShell({ children, currentView, navigation, notifications, onL
           <Button className="app-sidebar__logout" onClick={onLogout} variant="ghost"><LogOut aria-hidden="true" size={17} />Đăng xuất</Button>
         </footer>
       </aside>
-      <div className="app-shell__content">
+      <div className="app-shell__content" inert={mobileNavOpen}>
         <header className="app-header">
           <div><p>Sports Center</p><strong>{roleLabel}</strong></div>
           <div className="app-header__actions">
-            <button aria-controls="mobile-navigation" aria-expanded={mobileNavOpen} aria-label="Mở menu" className="app-header__menu" onClick={() => setMobileNavOpen((value) => !value)} type="button"><Menu aria-hidden="true" size={20} /></button>
+            <button aria-controls="mobile-navigation" aria-expanded={mobileNavOpen} aria-label="Mở menu" className="app-header__menu" onClick={() => setMobileNavOpen((value) => !value)} ref={mobileMenuTriggerRef} type="button"><Menu aria-hidden="true" size={20} /></button>
             <Tooltip label="Mở thông báo">
               {(triggerProps) => <button {...triggerProps} aria-expanded={notificationsOpen} aria-label={`Thông báo, ${unreadCount} chưa đọc`} className="app-header__notifications" onClick={() => setNotificationsOpen((value) => !value)} type="button"><Bell aria-hidden="true" size={18} />{unreadCount > 0 && <span>{unreadCount}</span>}</button>}
             </Tooltip>
@@ -170,7 +202,7 @@ export function AppShell({ children, currentView, navigation, notifications, onL
         {mobileNavOpen && (
           <>
             <button aria-label="Đóng menu" className="app-mobile-nav__backdrop" onClick={() => setMobileNavOpen(false)} type="button" />
-            <section aria-label="Điều hướng chính" className="app-mobile-nav__panel" id="mobile-navigation" role="dialog">
+            <section aria-label="Điều hướng chính" aria-modal="true" className="app-mobile-nav__panel" id="mobile-navigation" ref={mobileNavPanelRef} role="dialog">
               <div className="app-mobile-nav__heading"><div><small>Sports Center</small><h2>Điều hướng</h2></div><button aria-label="Đóng menu" onClick={() => setMobileNavOpen(false)} type="button"><X aria-hidden="true" size={20} /></button></div>
               <nav><NavigationItems currentView={currentView} expandedGroups={expandedGroups} mobile navigation={navigation} onNavigate={navigateFromMobile} toggleGroup={toggleGroup} /></nav>
               <Button className="app-mobile-nav__logout" onClick={onLogout} variant="ghost"><LogOut aria-hidden="true" size={18} />Đăng xuất</Button>

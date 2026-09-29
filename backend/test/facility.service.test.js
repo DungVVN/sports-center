@@ -65,4 +65,13 @@ describe("facility calendar service", () => {
     await expect(service.confirmCancellation("res-1", "another-member")).rejects.toMatchObject({ code: "FACILITY_CANCELLATION_CONFIRMATION_DENIED", statusCode: 403 });
   });
 
+  it("treats a retained cancellation request as completed once the reservation is cancelled", async () => {
+    const repository = {
+      mine: vi.fn().mockResolvedValue([{ id: "res-1", day_id: "day-1", status: "cancelled", cancellation_requested_at: new Date(), cancellation_reason: "Đổi lịch sân" }]),
+      daysByIds: vi.fn().mockResolvedValue([{ id: "day-1", facility_id: "court-1", open_on: date }]),
+      facilitiesByIds: vi.fn().mockResolvedValue([{ id: "court-1", name: "Sân A" }]),
+    };
+    await expect(createFacilityService({ repository, auditService }).mine("member-1")).resolves.toMatchObject([{ status: "cancelled", cancellationPending: false }]);
+  });
+
 });

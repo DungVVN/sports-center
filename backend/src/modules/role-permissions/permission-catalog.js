@@ -2,7 +2,7 @@
 export const assignablePermissionCodes = Object.freeze([
   "ai.assist.deliver", "ai.assist.read", "attendance.read", "attendance.self.read", "attendance.write",
   "audit.read", "booking.read", "booking.write", "class.change.request", "class.change.review",
-  "class.manage", "class.read", "member.read", "member.write", "membership.assign",
+  "class.manage", "class.read", "member.read", "member.write", "member.credentials.reset", "membership.assign",
   "membership.freeze.request", "membership.freeze.review", "membership.package.manage", "membership.package.read",
   "membership.self.read", "notification.preference.manage", "payment.read", "payment.record", "payment.self.read",
   "registration.approve", "report.read", "staff.manage", "support.ticket.create", "support.ticket.read",
@@ -13,6 +13,7 @@ export const assignablePermissionCodes = Object.freeze([
 
 export const permissionDependencies = Object.freeze({
   "member.write": ["member.read"],
+  "member.credentials.reset": ["member.read"],
   "class.manage": ["class.read"],
   "class.change.request": ["class.read"],
   "class.change.review": ["class.read"],
@@ -36,6 +37,7 @@ export const permissionDependencies = Object.freeze({
 
 // These APIs require a member profile and cannot operate for staff accounts.
 export const permissionRoleScopes = Object.freeze({
+  "member.credentials.reset": ["manager", "receptionist", "coach"],
   "attendance.self.read": ["member"],
   "membership.self.read": ["member"],
   "payment.self.read": ["member"],

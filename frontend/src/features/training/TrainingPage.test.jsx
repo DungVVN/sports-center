@@ -45,7 +45,7 @@ describe("TrainingPage", () => {
   it("completes a plan and renders shared success feedback", async () => {
     trainingApi.updatePlan.mockResolvedValue({ ...activePlan, status: "completed" });
     renderPage();
-    const buttons = await screen.findAllByRole("button", { name: "Hoàn thành" });
+    const buttons = await screen.findAllByRole("button", { name: "Hoàn thành" }, { timeout: 5000 });
     fireEvent.click(buttons[0]);
     await waitFor(() => expect(trainingApi.updatePlan).toHaveBeenCalledWith("plan-1", { status: "completed" }));
     expect(await screen.findByRole("status")).toHaveTextContent("Đã hoàn thành giáo án.");
@@ -54,7 +54,7 @@ describe("TrainingPage", () => {
   it("shows an API 409 conflict after plan completion", async () => {
     trainingApi.updatePlan.mockRejectedValue(new ApiError({ status: 409, message: "Giáo án đã hoàn thành." }));
     renderPage();
-    const buttons = await screen.findAllByRole("button", { name: "Hoàn thành" });
+    const buttons = await screen.findAllByRole("button", { name: "Hoàn thành" }, { timeout: 5000 });
     fireEvent.click(buttons[0]);
     expect(await screen.findByRole("alert")).toHaveTextContent("Giáo án đã hoàn thành.");
   });

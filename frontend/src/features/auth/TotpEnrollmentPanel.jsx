@@ -13,7 +13,7 @@ export function TotpEnrollmentPanel({ onEnrollmentCompleted }) {
   const feedback = useMutationFeedback();
   const showToast = useToast();
   const beginEnrollment = useSubmitMutation({ feedback, mutationFn: authApi.beginTotpEnrollment, successMessage: "Đã tạo mã thiết lập Authenticator. Nhập mã 6 số để hoàn tất.", errorMessage: "Không thể bắt đầu đăng ký Authenticator." });
-  const confirmEnrollment = useSubmitMutation({ feedback, mutationFn: (input) => authApi.confirmTotpEnrollment(input), onSuccess: () => { setEnrollment(null); setCode(""); onEnrollmentCompleted?.(); }, successMessage: "Authenticator đã được kích hoạt. Lần đăng nhập Manager tiếp theo sẽ yêu cầu mã 6 số.", errorMessage: "Không thể xác nhận Authenticator." });
+  const confirmEnrollment = useSubmitMutation({ feedback, mutationFn: (input) => authApi.confirmTotpEnrollment(input), onSuccess: () => { setEnrollment(null); setCode(""); onEnrollmentCompleted?.(); }, successMessage: "Authenticator đã được kích hoạt. Lần đăng nhập tiếp theo sẽ yêu cầu mã 6 số.", errorMessage: "Không thể xác nhận Authenticator." });
   async function begin() {
     try { setEnrollment(await beginEnrollment.mutateAsync()); } catch { /* feedback is rendered below */ }
   }
@@ -40,7 +40,7 @@ export function TotpEnrollmentPanel({ onEnrollmentCompleted }) {
       <div className="list-heading">
         <div>
           <h2>Authenticator</h2>
-          <p>Manager dùng mã 6 số từ ứng dụng Authenticator khi đăng nhập.</p>
+          <p>Sau khi thiết lập, bạn sẽ dùng mã 6 số từ ứng dụng Authenticator khi đăng nhập.</p>
         </div>
       </div>
       {feedback.notice && <p className="profile-notice" role="status">{feedback.notice}</p>}

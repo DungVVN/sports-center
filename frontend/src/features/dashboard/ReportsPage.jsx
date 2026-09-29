@@ -17,15 +17,18 @@ export function ReportsPage() {
   const [range, setRange] = useState({ from: "", to: "" });
   const [coachUserId, setCoachUserId] = useState("");
   const feedback = useMutationFeedback();
+  const customRangeComplete = Boolean(range.from && range.to);
+  const customRangeReversed = customRangeComplete && range.from > range.to;
+  const canRequestReport = period !== "custom" || (customRangeComplete && !customRangeReversed);
   const query = { period, ...(period === "custom" ? range : {}), ...(coachUserId ? { coachUserId } : {}) };
-  const reportQuery = useQuery({ queryKey: ["reports", query], queryFn: async () => { const [revenue, attendance] = await Promise.all([dashboardApi.revenue(query), dashboardApi.attendance(query)]); return { attendance, revenue }; }, enabled: period !== "custom" || Boolean(range.from && range.to) });
+  const reportQuery = useQuery({ queryKey: ["reports", query], queryFn: async () => { const [revenue, attendance] = await Promise.all([dashboardApi.revenue(query), dashboardApi.attendance(query)]); return { attendance, revenue }; }, enabled: canRequestReport });
   const coachesQuery = useQuery({ queryKey: ["coaches"], queryFn: classApi.coaches });
   const coaches = coachesQuery.data ?? [];
   const report = reportQuery.data?.revenue ?? null;
   const attendance = reportQuery.data?.attendance ?? null;
   const loading = reportQuery.isLoading;
 
-  const dateRange = report ? `${new Date(report.from).toLocaleDateString("vi-VN")} – ${new Date(report.to).toLocaleDateString("vi-VN")}` : "Đang tải…";
+  const dateRange = !canRequestReport ? "Chưa chọn khoảng ngày hợp lệ" : report ? `${new Date(report.from).toLocaleDateString("vi-VN")} – ${new Date(report.to).toLocaleDateString("vi-VN")}` : "Đang tải…";
   async function download(type) {
     const label = type === "revenue" ? "doanh thu" : "điểm danh";
     try {
@@ -60,8 +63,8 @@ export function ReportsPage() {
               </div>
             </div>
             <div style={{ display: "flex", gap: "12px", alignItems: "flex-end", flexWrap: "wrap" }}>
-              <button disabled={loading} onClick={() => void download("revenue")} type="button">Tải CSV doanh thu</button>
-              <button disabled={loading} onClick={() => void download("attendance")} type="button">Tải CSV điểm danh</button>
+              <button disabled={loading || !canRequestReport} onClick={() => void download("revenue")} type="button">Tải CSV doanh thu</button>
+              <button disabled={loading || !canRequestReport} onClick={() => void download("attendance")} type="button">Tải CSV điểm danh</button>
             </div>
           </div>
           <label>
@@ -76,10 +79,14 @@ export function ReportsPage() {
             </select>
           </label>
           {period === "custom" && (
-            <p>
-              <label>Từ ngày <input type="date" value={range.from} onChange={(event) => setRange({ ...range, from: event.target.value })} /></label>
-              <label>Đến ngày <input type="date" value={range.to} onChange={(event) => setRange({ ...range, to: event.target.value })} /></label>
-            </p>
+            <>
+              <p>
+                <label>Từ ngày <input type="date" value={range.from} onChange={(event) => setRange({ ...range, from: event.target.value })} /></label>
+                <label>Đến ngày <input type="date" value={range.to} onChange={(event) => setRange({ ...range, to: event.target.value })} /></label>
+              </p>
+              {!customRangeComplete && <p>Chọn ngày bắt đầu và kết thúc để xem báo cáo.</p>}
+              {customRangeReversed && <p className="auth-alert" role="alert">Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.</p>}
+            </>
           )}
           <small>Dữ liệu: <b>{dateRange}</b></small>
 

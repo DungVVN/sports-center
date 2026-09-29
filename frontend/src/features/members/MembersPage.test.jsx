@@ -35,6 +35,14 @@ describe("MembersPage", () => {
     expect(screen.queryByRole("button", { name: "Sửa" })).not.toBeInTheDocument();
   });
 
+  it("shows only the credential action when reset permission is granted without member.write", async () => {
+    memberApi.list.mockResolvedValue([{ id: "member-1", memberCode: "HV-01", fullName: "An", email: "an@example.test", phone: "0900000000", hasAccount: true }]);
+    renderPage({ readOnly: true, canResetCredentials: true });
+    expect(await screen.findByText("An")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Gửi lại MK" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Sửa" })).not.toBeInTheDocument();
+  });
+
   it("creates a member and shows the standardized success feedback", async () => {
     memberApi.create.mockResolvedValue({ id: "member-2", accountCreated: true, credentialEmailDelivered: true });
     renderPage();

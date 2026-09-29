@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { Button } from "../../components/ui/Button.jsx";
 import { DataTableToolbar, FilterMenu, SortableHeader } from "../../components/ui/DataTable.jsx";
@@ -32,12 +32,14 @@ const staffStatusOptions = [
 const staffRoleLabels = Object.fromEntries(staffRoleOptions);
 const staffStatusLabels = Object.fromEntries(staffStatusOptions);
 
-export function StaffPage() {
+export function StaffPage({ session }) {
   const [form, setForm] = useState(empty);
   const [editingId, setEditingId] = useState(null);
   const [password, setPassword] = useState(null);
   const [credentialEmailDelivered, setCredentialEmailDelivered] = useState(null);
   const [copiedPassword, setCopiedPassword] = useState(false);
+  const [validationError, setValidationError] = useState("");
+  const phoneInputRef = useRef(null);
   const showToast = useToast();
   const [staffSearch, setStaffSearch] = useState("");
   const [staffRoleFilters, setStaffRoleFilters] = useState([]);
@@ -46,7 +48,7 @@ export function StaffPage() {
   const [staffSort, setStaffSort] = useState({ key: "fullName", direction: "asc" });
   const workspace = useStaffWorkspace({ editingId });
   const { staff } = workspace;
-  const submitting = workspace.createStaff.isPending || workspace.updateStaff.isPending || workspace.updateStatus.isPending || workspace.detailLoading;
+  const submitting = workspace.createStaff.isPending || workspace.updateStaff.isPending || workspace.updateStatus.isPending || workspace.resetPassword.isPending || workspace.detailLoading;
   const visibleStaff = useMemo(() => {
     const query = staffSearch.trim().toLocaleLowerCase("vi");
     const filtered = staff.filter((item) =>
@@ -68,10 +70,19 @@ export function StaffPage() {
   function toggleStaffSort(key) {
     setStaffSort((value) => ({ key, direction: value.key === key && value.direction === "asc" ? "desc" : "asc" }));
   }
-  const update = (event) =>
+  const update = (event) => {
+    setValidationError("");
+    workspace.clearFeedback();
     setForm((value) => ({ ...value, [event.target.name]: event.target.value }));
+  };
   function create(event) {
     event.preventDefault();
+    if (form.phone.trim().length < 9 || form.phone.trim().length > 20) {
+      workspace.clearFeedback();
+      setValidationError("Số điện thoại phải từ 9 đến 20 ký tự.");
+      phoneInputRef.current?.focus();
+      return;
+    }
     setCredentialEmailDelivered(null);
     workspace.createStaff.mutate(form, { onSuccess: (result) => {
       setPassword(result.temporaryPassword ?? null);
@@ -93,7 +104,17 @@ export function StaffPage() {
   function status(id, value) {
     workspace.updateStatus.mutate({ id, status: value });
   }
+  function resetPassword(item) {
+    if (!window.confirm(`Cấp lại mật khẩu tạm cho ${item.fullName}? Các phiên đăng nhập hiện tại sẽ bị thu hồi.`)) return;
+    setPassword(null);
+    setCredentialEmailDelivered(null);
+    workspace.resetPassword.mutate(item.id, { onSuccess: (result) => {
+      setPassword(result.temporaryPassword ?? null);
+      setCredentialEmailDelivered(result.credentialEmailDelivered === true);
+    } });
+  }
   function openEdit(item) {
+    workspace.clearFeedback();
     setEditingId(item.id);
   }
   function save(input) {
@@ -124,7 +145,7 @@ export function StaffPage() {
           <p>
             {credentialEmailDelivered
               ? "Mật khẩu này không được lưu hoặc hiển thị lại. Hệ thống cũng đã gửi email thông tin đăng nhập cho nhân viên."
-              : "Email chưa gửi được hoặc chưa cấu hình SMTP, Quản lý vui lòng gửi riêng thông tin cho nhân viên. Mật khẩu này không được lưu hoặc hiển thị lại."}
+              : "Email chưa gửi được hoặc chưa cấu hình SMTP. Người thực hiện vui lòng gửi riêng thông tin cho nhân viên; mật khẩu này không được lưu hoặc hiển thị lại."}
           </p>
           <Button onClick={() => setPassword(null)} variant="secondary">
             Đã lưu an toàn
@@ -142,6 +163,8 @@ export function StaffPage() {
           <label>
             Họ tên
             <input
+              maxLength={120}
+              minLength={2}
               name="fullName"
               onChange={update}
               required
@@ -160,8 +183,9 @@ export function StaffPage() {
           </label>
           <label>
             Số điện thoại
-            <input name="phone" onChange={update} required value={form.phone} />
+            <input aria-describedby={validationError ? "staff-create-phone-error" : undefined} aria-invalid={Boolean(validationError)} maxLength={20} minLength={9} name="phone" onChange={update} ref={phoneInputRef} required value={form.phone} />
           </label>
+          {validationError && <p className="field-error" id="staff-create-phone-error" role="alert">{validationError}</p>}
           <label>
             Vai trò
             <select name="role" onChange={update} value={form.role}>
@@ -257,6 +281,7 @@ export function StaffPage() {
                       >
                         {item.status === "active" ? "Đình chỉ" : "Kích hoạt"}
                       </Button>
+                      {session?.user?.role === "admin" && <>{" "}<Button disabled={submitting} onClick={() => resetPassword(item)} size="sm" variant="outline">Cấp lại MK</Button></>}
                     </td>
                   </tr>
                 ))}
@@ -267,18 +292,42 @@ export function StaffPage() {
           )}
         </section>
       </section>
-      <StaffEditDialog detail={workspace.detail} editingId={editingId} loading={workspace.detailLoading} onClose={() => setEditingId(null)} onSubmit={save} />
+      <StaffEditDialog clearFeedback={workspace.clearFeedback} detail={workspace.detail} editingId={editingId} loading={workspace.detailLoading} onClose={() => setEditingId(null)} onSubmit={save} />
     </main>
   );
 }
 
-function StaffEditDialog({ detail, editingId, loading, onClose, onSubmit }) {
+function StaffEditDialog({ clearFeedback, detail, editingId, loading, onClose, onSubmit }) {
   if (!editingId) return null;
   const close = () => { if (!loading) onClose(); };
-  return <Dialog isOpen onClose={close} title="Cập nhật nhân viên">{loading && !detail ? <p className="dialog__body">Đang tải hồ sơ…</p> : detail && <StaffEditForm detail={detail} loading={loading} onClose={close} onSubmit={onSubmit} />}</Dialog>;
+  return <Dialog isOpen onClose={close} title="Cập nhật nhân viên">{loading && !detail ? <p className="dialog__body">Đang tải hồ sơ…</p> : detail && <StaffEditForm clearFeedback={clearFeedback} detail={detail} loading={loading} onClose={close} onSubmit={onSubmit} />}</Dialog>;
 }
 
-function StaffEditForm({ detail, loading, onClose, onSubmit }) {
+function StaffEditForm({ clearFeedback, detail, loading, onClose, onSubmit }) {
   const [form, setForm] = useState({ fullName: detail.fullName, email: detail.email, phone: detail.phone ?? "", role: detail.role, specialties: detail.specialties ?? [] });
-  return <form onSubmit={(event) => { event.preventDefault(); onSubmit(form); }}><div className="dialog__body"><label>Họ tên<input disabled={loading} onChange={(event) => setForm((current) => ({ ...current, fullName: event.target.value }))} required value={form.fullName} /></label><label>Email<input disabled type="email" value={form.email} /></label><label>Số điện thoại<input disabled={loading} onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))} required value={form.phone} /></label><label>Vai trò<select disabled={loading} onChange={(event) => setForm((current) => ({ ...current, role: event.target.value }))} value={form.role}><option value="receptionist">Lễ tân</option><option value="coach">Huấn luyện viên</option><option value="manager">Quản lý</option></select></label><label>Chuyên môn (cách nhau bởi dấu phẩy)<input disabled={loading} onChange={(event) => setForm((current) => ({ ...current, specialties: event.target.value.split(",").map((value) => value.trim()) }))} value={form.specialties.join(", ")} /></label></div><div className="dialog__actions"><Button disabled={loading} onClick={onClose} type="button" variant="secondary">Hủy</Button><Button loading={loading} type="submit">Lưu thay đổi</Button></div></form>;
+  const [validationError, setValidationError] = useState("");
+  const phoneInputRef = useRef(null);
+  function submit(event) {
+    event.preventDefault();
+    if (form.phone.trim().length < 9 || form.phone.trim().length > 20) {
+      clearFeedback();
+      setValidationError("Số điện thoại phải từ 9 đến 20 ký tự.");
+      phoneInputRef.current?.focus();
+      return;
+    }
+    onSubmit(form);
+  }
+  return (
+    <form onSubmit={submit}>
+      <div className="dialog__body">
+        <label>Họ tên<input disabled={loading} maxLength={120} minLength={2} onChange={(event) => setForm((current) => ({ ...current, fullName: event.target.value }))} required value={form.fullName} /></label>
+        <label>Email<input disabled type="email" value={form.email} /></label>
+        <label>Số điện thoại<input aria-describedby={validationError ? "staff-edit-phone-error" : undefined} aria-invalid={Boolean(validationError)} disabled={loading} maxLength={20} minLength={9} onChange={(event) => { clearFeedback(); setValidationError(""); setForm((current) => ({ ...current, phone: event.target.value })); }} ref={phoneInputRef} required value={form.phone} /></label>
+        {validationError && <p className="field-error" id="staff-edit-phone-error" role="alert">{validationError}</p>}
+        <label>Vai trò<select disabled={loading} onChange={(event) => setForm((current) => ({ ...current, role: event.target.value }))} value={form.role}><option value="receptionist">Lễ tân</option><option value="coach">Huấn luyện viên</option><option value="manager">Quản lý</option></select></label>
+        <label>Chuyên môn (cách nhau bởi dấu phẩy)<input disabled={loading} onChange={(event) => setForm((current) => ({ ...current, specialties: event.target.value.split(",").map((value) => value.trim()) }))} value={form.specialties.join(", ")} /></label>
+      </div>
+      <div className="dialog__actions"><Button disabled={loading} onClick={onClose} type="button" variant="secondary">Hủy</Button><Button loading={loading} type="submit">Lưu thay đổi</Button></div>
+    </form>
+  );
 }
