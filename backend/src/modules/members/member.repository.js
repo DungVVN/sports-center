@@ -76,6 +76,7 @@ export const memberRepository = {
     if (!member) return null;
     if (member.user_id) {
       const user = await tx.users.update({ where: { id: member.user_id }, data: { password_hash: passwordHash, must_change_password: true } });
+      await tx.auth_sessions.updateMany({ where: { user_id: user.id, revoked_at: null }, data: { revoked_at: new Date() } });
       return { member, user, accountCreated: false };
     }
     const user = await tx.users.create({ data: {

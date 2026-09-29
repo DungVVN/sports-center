@@ -5,7 +5,7 @@ const input = { name: "Yoga sáng", type: "group", coachUserId: "coach-1", roomI
 
 function dependencies({ room = { id: "room-1" }, coach = { id: "coach-1" } } = {}) {
   return {
-    repository: { findRoom: vi.fn().mockResolvedValue(room), findCoach: vi.fn().mockResolvedValue(coach), hasScheduleConflict: vi.fn().mockResolvedValue(null), find: vi.fn().mockResolvedValue({ id: "class-1", status: "published", room_id: "room-1", coach_user_id: "coach-1", starts_at: new Date(input.startsAt), ends_at: new Date(input.endsAt) }), create: vi.fn().mockResolvedValue({ id: "class-1" }), update: vi.fn().mockResolvedValue({ id: "class-1" }), createChange: vi.fn().mockResolvedValue({ id: "change-1" }), change: vi.fn(), reviewChange: vi.fn().mockResolvedValue({ id: "change-1" }), cancelBookings: vi.fn(), notifyClassMembers: vi.fn(), notifyUser: vi.fn() },
+    repository: { findRoom: vi.fn().mockResolvedValue(room), findCoach: vi.fn().mockResolvedValue(coach), hasScheduleConflict: vi.fn().mockResolvedValue(null), find: vi.fn().mockResolvedValue({ id: "class-1", status: "published", room_id: "room-1", coach_user_id: "coach-1", starts_at: new Date(input.startsAt), ends_at: new Date(input.endsAt) }), create: vi.fn().mockResolvedValue({ id: "class-1" }), update: vi.fn().mockResolvedValue({ id: "class-1" }), createChange: vi.fn().mockResolvedValue({ id: "change-1" }), change: vi.fn(), reviewChange: vi.fn().mockResolvedValue({ id: "change-1" }), cancelBookings: vi.fn().mockResolvedValue([]), notifyClassMembers: vi.fn(), notifyUser: vi.fn() },
     auditService: { record: vi.fn().mockResolvedValue(undefined) },
   };
 }
@@ -77,6 +77,18 @@ describe("Class service", () => {
     await createClassService({ repository, auditService }).reviewChange("change-1", false, "receptionist-1");
     expect(repository.notifyUser).toHaveBeenCalledWith("coach-1", expect.stringContaining("từ chối"), expect.any(String), "/classes/class-1");
     expect(auditService.record).toHaveBeenCalledWith(expect.objectContaining({ action: "class.change_rejected" }));
+  });
+
+  it("notifies only members whose bookings were cancelled by the approved change", async () => {
+    const { repository, auditService } = dependencies();
+    repository.change.mockResolvedValue({ id: "change-1", status: "pending", requested_by: "coach-1", class_session_id: "class-1", type: "cancel" });
+    repository.cancelBookings.mockResolvedValue(["member-active"]);
+    await createClassService({ repository, auditService }).reviewChange("change-1", true, "receptionist-1");
+    expect(repository.notifyClassMembers).toHaveBeenCalledWith("class-1", ["member-active"], "Lớp học đã hủy", expect.any(String));
+    repository.notifyClassMembers.mockClear();
+    repository.cancelBookings.mockResolvedValue([]);
+    await createClassService({ repository, auditService }).reviewChange("change-1", true, "receptionist-1");
+    expect(repository.notifyClassMembers).not.toHaveBeenCalled();
   });
 
   it("does not approve a reschedule when the schedule becomes unavailable", async () => {

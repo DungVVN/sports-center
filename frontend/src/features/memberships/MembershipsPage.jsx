@@ -313,15 +313,15 @@ export function MembershipsPage({ mode = "workspace", session }) {
     setError("");
     setNotice("");
     try {
-      await createMembershipMutation.mutateAsync({ memberId: membershipForm.memberId, input: {
+      const createdMembership = await createMembershipMutation.mutateAsync({ memberId: membershipForm.memberId, input: {
         packageId: membershipForm.packageId,
         startsOn: membershipForm.startsOn,
       } });
       setMembershipForm(emptyMembership);
       setMembershipTouched({});
-      setNotice(
-        "Đã tạo gói chờ thanh toán. Hãy chuyển sang Thanh toán để ghi nhận giao dịch.",
-      );
+      setNotice(createdMembership.status === "active"
+        ? "Đã kích hoạt gói miễn phí. Không cần lập phiếu thanh toán."
+        : "Đã tạo gói chờ thanh toán. Hãy chuyển sang Thanh toán để ghi nhận giao dịch.");
     } catch (caught) {
       setError(errorMessageFor(caught, "Không thể tạo gói cho hội viên."));
     }
@@ -555,6 +555,7 @@ export function MembershipsPage({ mode = "workspace", session }) {
             ))}
             <fieldset className="entitlement-fieldset">
               <legend>Quyền sử dụng</legend>
+              <p>Gói hạng cao kế thừa quyền sử dụng của các gói hạng thấp hơn. Các ô bên dưới là quyền thêm riêng cho gói này.</p>
               {Object.entries(entitlementLabels).map(([code, label]) => (
                 <label key={code}>
                   <input
@@ -682,7 +683,7 @@ export function MembershipsPage({ mode = "workspace", session }) {
             <input disabled type="date" value={membershipExpiresOn} />
           </label>
           <Button loading={submitting} type="submit">
-            Tạo chờ thanh toán
+            Tạo gói cho hội viên
           </Button>
         </form>
         )}
@@ -871,6 +872,7 @@ export function MembershipsPage({ mode = "workspace", session }) {
             </label>
             <fieldset className="entitlement-fieldset">
               <legend>Quyền sử dụng</legend>
+              <p>Gói hạng cao kế thừa quyền sử dụng của các gói hạng thấp hơn. Các ô bên dưới là quyền thêm riêng cho gói này.</p>
               {Object.entries(entitlementLabels).map(([code, label]) => (
                 <label key={code}>
                   <input

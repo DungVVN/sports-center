@@ -47,3 +47,17 @@ describe("staff creation credentials", () => {
     });
   });
 });
+
+describe("staff credential reset", () => {
+  it("issues a temporary password and never returns it after email delivery", async () => {
+    const repository = { find: vi.fn().mockResolvedValue(createdStaff), resetPassword: vi.fn().mockResolvedValue({}) };
+    const delivery = { deliver: vi.fn().mockResolvedValue({ delivered: true }) };
+    const auditService = { record: vi.fn() };
+    const service = createStaffService({ repository, auditService, credentialsDelivery: delivery });
+    const result = await service.resetPassword("staff-1", "admin-1");
+    expect(repository.resetPassword).toHaveBeenCalledWith("staff-1", expect.any(String));
+    expect(delivery.deliver).toHaveBeenCalledWith(expect.objectContaining({ recipient: "staff@example.com", temporaryPassword: expect.any(String) }));
+    expect(result.temporaryPassword).toBeUndefined();
+    expect(auditService.record).toHaveBeenCalledWith(expect.objectContaining({ action: "staff.credentials.reissued", actorUserId: "admin-1" }));
+  });
+});

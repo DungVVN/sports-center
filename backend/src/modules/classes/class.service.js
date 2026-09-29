@@ -54,13 +54,13 @@ export function createClassService({ repository, auditService }) {
         if (!session || session.status !== "published") throw new AppError({ statusCode: 422, code: "CLASS_CHANGE_UNAVAILABLE", message: "Lớp học không còn đủ điều kiện để thay đổi." });
         if (change.type === "cancel") await repository.update(change.class_session_id, { status: "cancelled" });
         else { if (!change.proposed_starts_at || !change.proposed_ends_at || change.proposed_ends_at <= change.proposed_starts_at) throw invalidTime(); if (await repository.hasScheduleConflict(session.room_id, session.coach_user_id, change.proposed_starts_at, change.proposed_ends_at, session.id)) throw scheduleConflict(); await repository.update(change.class_session_id, { starts_at: change.proposed_starts_at, ends_at: change.proposed_ends_at }); }
-        await repository.cancelBookings(change.class_session_id);
-        await repository.notifyClassMembers(change.class_session_id, change.type === "cancel" ? "Lớp học đã hủy" : "Lớp học đã đổi lịch", change.type === "cancel" ? "Booking đã được hủy, bạn không bị tính phạt." : "Booking đã được hủy để bạn chọn lại lịch phù hợp, bạn không bị tính phạt.");
+        const cancelledMemberIds = await repository.cancelBookings(change.class_session_id);
+        if (cancelledMemberIds.length) await repository.notifyClassMembers(change.class_session_id, cancelledMemberIds, change.type === "cancel" ? "Lớp học đã hủy" : "Lớp học đã đổi lịch", change.type === "cancel" ? "Booking đã được hủy, bạn không bị tính phạt." : "Booking đã được hủy để bạn chọn lại lịch phù hợp, bạn không bị tính phạt.");
       } else {
         await repository.notifyUser(change.requested_by, "Yêu cầu thay đổi lớp bị từ chối", "Lễ tân chưa phê duyệt yêu cầu thay đổi lớp của bạn.", `/classes/${change.class_session_id}`);
       }
       const result = await repository.reviewChange(id, approved ? "approved" : "rejected", actorUserId);
-      await auditService.record({ actorUserId, action: approved ? "class.change_approved" : "class.change_rejected", entityType: "class_session", entityId: change.class_session_id, summary: approved ? "Đã duyệt thay đổi lớp và thông báo hội viên." : "Đã từ chối thay đổi lớp và thông báo Coach." });
+      await auditService.record({ actorUserId, action: approved ? "class.change_approved" : "class.change_rejected", entityType: "class_session", entityId: change.class_session_id, summary: approved ? "Đã duyệt thay đổi lớp và xử lý booking còn hiệu lực." : "Đã từ chối thay đổi lớp và thông báo Coach." });
       return result;
     },
   };

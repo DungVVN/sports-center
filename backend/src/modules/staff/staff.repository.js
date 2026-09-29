@@ -9,4 +9,9 @@ export const staffRepository = {
   create(data) { return prisma.$transaction(async (tx) => { const user = await tx.users.create({ data: { email: data.email, password_hash: data.passwordHash, display_name: data.fullName, role: data.role, status: "active", must_change_password: true, profile_setup_required: true } }); const profile = await tx.staff_profiles.create({ data: { user_id: user.id, employee_code: data.employeeCode, phone: data.phone, date_of_birth: data.dateOfBirth, notes: data.notes, specialties: data.specialties } }); return { ...user, staff_profiles: profile }; }); },
   async update(id, data) { await prisma.$transaction(async (tx) => { await tx.users.update({ where: { id }, data: { ...(data.fullName ? { display_name: data.fullName } : {}), ...(data.role ? { role: data.role } : {}) } }); await tx.staff_profiles.update({ where: { user_id: id }, data: { ...(data.phone !== undefined ? { phone: data.phone } : {}), ...(data.dateOfBirth !== undefined ? { date_of_birth: data.dateOfBirth } : {}), ...(data.notes !== undefined ? { notes: data.notes } : {}), ...(data.specialties ? { specialties: data.specialties } : {}) } }); }); return this.find(id); },
   async setStatus(id, status) { const existing = await this.find(id); if (!existing) return null; return prisma.users.update({ where: { id }, data: { status } }); },
+  resetPassword(id, passwordHash) { return prisma.$transaction(async (tx) => {
+    const user = await tx.users.update({ where: { id }, data: { password_hash: passwordHash, must_change_password: true } });
+    await tx.auth_sessions.updateMany({ where: { user_id: id, revoked_at: null }, data: { revoked_at: new Date() } });
+    return user;
+  }); },
 };

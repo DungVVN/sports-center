@@ -65,7 +65,7 @@ describe("permission-backed role actions", () => {
   it("lets Admin reach membership assignment", async () => {
     renderWorkspace(<MembershipsPage mode="assign" session={{ user: { role: "admin" }, permissions: ["membership.assign", "membership.freeze.review"] }} />);
     await waitFor(() => expect(memberApi.list).toHaveBeenCalled());
-    expect(screen.getByText("Tạo gói cho hội viên")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Tạo gói cho hội viên" })).toBeInTheDocument();
   });
 
   it("shows Admin the booking form when booking.write is granted", async () => {

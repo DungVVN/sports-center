@@ -49,7 +49,7 @@
   font-size: 13px;
 }
 .profile-status--active {
-  color: var(--color-success);
+  color: #15803d;
 }
 .profile-status--suspended {
   color: var(--color-danger);

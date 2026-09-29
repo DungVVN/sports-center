@@ -65,7 +65,7 @@ describe("MembershipsPage", () => {
   it("shows assignment field errors before sending a request", async () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(<QueryClientProvider client={client}><MembershipsPage mode="assign" session={{ user: { role: "receptionist" }, permissions: ["membership.assign"] }} /></QueryClientProvider>);
-    fireEvent.click(screen.getByRole("button", { name: "Tạo chờ thanh toán" }));
+    fireEvent.click(screen.getByRole("button", { name: "Tạo gói cho hội viên" }));
     expect(screen.getByText("Vui lòng chọn hội viên.")).toBeInTheDocument();
     expect(screen.getByText("Vui lòng chọn gói tập.")).toBeInTheDocument();
     expect(membershipApi.create).not.toHaveBeenCalled();

@@ -55,6 +55,16 @@ describe("role permission configuration", () => {
     expect(result.permissions.find((permission) => permission.code === "training.self.read")).toMatchObject({ availableRoles: ["coach", "member"] });
   });
 
+  it("limits member credential reset grants to staff roles with member.read", async () => {
+    const { service, repository } = setup();
+    await expect(service.replace({ role: "member", version: 0, permissionCodes: ["member.read", "member.credentials.reset"], actorUserId: "admin-1" }))
+      .rejects.toMatchObject({ code: "PERMISSION_ROLE_SCOPE_INVALID" });
+    await expect(service.replace({ role: "coach", version: 0, permissionCodes: ["member.credentials.reset"], actorUserId: "admin-1" }))
+      .rejects.toMatchObject({ code: "PERMISSION_DEPENDENCY_MISSING" });
+    await service.replace({ role: "coach", version: 0, permissionCodes: ["member.read", "member.credentials.reset"], actorUserId: "admin-1" });
+    expect(repository.replace).toHaveBeenCalledWith(expect.objectContaining({ role: "coach", permissionCodes: ["member.credentials.reset", "member.read"] }));
+  });
+
   it("rejects Admin modification, duplicate codes and stale edits", async () => {
     const { service, repository } = setup();
     await expect(service.replace({ role: "admin", version: 0, permissionCodes: [], actorUserId: "admin-1" })).rejects.toMatchObject({ code: "ROLE_NOT_CONFIGURABLE" });

@@ -20,6 +20,7 @@ describe("TotpEnrollmentPanel", () => {
     const onEnrollmentCompleted = vi.fn();
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(<QueryClientProvider client={client}><TotpEnrollmentPanel onEnrollmentCompleted={onEnrollmentCompleted} /></QueryClientProvider>);
+    expect(screen.getByText("Sau khi thiết lập, bạn sẽ dùng mã 6 số từ ứng dụng Authenticator khi đăng nhập.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Thiết lập Authenticator" }));
     expect(await screen.findByRole("img", { name: "Mã QR thiết lập Authenticator" })).toBeInTheDocument();
     expect(await screen.findByDisplayValue("JBSWY3DPEHPK3PXP")).toBeInTheDocument();
@@ -27,6 +28,6 @@ describe("TotpEnrollmentPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Xác nhận Authenticator" }));
     await waitFor(() => expect(authApi.confirmTotpEnrollment).toHaveBeenCalledWith({ enrollmentId: "enrollment-1", code: "123456" }));
     expect(onEnrollmentCompleted).toHaveBeenCalledTimes(1);
-    expect(await screen.findByRole("status")).toHaveTextContent("Authenticator đã được kích hoạt");
+    expect(await screen.findByRole("status")).toHaveTextContent("Lần đăng nhập tiếp theo sẽ yêu cầu mã 6 số");
   });
 });

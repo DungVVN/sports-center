@@ -2,6 +2,26 @@ import { describe, expect, it, vi } from "vitest";
 import { runMembershipLifecycleJob } from "../src/jobs/membership-lifecycle.job.js";
 
 describe("membership lifecycle job", () => {
+  it("starts and ends an approved freeze on its scheduled days", async () => {
+    const startsOn = new Date("2026-10-04T00:00:00.000Z");
+    const endsOn = new Date("2026-10-05T00:00:00.000Z");
+    const database = {
+      membership_freeze_requests: { findMany: vi.fn().mockImplementation(({ where }) => {
+        if (where.starts_on) return where.starts_on.lte >= startsOn && where.starts_on.lte < endsOn ? [{ membership_id: "membership-1" }] : [];
+        return where.ends_on.lte >= endsOn ? [{ membership_id: "membership-1" }] : [];
+      }) },
+      member_memberships: { findMany: vi.fn().mockResolvedValue([]), updateMany: vi.fn().mockResolvedValue(undefined) },
+      class_sessions: { findMany: vi.fn().mockResolvedValue([]) },
+      attendance_records: { findMany: vi.fn().mockResolvedValue([]) },
+      training_plans: { findMany: vi.fn().mockResolvedValue([]) },
+    };
+
+    await expect(runMembershipLifecycleJob(new Date("2026-10-03T12:00:00.000Z"), database)).resolves.toMatchObject({ freezeStarted: 0, freezeEnded: 0 });
+    await expect(runMembershipLifecycleJob(new Date("2026-10-04T12:00:00.000Z"), database)).resolves.toMatchObject({ freezeStarted: 1, freezeEnded: 0 });
+    await expect(runMembershipLifecycleJob(new Date("2026-10-05T12:00:00.000Z"), database)).resolves.toMatchObject({ freezeStarted: 0, freezeEnded: 1 });
+    expect(database.member_memberships.updateMany).toHaveBeenNthCalledWith(1, { where: { id: { in: ["membership-1"] }, status: { in: ["active", "expiring_soon"] } }, data: { status: "frozen" } });
+    expect(database.member_memberships.updateMany).toHaveBeenNthCalledWith(2, { where: { id: { in: ["membership-1"] }, status: "frozen" }, data: { status: "active" } });
+  });
   it("starts a grace window exactly 72 hours after contractual expiry", async () => {
     const expiresOn = new Date("2026-09-10T00:00:00.000Z");
     const database = {

@@ -27,6 +27,7 @@ export function AttendancePage({ session }) {
   const [draftStatuses, setDraftStatuses] = useState({});
   const [correction, setCorrection] = useState(emptyCorrection);
   const [confirmSubmitOpen, setConfirmSubmitOpen] = useState(false);
+  const [checkOutRecord, setCheckOutRecord] = useState(null);
   const [now, setNow] = useState(() => new Date());
   const role = session?.user?.role;
   const coachId = role === "coach" ? session.user.id : null;
@@ -34,7 +35,7 @@ export function AttendancePage({ session }) {
   const canCorrect = canOperate;
   const workspace = useAttendanceWorkspace({ classId });
   const { bookings, classes, records } = workspace;
-  const submitting = workspace.submitAttendance.isPending || workspace.correctAttendance.isPending;
+  const submitting = workspace.submitAttendance.isPending || workspace.correctAttendance.isPending || workspace.checkOutAttendance.isPending;
   const availableClasses = useMemo(() => {
     const dayStart = new Date(now);
     dayStart.setHours(0, 0, 0, 0);
@@ -285,6 +286,7 @@ export function AttendancePage({ session }) {
                     <th>Hội viên</th>
                     <th>Trạng thái</th>
                     <th>Check-in</th>
+                    <th>Check-out</th>
                     {canOperate && <th>Thao tác</th>}
                   </tr>
                 </thead>
@@ -315,6 +317,7 @@ export function AttendancePage({ session }) {
                             )
                           : "—"}
                       </td>
+                      <td>{record.checked_out_at ? new Date(record.checked_out_at).toLocaleString("vi-VN") : "—"}</td>
                       {canOperate && (
                         <td>
                           {record.status === "not_marked" &&
@@ -341,6 +344,11 @@ export function AttendancePage({ session }) {
                                 Sửa
                               </Button>
                             )}
+                          {record.status === "present" && record.checked_in_at && !record.checked_out_at && (
+                            <Button disabled={submitting} onClick={() => setCheckOutRecord(record)} size="sm" type="button" variant="ghost">
+                              Check-out
+                            </Button>
+                          )}
                         </td>
                       )}
                     </tr>
@@ -352,6 +360,12 @@ export function AttendancePage({ session }) {
           <Pagination {...attendancePagination} />
         </section>
       </div>
+      <Dialog isOpen={Boolean(checkOutRecord)} onClose={() => { if (!submitting) setCheckOutRecord(null); }} title="Xác nhận check-out">
+        <p>Check-out cho {checkOutRecord?.member?.full_name ?? "hội viên"}?</p>
+        <Button disabled={submitting} onClick={() => workspace.checkOutAttendance.mutate(checkOutRecord.id, { onSuccess: () => setCheckOutRecord(null) })} type="button">
+          Xác nhận check-out
+        </Button>
+      </Dialog>
       <Dialog
         isOpen={Boolean(correction.record)}
         onClose={closeCorrection}

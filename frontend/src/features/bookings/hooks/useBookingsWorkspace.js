@@ -30,7 +30,9 @@ export function useBookingsWorkspace({ canCreateBooking, isMember, memberId }) {
     feedback,
     mutationFn: ({ id, reason }) => bookingApi.cancel(id, reason),
     onSuccess: invalidateBookings,
-    successMessage: "Đã hủy đặt chỗ. Hội viên đủ điều kiện đầu tiên trong danh sách chờ sẽ được xác nhận tự động.",
+    successMessage: (result) => result.promotedBookingId
+      ? "Đã hủy đặt chỗ và tự động xác nhận hội viên đủ điều kiện trong danh sách chờ."
+      : "Đã hủy đặt chỗ.",
     errorMessage: "Không thể hủy đặt chỗ.",
   });
   const failedQuery = [bookingsQuery, classesQuery, membersQuery].find((query) => query.isError);

@@ -19,7 +19,8 @@ const retryDelaysMs = [3000, 5000, 10000, 15000, 20000, 30000];
 
 function runMigration(migrationUrl) {
   return new Promise((resolve, reject) => {
-    const child = spawn("prisma", ["migrate", "deploy"], {
+    const prismaCli = fileURLToPath(new URL("../node_modules/prisma/build/index.js", import.meta.url));
+    const child = spawn(process.execPath, [prismaCli, "migrate", "deploy"], {
       env: { ...process.env, MIGRATE_DATABASE_URL: migrationUrl },
       stdio: ["inherit", "pipe", "pipe"],
     });

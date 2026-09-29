@@ -27,12 +27,19 @@ export const classRepository = {
   changes: (status) => prisma.class_change_requests.findMany({ where: status ? { status } : undefined, orderBy: { created_at: "desc" } }),
   change: (id) => prisma.class_change_requests.findUnique({ where: { id } }),
   reviewChange: (id, status, reviewer) => prisma.class_change_requests.update({ where: { id }, data: { status, reviewed_by: reviewer, reviewed_at: new Date() } }),
-  cancelBookings: (classId) => prisma.bookings.updateMany({ where: { class_session_id: classId, status: { in: ["confirmed", "waitlisted"] } }, data: { status: "cancelled", cancelled_at: new Date(), cancel_reason: "Lớp học đã được thay đổi lịch hoặc hủy." } }),
+  async cancelBookings(classId) {
+    const cancelled = await prisma.bookings.updateManyAndReturn({
+      where: { class_session_id: classId, status: { in: ["confirmed", "waitlisted"] } },
+      data: { status: "cancelled", cancelled_at: new Date(), cancel_reason: "Lớp học đã được thay đổi lịch hoặc hủy." },
+      select: { member_id: true },
+    });
+    return [...new Set(cancelled.map((booking) => booking.member_id))];
+  },
   notifyUser: (userId, title, body, linkPath) => prisma.notifications.create({ data: { recipient_user_id: userId, category: "operations", title, body, link_path: linkPath } }),
-  async notifyClassMembers(classId, title, body) {
-    const bookings = await prisma.bookings.findMany({ where: { class_session_id: classId }, select: { member_id: true } });
-    const members = await prisma.members.findMany({ where: { id: { in: bookings.map((item) => item.member_id) } }, select: { user_id: true } });
-    const notifications = members.filter((item) => item.user_id).map((item) => ({ recipient_user_id: item.user_id, category: "operations", title, body, link_path: `/classes/${classId}` }));
+  async notifyClassMembers(classId, memberIds, title, body) {
+    if (!memberIds.length) return;
+    const members = await prisma.members.findMany({ where: { id: { in: memberIds } }, select: { user_id: true } });
+    const notifications = [...new Set(members.map((item) => item.user_id).filter(Boolean))].map((userId) => ({ recipient_user_id: userId, category: "operations", title, body, link_path: `/classes/${classId}` }));
     if (notifications.length) await prisma.notifications.createMany({ data: notifications });
   },
 };

@@ -60,4 +60,19 @@ describe("BookingsPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Đặt chỗ" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Hội viên đã đặt lớp này.");
   });
+
+  it.each([
+    [null, "Đã hủy đặt chỗ."],
+    ["promoted-1", "Đã hủy đặt chỗ và tự động xác nhận hội viên đủ điều kiện trong danh sách chờ."],
+  ])("reports promotion accurately after cancelling a booking (%s)", async (promotedBookingId, expectedMessage) => {
+    bookingApi.list.mockResolvedValue([{ id: "booking-1", booking_code: "BKG-001", status: "confirmed", class_session: futureClass, booked_at: "2026-09-29T00:00:00.000Z" }]);
+    bookingApi.cancel.mockResolvedValue({ id: "booking-1", status: "cancelled", promotedBookingId });
+    renderPage();
+    const cancelButton = await screen.findByRole("button", { name: "Hủy" });
+    fireEvent.click(cancelButton);
+    fireEvent.change(screen.getByLabelText("Lý do hủy"), { target: { value: "Kiểm thử QA" } });
+    fireEvent.click(screen.getByRole("button", { name: "Xác nhận hủy" }));
+    await waitFor(() => expect(bookingApi.cancel).toHaveBeenCalledWith("booking-1", "Kiểm thử QA"));
+    expect(await screen.findByRole("status")).toHaveTextContent(expectedMessage);
+  });
 });

@@ -147,5 +147,13 @@ export function createStaffService({ repository, auditService, credentialsDelive
       });
       return view({ ...before, ...staff });
     },
+    async resetPassword(id, actorUserId) {
+      const before = await this.get(id);
+      const temporaryPassword = randomBytes(12).toString("base64url");
+      await repository.resetPassword(id, await hashPassword(temporaryPassword));
+      const credentialEmail = await credentialsDelivery.deliver({ recipient: before.email, fullName: before.fullName, temporaryPassword });
+      await auditService.record({ actorUserId, action: "staff.credentials.reissued", entityType: "staff", entityId: id, summary: "Admin đã cấp lại mật khẩu tạm cho nhân viên.", newValue: { credentialEmailDelivered: credentialEmail.delivered } });
+      return { staff: before, credentialEmailDelivered: credentialEmail.delivered, ...(credentialEmail.delivered ? {} : { temporaryPassword }) };
+    },
   };
 }

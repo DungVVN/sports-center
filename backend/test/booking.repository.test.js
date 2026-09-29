@@ -10,7 +10,8 @@ const prisma = {
     update: vi.fn(),
   },
   class_sessions: { findUnique: vi.fn() },
-  member_memberships: { findFirst: vi.fn() },
+  member_memberships: { findMany: vi.fn() },
+  membership_freeze_requests: { findMany: vi.fn() },
   members: { findUnique: vi.fn() },
   notifications: { create: vi.fn() },
   membership_packages: {
@@ -30,6 +31,7 @@ describe("booking repository entitlement inheritance", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     prisma.$transaction.mockImplementation(async (callback) => callback(prisma));
+    prisma.membership_freeze_requests.findMany.mockResolvedValue([]);
   });
 
   it("uses a lower-tier booking entitlement when the current package does not duplicate it", async () => {
@@ -104,9 +106,9 @@ describe("booking repository entitlement inheritance", () => {
       { id: "booking-ineligible", member_id: "member-ineligible" },
       { id: "booking-eligible", member_id: "member-eligible" },
     ]);
-    prisma.member_memberships.findFirst
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce({ package_id: "premium" });
+    prisma.member_memberships.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ id: "membership-eligible", package_id: "premium" }]);
     prisma.membership_packages.findUnique.mockResolvedValue({ tier_rank: 3 });
     prisma.membership_packages.findMany.mockResolvedValue([{ id: "basic", tier_rank: 1 }, { id: "premium", tier_rank: 3 }]);
     prisma.membership_package_entitlements.findMany.mockResolvedValue([{ package_id: "basic", entitlement: "group_class_booking" }]);
@@ -118,5 +120,37 @@ describe("booking repository entitlement inheritance", () => {
     expect(prisma.notifications.create).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({ recipient_user_id: "user-eligible", title: "Đã có chỗ trong lớp" }),
     }));
+  });
+
+  it("rejects a membership frozen on the future class date, not only one frozen today", async () => {
+    const accessAt = new Date("2026-10-04T01:00:00.000Z");
+    prisma.member_memberships.findMany.mockResolvedValue([{ id: "membership-frozen", package_id: "premium" }]);
+    prisma.membership_freeze_requests.findMany.mockResolvedValue([{ membership_id: "membership-frozen" }]);
+
+    await expect(bookingRepository.activeMembership("member-1", accessAt)).resolves.toBeNull();
+    expect(prisma.membership_freeze_requests.findMany).toHaveBeenCalledWith({
+      where: { membership_id: { in: ["membership-frozen"] }, status: "approved", starts_on: { lte: new Date("2026-10-04T00:00:00.000Z") }, ends_on: { gt: new Date("2026-10-04T00:00:00.000Z") } },
+      select: { membership_id: true },
+    });
+  });
+
+  it("uses another eligible membership when the later-expiring one is frozen", async () => {
+    prisma.member_memberships.findMany.mockResolvedValue([
+      { id: "membership-frozen", package_id: "premium" },
+      { id: "membership-available", package_id: "basic" },
+    ]);
+    prisma.membership_freeze_requests.findMany.mockResolvedValue([{ membership_id: "membership-frozen" }]);
+
+    await expect(bookingRepository.activeMembership("member-1", new Date("2026-10-04T01:00:00.000Z"))).resolves.toMatchObject({ id: "membership-available" });
+  });
+
+  it("skips a waitlisted member frozen on the class date", async () => {
+    prisma.class_sessions.findUnique.mockResolvedValue({ starts_at: new Date("2026-10-04T01:00:00.000Z") });
+    prisma.bookings.findMany.mockResolvedValue([{ id: "booking-frozen", member_id: "member-frozen" }]);
+    prisma.member_memberships.findMany.mockResolvedValue([{ id: "membership-frozen", package_id: "premium" }]);
+    prisma.membership_freeze_requests.findMany.mockResolvedValue([{ membership_id: "membership-frozen" }]);
+
+    await expect(bookingRepository.promoteWaitlisted("class-1")).resolves.toBeNull();
+    expect(prisma.bookings.update).not.toHaveBeenCalled();
   });
 });
