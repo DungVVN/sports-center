@@ -60,7 +60,7 @@ export function BlockEditor({ block, index, total, onChange, onMove, onRemove })
       {block.type !== "faq" && block.type !== "hero" && field("body", "Nội dung", true)}
       {block.type === "hero" && field("description", "Mô tả", true)}
       {["hero", "imageText"].includes(block.type) && <ImageField block={block} onChange={onChange} />}
-      {block.type === "imageText" && field("imageAlt", "Mô tả ảnh")}
+      {["hero", "imageText"].includes(block.type) && field("imageAlt", "Mô tả ảnh")}
       {["hero", "cta"].includes(block.type) && <>{field("buttonLabel", "Nhãn nút")}{field("buttonHref", "Đường dẫn nút")}</>}
       {block.type === "faq" && <FaqFields block={block} onChange={onChange} />}
     </div>

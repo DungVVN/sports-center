@@ -12,7 +12,7 @@ const blockBase = { id: z.string().uuid(), active: z.boolean().default(true) };
 const button = { buttonLabel: text(80).default(""), buttonHref: safeUrl.default("") };
 
 export const blockSchema = z.discriminatedUnion("type", [
-  z.object({ ...blockBase, type: z.literal("hero"), eyebrow: text(100).default(""), title: nonempty(160), description: text(800).default(""), imageUrl: safeUrl.default(""), ...button }).strict(),
+  z.object({ ...blockBase, type: z.literal("hero"), eyebrow: text(100).default(""), title: nonempty(160), description: text(800).default(""), imageUrl: safeUrl.default(""), imageAlt: text(300).default(""), ...button }).strict(),
   z.object({ ...blockBase, type: z.literal("richText"), title: nonempty(160), body: text(5000) }).strict(),
   z.object({ ...blockBase, type: z.literal("imageText"), title: nonempty(160), body: text(3000), imageUrl: safeUrl, imageAlt: text(300).default("") }).strict(),
   z.object({ ...blockBase, type: z.literal("cta"), title: nonempty(160), body: text(800).default(""), ...button }).strict(),

@@ -60,6 +60,7 @@ describe("site content contracts", () => {
     expect(pageDraftSchema.safeParse({ editRevision: 1, title: "Trang", blocks: [hero] }).success).toBe(false);
     const validHero = { ...hero, buttonHref: "/register" };
     expect(pageDraftSchema.safeParse({ editRevision: 1, title: "Trang", blocks: [validHero, validHero] }).success).toBe(false);
+    expect(pageDraftSchema.parse({ editRevision: 1, title: "Trang", blocks: [{ ...validHero, id: "33333333-3333-4333-8333-333333333333", imageAlt: "Người tập luyện" }] }).blocks[0].imageAlt).toBe("Người tập luyện");
     const child = { id: "22222222-2222-4222-8222-222222222222", label: "Con", kind: "link", href: "/" };
     const group = { id: uuid, label: "Nhóm", kind: "group", children: [{ ...child, children: [child] }] };
     expect(menuDraftSchema.safeParse({ editRevision: 0, items: [group] }).success).toBe(false);

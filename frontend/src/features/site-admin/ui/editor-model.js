@@ -15,7 +15,7 @@ export const blockDescriptions = {
 };
 
 const blockDefaults = {
-  hero: { eyebrow: "", title: "Tiêu đề mới", description: "", imageUrl: "", buttonLabel: "", buttonHref: "" },
+  hero: { eyebrow: "", title: "Tiêu đề mới", description: "", imageUrl: "", imageAlt: "", buttonLabel: "", buttonHref: "" },
   richText: { title: "Tiêu đề mới", body: "" },
   imageText: { title: "Tiêu đề mới", body: "", imageUrl: "", imageAlt: "" },
   cta: { title: "Tiêu đề mới", body: "", buttonLabel: "", buttonHref: "" },
