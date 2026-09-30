@@ -1,3 +1,31 @@
-import { Router } from "express"; import { z } from "zod"; import { authenticate, requirePermission } from "../../../shared/auth/authentication.middleware.js"; import { sendSuccess } from "../../../shared/http/response.js"; import { validateRequest } from "../../../shared/validation/validate-request.js";
+import { Router } from "express";
+import { z } from "zod";
+import { authenticate, requirePermission } from "../../../shared/auth/authentication.middleware.js";
+import { sendSuccess } from "../../../shared/http/response.js";
+import { validateRequest } from "../../../shared/validation/validate-request.js";
 const id = z.string().uuid();
-export function createAssignmentRouter(service, authService) { const router = Router(); const secure = [authenticate(authService), requirePermission("member.write")]; router.get("/members/:id/coach-assignments", ...secure, validateRequest(z.object({ params: z.object({ id }) })), async (req, res, next) => { try { sendSuccess(res, { data: await service.list(req.validated.params.id) }); } catch (error) { next(error); } }); router.post("/members/:id/coach-assignments", ...secure, validateRequest(z.object({ params: z.object({ id }), body: z.object({ coachUserId: id, effectiveFrom: z.string().date(), reason: z.string().max(500).optional() }) })), async (req, res, next) => { try { sendSuccess(res, { statusCode: 201, data: await service.assign(req.validated.params.id, req.validated.body, req.auth.user.id) }); } catch (error) { next(error); } }); return router; }
+export function createAssignmentRouter(service, authService) {
+  const router = Router();
+  const secure = [authenticate(authService), requirePermission("member.write")];
+
+  router.get("/members/:id/coach-assignments", ...secure, validateRequest(z.object({ params: z.object({ id }) })), async (req, res, next) => {
+    try {
+      sendSuccess(res, { data: await service.list(req.validated.params.id) });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/members/:id/coach-assignments", ...secure, validateRequest(z.object({
+    params: z.object({ id }),
+    body: z.object({ coachUserId: id, effectiveFrom: z.string().date(), reason: z.string().max(500).optional() }),
+  })), async (req, res, next) => {
+    try {
+      sendSuccess(res, { statusCode: 201, data: await service.assign(req.validated.params.id, req.validated.body, req.auth.user.id) });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  return router;
+}

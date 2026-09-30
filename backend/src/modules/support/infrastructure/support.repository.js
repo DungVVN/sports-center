@@ -1,4 +1,5 @@
 import { prisma } from "../../../database.js";
+
 export const supportRepository = {
   tickets: (where) => prisma.support_tickets.findMany({ where, orderBy: { updated_at: "desc" } }),
   ticket: (id) => prisma.support_tickets.findUnique({ where: { id } }),
