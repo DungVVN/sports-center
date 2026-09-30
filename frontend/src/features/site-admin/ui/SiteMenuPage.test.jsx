@@ -18,8 +18,8 @@ describe("site menu admin draft", () => {
   it("keeps menu changes in draft until a separate publish action", async () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(<QueryClientProvider client={client}><SiteMenuPage /></QueryClientProvider>);
-    fireEvent.click(await screen.findByRole("button", { name: "Thêm liên kết" }));
-    expect(screen.getByRole("button", { name: /1\. Mục mới/ })).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("button", { name: "+ Thêm mục cấp 1" }));
+    expect(screen.getByRole("button", { name: "Chỉnh sửa Mục mới" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Xuất bản" })).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: "Lưu nháp" }));
     await waitFor(() => expect(siteAdminApi.saveMenuDraft).toHaveBeenCalledWith("header", expect.objectContaining({ editRevision: 0, items: [expect.objectContaining({ label: "Mục mới" })] })));
