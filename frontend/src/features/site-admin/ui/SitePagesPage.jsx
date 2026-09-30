@@ -5,6 +5,7 @@ import { errorMessageFor } from "../../../shared/api/error-message.js";
 import { SiteBlockView } from "../../site/index.js";
 import { siteAdminApi } from "../api/site-admin-api.js";
 import { BlockEditor } from "./BlockEditor.jsx";
+import { SitePageCatalog } from "./SitePageCatalog.jsx";
 import { blockDescriptions, blockNames, newBlock } from "./editor-model.js";
 import "./site-admin.css";
 
@@ -14,8 +15,8 @@ export function SitePagesPage() {
   const client = useQueryClient();
   const pagesQuery = useQuery({ queryKey: ["site-admin-pages"], queryFn: siteAdminApi.pages });
   const pages = pagesQuery.data ?? [];
-  const [selected, setSelected] = useState("home");
-  const detailQuery = useQuery({ queryKey: ["site-admin-page", selected], queryFn: () => siteAdminApi.page(selected), enabled: pages.some((page) => page.route_key === selected), retry: false });
+  const [selected, setSelected] = useState(null);
+  const detailQuery = useQuery({ queryKey: ["site-admin-page", selected], queryFn: () => siteAdminApi.page(selected), enabled: Boolean(selected) && pages.some((page) => page.route_key === selected), retry: false });
   const detail = detailQuery.data;
   const [formState, setFormState] = useState(null);
   const detailKey = detail ? `${selected}:${detail.draft?.id ?? "none"}:${detail.draft?.edit_revision ?? 0}` : "";
@@ -72,6 +73,13 @@ export function SitePagesPage() {
     const result = await action(() => siteAdminApi.createPage(input), "Đã tạo trang và bản nháp đầu tiên.");
     if (result) { setSelected(input.routeKey); setShowCreate(false); setCreateForm({ routeKey: "", path: "", title: "" }); setFormState(null); }
   }
+  function openPage(routeKey, showPreview = false) {
+    setSelected(routeKey); setFormState(null); setSelectedBlockId(null); setPreview(showPreview); setError(""); setNotice("");
+  }
+  function backToCatalog() {
+    if (dirty && !window.confirm("Bỏ thay đổi chưa lưu?")) return;
+    setSelected(null); setFormState(null); setPreview(false); setLibraryOpen(false); setError(""); setNotice("");
+  }
   async function startDraft() {
     const result = await action(() => siteAdminApi.startPageDraft(selected), "Đã tạo bản nháp. Website công khai chưa thay đổi.");
     if (result) setFormState(null);
@@ -97,8 +105,9 @@ export function SitePagesPage() {
 
   if (pagesQuery.isPending) return <p role="status">Đang tải danh sách trang...</p>;
   if (pagesQuery.isError) return <p role="alert">{errorMessageFor(pagesQuery.error, "Không tải được danh sách trang.")}</p>;
-  return <section className="site-admin">
-    <header className="site-admin__header"><div><p className="site-admin__eyebrow">NỘI DUNG WEBSITE / TRANG</p><h1>Trang website</h1><p>Chọn trang, sắp xếp các phần và xem bố cục trước khi xuất bản.</p></div><Button onClick={() => setShowCreate((value) => !value)} variant="secondary">Tạo trang</Button></header>
+  if (!selected) return <SitePageCatalog pages={pages} onOpen={openPage} onCreate={create} showCreate={showCreate} setShowCreate={setShowCreate} createForm={createForm} setCreateForm={setCreateForm} working={working} notice={notice} error={error} />;
+  return <section className="site-admin site-admin--page-editor">
+    <header className="site-admin__header"><div><button className="site-admin__back" type="button" onClick={backToCatalog}>← Danh mục trang</button><p className="site-admin__eyebrow">NỘI DUNG WEBSITE / TRANG</p><h1>{form?.title ?? detail?.published?.title ?? (selected === "home" ? "Trang chủ" : selected)}</h1><p>Chỉnh sửa nội dung trang; website chỉ thay đổi sau khi xuất bản.</p></div></header>
     {notice && <p className="site-admin__notice" role="status">{notice}</p>}
     {error && <p className="site-admin__error" role="alert">{error}</p>}
     {showCreate && <form className="site-admin__panel site-admin__create" onSubmit={(event) => { event.preventDefault(); void create({ ...createForm, kind: "static" }); }}>

@@ -25,6 +25,7 @@ describe("site pages admin draft", () => {
 
   it("saves a draft without publishing and disables publish while changes are unsaved", async () => {
     renderPage();
+    fireEvent.click(await screen.findByRole("button", { name: "Sửa trang Trang chủ" }));
     const title = await screen.findByLabelText("Tiêu đề trang");
     fireEvent.change(title, { target: { value: "Trang chủ mới" } });
     expect(screen.getByRole("button", { name: "Xuất bản" })).toBeDisabled();
@@ -35,6 +36,7 @@ describe("site pages admin draft", () => {
 
   it("adds a supported block through the library and previews it in the draft canvas", async () => {
     renderPage();
+    fireEvent.click(await screen.findByRole("button", { name: "Sửa trang Trang chủ" }));
     await screen.findByLabelText("Tiêu đề trang");
     fireEvent.click(screen.getByRole("button", { name: "+ Thêm phần" }));
     expect(screen.getByRole("dialog", { name: "Thêm phần vào trang" })).toBeInTheDocument();
