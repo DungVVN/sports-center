@@ -116,42 +116,33 @@ export function SiteMenuPage() {
             </nav>
           )}
 
-          <div className="site-admin__builder site-admin__builder--menu">
-            <div className="site-admin__menu-workspace">
-              <SiteMenuTree
-                items={draft.items}
-                location={location}
-                selectedId={draft.selectedItemId}
-                onSelect={draft.setSelectedItemId}
-                onAddRoot={() => draft.addItem()}
-              />
-            </div>
-
-            <div className="site-admin__inspector">
-              {selectedItem ? (
-                <aside className="site-admin__panel site-admin__menu-inspector" aria-label="Bảng chỉnh sửa mục menu">
-                  <div className="site-admin__subhead">
-                    <div>
-                      <p className="site-admin__eyebrow">CHỈNH SỬA NODE</p>
-                      <h3>{selectedItem.label}</h3>
-                    </div>
-                    <button type="button" className="site-admin__sheet-close" onClick={() => draft.setSelectedItemId(null)} aria-label="Đóng bảng chỉnh sửa">×</button>
+          <div className="site-admin__menu-workspace">
+            <SiteMenuTree
+              items={draft.items}
+              location={location}
+              selectedId={draft.selectedItemId}
+              onSelect={draft.setSelectedItemId}
+              onAddRoot={() => draft.addItem()}
+            />
+            {selectedItem ? (
+              <aside className="site-admin__panel site-admin__menu-inspector" aria-label="Bảng chỉnh sửa mục menu">
+                <div className="site-admin__subhead">
+                  <div>
+                    <p className="site-admin__eyebrow">CHỈNH SỬA NODE</p>
+                    <h3>{selectedItem.label}</h3>
                   </div>
-                  <MenuItemEditor
-                    item={selectedItem}
-                    index={selectedIndex}
-                    onChange={(patch) => draft.updateAt(selectedIndex, patch)}
-                    onMove={(direction) => draft.move(selectedIndex, direction)}
-                    onRemove={() => draft.removeItem(selectedIndex)}
-                  />
-                  <Button disabled={draft.items.length >= 20} onClick={() => draft.addItem("group")} size="sm" variant="outline">Thêm nhóm cấp 1</Button>
-                </aside>
-              ) : (
-                <aside className="site-admin__panel site-admin__empty" aria-label="Hướng dẫn Inspector">
-                  <p>Chọn một mục bên cây thư mục để chỉnh sửa hoặc nhấn "Thêm mục cấp 1".</p>
-                </aside>
-              )}
-            </div>
+                  <button type="button" className="site-admin__sheet-close" onClick={() => draft.setSelectedItemId(null)} aria-label="Đóng bảng chỉnh sửa">×</button>
+                </div>
+                <MenuItemEditor
+                  item={selectedItem}
+                  index={selectedIndex}
+                  onChange={(patch) => draft.updateAt(selectedIndex, patch)}
+                  onMove={(direction) => draft.move(selectedIndex, direction)}
+                  onRemove={() => draft.removeItem(selectedIndex)}
+                />
+                <Button disabled={draft.items.length >= 20} onClick={() => draft.addItem("group")} size="sm" variant="outline">Thêm nhóm cấp 1</Button>
+              </aside>
+            ) : null}
           </div>
 
           {detail.revisions.length > 0 && (
