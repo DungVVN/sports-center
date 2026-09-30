@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ToastProvider } from "../shared/ui/ToastContext.jsx";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AdminLoginPage, LoginPage, TotpVerificationPage, PendingApprovalPage, RegisterPage, VerificationPage, InitialPasswordChangePage, authApi } from "../features/auth/index.js";
 import { DashboardPlaceholder } from "./composition/DashboardPlaceholder.jsx";
 import { authenticationExpiredEvent, permissionsChangedEvent } from "../shared/api/client.js";
@@ -46,6 +46,7 @@ export function App() {
   const [session, setSession] = useState(null);
   const [mfaChallenge, setMfaChallenge] = useState(null);
   const [isRestoringSession, setIsRestoringSession] = useState(true);
+  const sessionChangeVersion = useRef(0);
 
   const navigate = useCallback((newView) => {
     setView(newView);
@@ -74,6 +75,8 @@ export function App() {
 
   useEffect(() => {
     const resetToLogin = () => {
+      sessionChangeVersion.current += 1;
+      setIsRestoringSession(false);
       setSession(null);
       navigate("login");
     };
@@ -82,16 +85,17 @@ export function App() {
   }, [navigate]);
   useEffect(() => {
     let isCurrent = true;
+    const version = sessionChangeVersion.current;
 
     void authApi.me({ suppressAuthenticationExpiredEvent: true })
       .then((currentSession) => {
-        if (isCurrent && currentSession && (currentSession.user.role === "admin") === isAdminPortal) setSession(currentSession);
+        if (isCurrent && version === sessionChangeVersion.current && currentSession && (currentSession.user.role === "admin") === isAdminPortal) setSession(currentSession);
       })
       .catch(() => {
         // A missing or expired cookie is the normal anonymous state on a fresh load.
       })
       .finally(() => {
-        if (isCurrent) setIsRestoringSession(false);
+        if (isCurrent && version === sessionChangeVersion.current) setIsRestoringSession(false);
       });
 
     return () => { isCurrent = false; };
@@ -120,19 +124,20 @@ export function App() {
     const handleSessionChange = (event) => {
       if (event.key !== sessionChangeStorageKey) return;
       const requestId = ++currentRequest;
+      const version = ++sessionChangeVersion.current;
       queryClient.clear();
       setSession(null);
       setIsRestoringSession(true);
       void authApi.me({ suppressAuthenticationExpiredEvent: true })
         .then((currentSession) => {
-          if (requestId !== currentRequest) return;
+          if (requestId !== currentRequest || version !== sessionChangeVersion.current) return;
           if ((currentSession.user.role === "admin") === isAdminPortal) {
             setSession(currentSession);
             navigate("dashboard");
           } else navigate("login");
         })
-        .catch(() => { if (requestId === currentRequest) navigate("login"); })
-        .finally(() => { if (requestId === currentRequest) setIsRestoringSession(false); });
+        .catch(() => { if (requestId === currentRequest && version === sessionChangeVersion.current) navigate("login"); })
+        .finally(() => { if (requestId === currentRequest && version === sessionChangeVersion.current) setIsRestoringSession(false); });
     };
     window.addEventListener("storage", handleSessionChange);
     return () => { currentRequest += 1; window.removeEventListener("storage", handleSessionChange); };
@@ -141,6 +146,8 @@ export function App() {
   const onMfaRequired = (challenge) => { setMfaChallenge(challenge); navigate("mfa"); };
   const onLoggedIn = (currentSession) => {
     if ((currentSession.user.role === "admin") !== isAdminPortal) return;
+    sessionChangeVersion.current += 1;
+    setIsRestoringSession(false);
     queryClient.clear();
     setSession(currentSession);
     navigate(currentSession.user.profileSetupRequired ? "profile" : "dashboard");
@@ -149,11 +156,12 @@ export function App() {
   const loginPage = isAdminPortal
     ? <AdminLoginPage onLoggedIn={onLoggedIn} onMfaRequired={onMfaRequired} />
     : <LoginPage onLoggedIn={onLoggedIn} onMfaRequired={onMfaRequired} onRegister={() => navigate("register")} />;
-  const content = isRestoringSession
-    ? <main className="app-loading-state" aria-live="polite">Đang khôi phục phiên đăng nhập...</main>
+  const isWaitingForPrivateRoute = isRestoringSession && (view === "dashboard" || Boolean(dashboardView(window.location.pathname)));
+  const content = isWaitingForPrivateRoute
+    ? <main className="app-loading-state" aria-label="Đang tải tài khoản" />
     : session?.user.mustChangePassword
     ? <InitialPasswordChangePage onCompleted={() => { setSession((current) => ({ ...current, user: { ...current.user, mustChangePassword: false } })); }} />
-    : session && view !== "notFound" && view !== "site-page" ? <DashboardPlaceholder key={session.user.id} initialView={dashboardView(window.location.pathname) ?? (session.user.profileSetupRequired ? "profile" : "dashboard")} session={session} onProfileSaved={() => setSession((current) => ({ ...current, user: { ...current.user, profileSetupRequired: false } }))} onLogout={() => { queryClient.clear(); setSession(null); navigate("login"); notifyOtherTabsOfSessionChange(); }} /> : {
+    : session && view !== "notFound" && view !== "site-page" ? <DashboardPlaceholder key={session.user.id} initialView={dashboardView(window.location.pathname) ?? (session.user.profileSetupRequired ? "profile" : "dashboard")} session={session} onProfileSaved={() => setSession((current) => ({ ...current, user: { ...current.user, profileSetupRequired: false } }))} onLogout={() => { sessionChangeVersion.current += 1; setIsRestoringSession(false); queryClient.clear(); setSession(null); navigate("login"); notifyOtherTabsOfSessionChange(); }} /> : {
     login: loginPage,
     landing: <HomeRoute onLoginClick={() => navigate("login")} onRegisterClick={() => navigate("register")} onGalleryClick={() => navigate("gallery")} onCalendarClick={() => navigate("calendar")} onHomeClick={() => navigate("landing")} />,
     "site-page": <ManagedPublicPage path={window.location.pathname} onHomeClick={() => navigate("landing")} onLoginClick={() => navigate("login")} />,
