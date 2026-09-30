@@ -1,11 +1,15 @@
 import { apiClient, apiErrorFromResponse } from "../../../shared/api/client.js";
 import { apiBaseUrl } from "../../../config/runtime.js";
+import { portalSurface } from "../../../config/portal.js";
 import { ApiError } from "../../../shared/api/api-error.js";
 
 async function exportCsv(type, query) {
   let response;
   try {
-    response = await fetch(`${apiBaseUrl}/reports/${type}/export?${new URLSearchParams(query)}`, { credentials: "include" });
+    response = await fetch(`${apiBaseUrl}/reports/${type}/export?${new URLSearchParams(query)}`, {
+      credentials: "include",
+      headers: { "x-sports-center-portal": portalSurface() },
+    });
   } catch {
     throw new ApiError({ code: "NETWORK_ERROR", message: "Không nhận được phản hồi khi tải báo cáo. Kiểm tra kết nối mạng rồi thử lại." });
   }
