@@ -5,6 +5,7 @@ import { TotpEnrollmentPanel } from "./TotpEnrollmentPanel.jsx";
 import { NotificationPreferencesPanel } from "../../notifications/index.js";
 import { hasSessionPermission } from "../domain/session-permissions.js";
 import { useProfileWorkspace } from "../api/useProfileWorkspace.js";
+import { uploadProfileAvatar } from "../api/cloudinary-profile-upload.js";
 import "./profile.css";
 
 const roleLabels = {
@@ -46,6 +47,7 @@ export function ProfilePage({ onSessionRevoked, onProfileSaved, session }) {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
 
   const form = profile ? formDraft ?? toForm(profile) : null;
 
@@ -70,6 +72,17 @@ export function ProfilePage({ onSessionRevoked, onProfileSaved, session }) {
         isPrimary: contactIndex === index,
       })),
     }));
+  }
+
+  async function uploadAvatar(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setAvatarUploading(true);
+    workspace.clearFeedback();
+    try { updateField("avatarUrl", await uploadProfileAvatar(file)); }
+    catch (cause) { workspace.setError(cause?.message || "Không thể tải ảnh đại diện lên."); }
+    finally { setAvatarUploading(false); }
   }
 
   async function submit(event) {
@@ -227,6 +240,7 @@ export function ProfilePage({ onSessionRevoked, onProfileSaved, session }) {
                   type="url"
                   value={form.avatarUrl}
                 />
+                <input accept="image/jpeg,image/png,image/webp,image/gif,image/avif" disabled={avatarUploading} onChange={uploadAvatar} type="file" />
                 {form.avatarUrl && (
                   <ProfileAvatar
                     key={form.avatarUrl}
@@ -235,7 +249,7 @@ export function ProfilePage({ onSessionRevoked, onProfileSaved, session }) {
                     src={form.avatarUrl}
                   />
                 )}
-                <small>Nhập đường dẫn HTTPS của ảnh.</small>
+                <small>Nhập URL HTTPS hoặc chọn ảnh từ máy (JPG, PNG, WebP, GIF, AVIF; tối đa 10 MB){avatarUploading ? " · Đang tải..." : ""}. Bấm Lưu thay đổi để cập nhật hồ sơ.</small>
               </label>
               {isMember && (
                 <label>

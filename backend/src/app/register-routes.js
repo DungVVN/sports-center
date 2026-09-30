@@ -15,13 +15,14 @@ import { createInsightRouter } from "../modules/insights/index.js";
 import { createAuditRouter } from "../modules/audit/index.js";
 import { createAssignmentRouter } from "../modules/assignments/index.js";
 import { createRolePermissionRouter } from "../modules/role-permissions/index.js";
+import { createSiteRouter } from "../modules/site/index.js";
 
 export function registerRoutes(app, apiBasePath, {
   authService, staffService, memberService, membershipService, classService, bookingService,
   facilityService, attendanceService, paymentService, supportService, notificationPreferenceService,
-  aiAssistService, trainingService, insightService, auditLogService, assignmentService, rolePermissionService,
+  aiAssistService, trainingService, insightService, auditLogService, assignmentService, rolePermissionService, siteService, cloudinaryMediaService,
 }) {
-  app.use(`${apiBasePath}/auth`, createAuthRouter(authService));
+  app.use(`${apiBasePath}/auth`, createAuthRouter(authService, cloudinaryMediaService));
   app.use(`${apiBasePath}/staff`, createStaffRouter(staffService, authService));
   app.use(`${apiBasePath}/members`, createMemberRouter(memberService, authService));
   app.use(apiBasePath, createMembershipRouter(membershipService, authService));
@@ -38,4 +39,5 @@ export function registerRoutes(app, apiBasePath, {
   app.use(apiBasePath, createAuditRouter(auditLogService, authService));
   app.use(apiBasePath, createAssignmentRouter(assignmentService, authService));
   app.use(apiBasePath, createRolePermissionRouter(rolePermissionService, authService));
+  app.use(apiBasePath, createSiteRouter(siteService, authService, cloudinaryMediaService));
 }

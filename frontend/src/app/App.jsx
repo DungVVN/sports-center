@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AdminLoginPage, LoginPage, TotpVerificationPage, PendingApprovalPage, RegisterPage, VerificationPage, InitialPasswordChangePage, authApi } from "../features/auth/index.js";
 import { DashboardPlaceholder } from "./composition/DashboardPlaceholder.jsx";
 import { authenticationExpiredEvent, permissionsChangedEvent } from "../shared/api/client.js";
-import { LandingPage, GalleryPage, CalendarPage, NotFoundPage } from "../features/site/index.js";
+import { HomeRoute, ManagedPublicPage, GalleryPage, CalendarPage, NotFoundPage } from "../features/site/index.js";
 import { dashboardPath, dashboardView, isDashboardView } from "./dashboard-routes.js";
 import { portalSurface } from "../config/portal.js";
 
@@ -38,7 +38,7 @@ export function App() {
     if (path === "/gallery") return "gallery";
     if (path === "/calendar") return "calendar";
     if (dashboardView(path)) return "login";
-    return "notFound";
+    return "site-page";
   };
 
   const [view, setView] = useState(getInitialView());
@@ -66,11 +66,11 @@ export function App() {
       else if (path === "/calendar") setView("calendar");
       else if (dashboardView(path)) setView("dashboard");
       else if (path === "/") setView("landing");
-      else setView("notFound");
+      else setView(isAdminPortal ? "notFound" : "site-page");
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, []);
+  }, [isAdminPortal]);
 
   useEffect(() => {
     const resetToLogin = () => {
@@ -153,9 +153,10 @@ export function App() {
     ? <main className="app-loading-state" aria-live="polite">Đang khôi phục phiên đăng nhập...</main>
     : session?.user.mustChangePassword
     ? <InitialPasswordChangePage onCompleted={() => { setSession((current) => ({ ...current, user: { ...current.user, mustChangePassword: false } })); }} />
-    : session && view !== "notFound" ? <DashboardPlaceholder key={session.user.id} initialView={dashboardView(window.location.pathname) ?? (session.user.profileSetupRequired ? "profile" : "dashboard")} session={session} onProfileSaved={() => setSession((current) => ({ ...current, user: { ...current.user, profileSetupRequired: false } }))} onLogout={() => { queryClient.clear(); setSession(null); navigate("login"); notifyOtherTabsOfSessionChange(); }} /> : {
+    : session && view !== "notFound" && view !== "site-page" ? <DashboardPlaceholder key={session.user.id} initialView={dashboardView(window.location.pathname) ?? (session.user.profileSetupRequired ? "profile" : "dashboard")} session={session} onProfileSaved={() => setSession((current) => ({ ...current, user: { ...current.user, profileSetupRequired: false } }))} onLogout={() => { queryClient.clear(); setSession(null); navigate("login"); notifyOtherTabsOfSessionChange(); }} /> : {
     login: loginPage,
-    landing: <LandingPage onLoginClick={() => navigate("login")} onRegisterClick={() => navigate("register")} onGalleryClick={() => navigate("gallery")} onCalendarClick={() => navigate("calendar")} />,
+    landing: <HomeRoute onLoginClick={() => navigate("login")} onRegisterClick={() => navigate("register")} onGalleryClick={() => navigate("gallery")} onCalendarClick={() => navigate("calendar")} onHomeClick={() => navigate("landing")} />,
+    "site-page": <ManagedPublicPage path={window.location.pathname} onHomeClick={() => navigate("landing")} onLoginClick={() => navigate("login")} />,
     gallery: <GalleryPage onLoginClick={() => navigate("login")} onHomeClick={() => navigate("landing")} />,
     calendar: <CalendarPage onLoginClick={() => navigate("login")} onHomeClick={() => navigate("landing")} />,
     notFound: <NotFoundPage onHome={() => navigate("landing")} onLogin={() => navigate("login")} />,

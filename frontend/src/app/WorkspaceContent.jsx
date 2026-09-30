@@ -11,6 +11,7 @@ import { loadMemberPaymentsPage, loadPaymentsPage } from "../features/payments/i
 import { loadRolePermissionPage } from "../features/role-permissions/index.js";
 import { loadStaffPage } from "../features/staff/index.js";
 import { loadSupportPage, loadSupportStaffPage } from "../features/support/index.js";
+import { loadSiteMenuPage, loadSitePagesPage } from "../features/site-admin/index.js";
 import { loadMemberTrainingPage, loadTrainingPage } from "../features/training/index.js";
 
 const lazyPage = (load, exportName) => lazy(() => load().then((module) => ({ default: module[exportName] })));
@@ -34,6 +35,8 @@ const RolePermissionPage = lazyPage(loadRolePermissionPage, "RolePermissionPage"
 const StaffPage = lazyPage(loadStaffPage, "StaffPage");
 const SupportPage = lazyPage(loadSupportPage, "SupportPage");
 const SupportStaffPage = lazyPage(loadSupportStaffPage, "SupportStaffPage");
+const SiteMenuPage = lazyPage(loadSiteMenuPage, "SiteMenuPage");
+const SitePagesPage = lazyPage(loadSitePagesPage, "SitePagesPage");
 const TrainingPage = lazyPage(loadTrainingPage, "TrainingPage");
 
 export function WorkspaceContent({ onNavigate, onProfileSaved, onSessionRevoked, session, view, dashboardRole = "manager" }) {
@@ -55,6 +58,8 @@ export function WorkspaceContent({ onNavigate, onProfileSaved, onSessionRevoked,
     registrations: <RegistrationApprovalPage />,
     reports: <ReportsPage />,
     rolePermissions: dashboardRole === "admin" ? <RolePermissionPage /> : null,
+    sitePages: dashboardRole === "admin" ? <SitePagesPage /> : null,
+    siteMenu: dashboardRole === "admin" ? <SiteMenuPage /> : null,
     staff: <StaffPage session={session} />,
     support: dashboardRole === "member" ? <SupportPage session={session} /> : <SupportStaffPage session={session} />,
     training: <TrainingPage session={session} />,

@@ -1,18 +1,13 @@
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Activity, Star, Trophy, Users, Check, ChevronRight, Menu, X } from "lucide-react";
-import { publicMembershipPackages } from "../../../memberships/index.js";
 import { PublicFooter } from "../PublicFooter/PublicFooter.jsx";
+import { PublicPricingSection } from "../Pricing/PublicPricingSection.jsx";
+import { PublicMenuLinks } from "../PublicNavigation/PublicMenuLinks.jsx";
 import "./LandingPage.css";
 
 export function LandingPage({ onLoginClick, onRegisterClick, onGalleryClick, onCalendarClick }) {
    const [scrolled, setScrolled] = useState(false);
    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-   const { data: packages = [], isPending: packagesLoading, isError: packagesError, refetch: retryPackages } = useQuery({
-      queryKey: ["public-membership-packages"],
-      queryFn: publicMembershipPackages,
-      retry: false,
-   });
 
    useEffect(() => {
       const handleScroll = () => {
@@ -38,10 +33,7 @@ export function LandingPage({ onLoginClick, onRegisterClick, onGalleryClick, onC
                <span className="logo-text">Kinetic</span>
             </div>
             <div className="navbar-links">
-               <a href="#about">Về Chúng Tôi</a>
-               <a href="#facilities">Dịch Vụ</a>
-               <a href="#pricing">Bảng Giá</a>
-               <a href="#contact">Liên Hệ</a>
+               <PublicMenuLinks />
             </div>
             <div className="navbar-actions">
                <button className="btn-primary btn-sm" onClick={onLoginClick}>Đăng Nhập</button>
@@ -57,10 +49,7 @@ export function LandingPage({ onLoginClick, onRegisterClick, onGalleryClick, onC
                </button>
             </div>
             <div className={`mobile-nav-menu${mobileMenuOpen ? " open" : ""}`} id="mobile-public-navigation">
-               <a href="#about" onClick={() => setMobileMenuOpen(false)}>Về Chúng Tôi</a>
-               <a href="#facilities" onClick={() => setMobileMenuOpen(false)}>Dịch Vụ</a>
-               <a href="#pricing" onClick={() => setMobileMenuOpen(false)}>Bảng Giá</a>
-               <a href="#contact" onClick={() => setMobileMenuOpen(false)}>Liên Hệ</a>
+               <PublicMenuLinks onNavigate={() => setMobileMenuOpen(false)} />
             </div>
          </nav>
 
@@ -81,10 +70,10 @@ export function LandingPage({ onLoginClick, onRegisterClick, onGalleryClick, onC
                   </p>
                   <div className="hero-social-proof">
                      <div className="avatars">
-                        <img src="https://i.pravatar.cc/100?img=11" alt="user" />
-                        <img src="https://i.pravatar.cc/100?img=12" alt="user" />
-                        <img src="https://i.pravatar.cc/100?img=13" alt="user" />
-                        <img src="https://i.pravatar.cc/100?img=14" alt="user" />
+                        <img src="https://i.pravatar.cc/100?img=11" alt="" width="48" height="48" />
+                        <img src="https://i.pravatar.cc/100?img=12" alt="" width="48" height="48" />
+                        <img src="https://i.pravatar.cc/100?img=13" alt="" width="48" height="48" />
+                        <img src="https://i.pravatar.cc/100?img=14" alt="" width="48" height="48" />
                      </div>
                      <p>Hơn <strong>10,000+</strong> hội viên đã tin tưởng và đồng hành.</p>
                   </div>
@@ -115,8 +104,8 @@ export function LandingPage({ onLoginClick, onRegisterClick, onGalleryClick, onC
          <section id="about" className="section-about">
             <div className="about-grid">
                <div className="about-images">
-                  <img src="https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?q=80&w=1000&auto=format&fit=crop" alt="Trainer helping member" className="img-main" />
-                  <img src="https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?q=80&w=800&auto=format&fit=crop" alt="Modern gym equipment" className="img-sub" />
+                  <img src="https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?q=80&w=1000&auto=format&fit=crop" alt="Huấn luyện viên hỗ trợ hội viên" className="img-main" width="1000" height="667" loading="lazy" />
+                  <img src="https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?q=80&w=800&auto=format&fit=crop" alt="Trang thiết bị tập luyện hiện đại" className="img-sub" width="800" height="533" loading="lazy" />
                   <div className="experience-badge">
                      <span className="years">10+</span>
                      <span className="text">Năm KInh Nghiệm</span>
@@ -176,7 +165,7 @@ export function LandingPage({ onLoginClick, onRegisterClick, onGalleryClick, onC
             {/* Feature 1 */}
             <div className="zigzag-row">
                <div className="zigzag-image">
-                  <div className="image-wrapper bg-soccer">
+                  <div className="image-wrapper bg-soccer" role="img" aria-label="Sân bóng đá cỏ nhân tạo">
                      <div className="image-overlay"></div>
                   </div>
                </div>
@@ -196,7 +185,7 @@ export function LandingPage({ onLoginClick, onRegisterClick, onGalleryClick, onC
             {/* Feature 2 */}
             <div className="zigzag-row reverse">
                <div className="zigzag-image">
-                  <div className="image-wrapper bg-gym">
+                  <div className="image-wrapper bg-gym" role="img" aria-label="Phòng tập Gym hiện đại">
                      <div className="image-overlay"></div>
                   </div>
                </div>
@@ -214,31 +203,7 @@ export function LandingPage({ onLoginClick, onRegisterClick, onGalleryClick, onC
             </div>
          </section>
 
-         {/* Pricing Section */}
-         <section id="pricing" className="section-pricing">
-            <div className="section-header center">
-               <span className="section-subtitle">ĐẦU TƯ CHO SỨC KHỎE</span>
-               <h2>Gói Hội Viên Linh Hoạt</h2>
-               <p className="max-w-xl">Giá và quyền lợi theo từng thời hạn gói. Tạo tài khoản để bắt đầu; nhân viên sẽ hỗ trợ đăng ký và thanh toán gói sau khi tài khoản được duyệt.</p>
-            </div>
-            {packagesLoading && <p className="pricing-state" role="status">Đang tải bảng giá...</p>}
-            {packagesError && <div className="pricing-state" role="alert"><p>Chưa tải được bảng giá. Vui lòng thử lại.</p><button className="btn-secondary" onClick={() => retryPackages()}>Thử lại</button></div>}
-            {!packagesLoading && !packagesError && packages.length === 0 && <p className="pricing-state">Hiện chưa có gói hội viên được mở bán.</p>}
-            {!packagesLoading && !packagesError && packages.length > 0 && <div className="pricing-grid">
-               {packages.map((pkg) => <article className={`price-card${pkg.code === "STANDARD" ? " featured" : ""}`} key={pkg.code}>
-                  <div className="price-header">
-                     <span className="price-duration">{pkg.durationDays} ngày sử dụng</span>
-                     <h3>{pkg.name}</h3>
-                     <div className="price">{Number(pkg.priceVnd).toLocaleString("vi-VN")}<span> ₫ / gói</span></div>
-                  </div>
-                  <div className="price-body">
-                     <p>Quyền lợi bao gồm</p>
-                     <ul>{pkg.benefits.map((benefit) => <li key={benefit}><Check size={18} aria-hidden="true" />{benefit}</li>)}</ul>
-                     <button className="btn-primary w-full" onClick={onRegisterClick}>Tạo tài khoản</button>
-                  </div>
-               </article>)}
-            </div>}
-         </section>
+         <PublicPricingSection onRegisterClick={onRegisterClick} />
 
          {/* CTA Banner */}
          <section className="section-cta-banner">
