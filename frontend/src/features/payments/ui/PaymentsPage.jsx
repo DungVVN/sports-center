@@ -212,7 +212,7 @@ export function PaymentsPage({ session }) {
         </form>}
         {checkoutUrl && (
           <div className="auth-success payment-checkout" role="status">
-            <p>Liên kết thanh toán: <a href={checkoutUrl} rel="noreferrer" target="_blank">Mở trang thanh toán</a></p>
+            <p>Liên kết thanh toán: <a href={checkoutUrl} rel="noopener noreferrer" target="_blank">Mở trang thanh toán</a></p>
             {qrCode && (
               <div className="payment-checkout__qr">
                 <img src={qrCode} alt="Mã QR thanh toán" />

@@ -12,35 +12,35 @@ export function GalleryPage({ onLoginClick, onHomeClick }) {
         </header>
         <div className="gallery-grid">
             <div className="gallery-item large">
-              <img src="/assets/images/gym.jpg" alt="Gym" />
+              <img src="/assets/images/gym.jpg" alt="Phòng Gym" width="800" height="600" loading="lazy" />
               <div className="gallery-overlay"><span>Phòng Thể Lực</span></div>
             </div>
             <div className="gallery-item">
-              <img src="/images/basketball_court.jpg" alt="Basketball court" />
+              <img src="/images/basketball_court.jpg" alt="Sân bóng rổ" width="800" height="600" loading="lazy" />
               <div className="gallery-overlay"><span>Sân Bóng Rổ</span></div>
             </div>
             <div className="gallery-item tall">
-              <img src="/images/yoga.jpg" alt="Hình minh họa các tư thế yoga" />
+              <img src="/images/yoga.jpg" alt="Các tư thế yoga" width="800" height="600" loading="lazy" />
               <div className="gallery-overlay"><span>Phòng Yoga</span></div>
             </div>
             <div className="gallery-item">
-              <img src="/images/pool.jpg" alt="Swimming pool" />
+              <img src="/images/pool.jpg" alt="Hồ bơi" width="800" height="600" loading="lazy" />
               <div className="gallery-overlay"><span>Hồ Bơi 4 Mùa</span></div>
             </div>
             <div className="gallery-item wide">
-              <img src="/images/soccer_field.jpg" alt="Soccer field" />
+              <img src="/images/soccer_field.jpg" alt="Sân bóng đá" width="800" height="600" loading="lazy" />
               <div className="gallery-overlay"><span>Sân Bóng Đá</span></div>
             </div>
             <div className="gallery-item wide">
-              <img src="/images/track.jpg" alt="Cận cảnh mặt đường chạy" />
+              <img src="/images/track.jpg" alt="Đường chạy điền kinh" width="800" height="600" loading="lazy" />
               <div className="gallery-overlay"><span>Đường Chạy Track</span></div>
             </div>
             <div className="gallery-item wide">
-              <img src="/images/tennis.jpg" alt="Tennis court" />
+              <img src="/images/tennis.jpg" alt="Sân Tennis" width="800" height="600" loading="lazy" />
               <div className="gallery-overlay"><span>Sân Quần Vợt</span></div>
             </div>
             <div className="gallery-item wide">
-              <img src="/images/volleyball.jpg" alt="Hình minh họa trận bóng chuyền" />
+              <img src="/images/volleyball.jpg" alt="Trận bóng chuyền" width="800" height="600" loading="lazy" />
               <div className="gallery-overlay"><span>Sân Bóng Chuyền</span></div>
             </div>
         </div>

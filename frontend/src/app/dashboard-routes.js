@@ -2,6 +2,8 @@ const routes = {
   dashboard: "/dashboard",
   profile: "/profile",
   rolePermissions: "/admin/permissions",
+  sitePages: "/admin/site/pages",
+  siteMenu: "/admin/site/menu",
   members: "/members",
   registrations: "/registrations",
   packages: "/packages",

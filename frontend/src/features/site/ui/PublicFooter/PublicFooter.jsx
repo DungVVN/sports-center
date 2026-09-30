@@ -1,4 +1,5 @@
 import { Activity, MapPin, Phone, Mail } from 'lucide-react';
+import { PublicMenuLinks } from "../PublicNavigation/PublicMenuLinks.jsx";
 
 export function PublicFooter() {
   return (
@@ -18,12 +19,7 @@ export function PublicFooter() {
 
         <div className="footer-col">
           <h4>Dịch Vụ</h4>
-          <ul className="footer-links">
-            <li><a href="/#facilities">Sân Bóng Đá</a></li>
-            <li><a href="/#facilities">Phòng Gym</a></li>
-            <li><a href="/#facilities">Yoga & Group X</a></li>
-            <li><a href="/#facilities">Sân Tennis</a></li>
-          </ul>
+          <PublicMenuLinks location="footer" />
         </div>
 
         <div className="footer-col">

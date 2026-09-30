@@ -20,6 +20,8 @@ const navigationItems = [
   { id: "dashboard", label: "Tổng quan" },
   { id: "profile", label: "Hồ sơ" },
   { id: "rolePermissions", label: "Phân quyền chức năng" },
+  { id: "sitePages", label: "Trang website" },
+  { id: "siteMenu", label: "Menu website" },
   { id: "members", label: "Hội viên" },
   { id: "registrations", label: "Duyệt đăng ký" },
   { id: "packages", label: "Gói tập", children: [
@@ -61,7 +63,7 @@ export function DashboardPlaceholder({ initialView = "dashboard", session, onLog
   const navigation = useMemo(() => {
     const allowed = (id) => session.user.role === "admin" || !accessByView[id] || accessByView[id].some((permission) => granted.has(permission));
     const items = navigationItems.flatMap((item) => {
-      if (item.id === "rolePermissions" && session.user.role !== "admin") return [];
+      if (["rolePermissions", "sitePages", "siteMenu"].includes(item.id) && session.user.role !== "admin") return [];
       if (item.children) {
         const children = item.children.filter((child) => allowed(child.id));
         return children.length ? [{ ...item, children }] : [];

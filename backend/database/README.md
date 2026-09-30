@@ -26,4 +26,17 @@ Migration đầu tiên vẫn giữ nguyên lời chú thích lịch sử nhắc 
 
 Schema/migration hiện bao gồm tài khoản và xác thực, Admin cùng bốn role nghiệp vụ, bảng quyền và quyền cấu hình theo role, hồ sơ nhân viên/hội viên, gói hội viên và quyền sử dụng, lớp và booking, điểm danh, thanh toán PayOS, giáo án, thông báo, hỗ trợ và audit. Quy tắc phân quyền theo người dùng/phạm vi dữ liệu vẫn được backend kiểm tra, không suy ra chỉ từ bảng quyền hoặc giao diện.
 
+## Nền tảng quản trị nội dung website công khai
+
+Migration `20260930010000_public_site_content_foundation` bổ sung riêng sáu bảng, chưa đổi dữ liệu hoặc luồng nghiệp vụ hiện có:
+
+- `site_pages`: danh mục route công khai (`home`, `static`), không chứa lịch hay giá gói tập.
+- `site_page_revisions`: bản nháp/bản xuất bản của tiêu đề, SEO và danh sách block JSON; `site_page_publications` trỏ tới đúng bản đang hiển thị.
+- `site_menu_revisions`: cây menu header/footer theo từng phiên bản; `site_menu_publications` trỏ tới bản đang hiển thị. Đây **không phải** menu sidebar của nhân viên/admin (sidebar vẫn sinh từ quyền hiện có).
+- `site_media_assets`: metadata ảnh Cloudinary; ảnh được tải trực tiếp bằng chữ ký ngắn hạn chỉ cấp cho admin, với MIME, dung lượng và thư mục delivery được API kiểm tra.
+
+Các bản đã xuất bản bất biến ở mức DB; con trỏ công khai không thể trỏ tới bản nháp. Chỉ cho một bản nháp trên mỗi trang/vị trí menu. `audit_logs` sẵn có sẽ ghi thao tác quản trị khi triển khai API, không tạo bảng audit thứ hai. Backend phải kiểm tra schema từng block/menu item, route hợp lệ, quyền admin và cập nhật phiên bản/pointer trong transaction. Không đưa giá gói tập, lịch trống hay trạng thái đặt chỗ vào JSON nội dung; các block động chỉ giữ khóa binding tới API nghiệp vụ.
+
+Migration này không seed trang/menu. API quản trị và giao diện biên tập có trong mã nguồn hiện tại, nhưng áp dụng migration một mình không thay đổi website công khai: frontend giữ `VITE_SITE_CMS_PUBLIC_ENABLED=false` theo mặc định. Khi triển khai, giữ fallback hiện tại cho tới khi backend mới và nội dung đã xuất bản được kiểm tra trên trình duyệt. Chỉ chạy migration lên đúng DB sau khi xác nhận đích; với Neon đang có dữ liệu cần quy trình deploy/backup như phần trên.
+
 Swagger/OpenAPI tại `../src/openapi/spec.js` là nguồn chuẩn của HTTP contract, không phải nguồn chuẩn của cấu trúc DB.
