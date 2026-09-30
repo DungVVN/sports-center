@@ -32,4 +32,16 @@ describe("site pages admin draft", () => {
     await waitFor(() => expect(siteAdminApi.savePageDraft).toHaveBeenCalledWith("home", expect.objectContaining({ title: "Trang chủ mới", editRevision: 1 })));
     expect(siteAdminApi.publishPage).not.toHaveBeenCalled();
   });
+
+  it("adds a supported block through the library and previews it in the draft canvas", async () => {
+    renderPage();
+    await screen.findByLabelText("Tiêu đề trang");
+    fireEvent.click(screen.getByRole("button", { name: "+ Thêm phần" }));
+    expect(screen.getByRole("dialog", { name: "Thêm phần vào trang" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Câu hỏi thường gặp/ }));
+    expect(screen.getByText("2 phần trên trang")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Xuất bản" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Lưu nháp" }));
+    await waitFor(() => expect(siteAdminApi.savePageDraft).toHaveBeenCalledWith("home", expect.objectContaining({ blocks: expect.arrayContaining([expect.objectContaining({ type: "faq" })]) })));
+  });
 });
