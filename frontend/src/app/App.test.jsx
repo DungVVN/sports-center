@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App.jsx";
 
@@ -63,6 +63,44 @@ describe("first login routing", () => {
     render(<App />);
 
     expect(await screen.findByText("Dashboard view: dashboard; account: member-1")).toBeInTheDocument();
+  });
+
+  it("shows the public home immediately while session lookup is pending", () => {
+    mockAuthMe.mockReturnValue(new Promise(() => {}));
+
+    render(<App />);
+
+    expect(screen.getByRole("button", { name: /đăng nhập/i })).toBeInTheDocument();
+    expect(screen.queryByText("Đang khôi phục phiên đăng nhập...")).not.toBeInTheDocument();
+  });
+
+  it("does not replace a new login with a stale session lookup", async () => {
+    let finishLookup;
+    mockAuthMe.mockReturnValue(new Promise((resolve) => { finishLookup = resolve; }));
+
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: /đăng nhập/i }));
+    fireEvent.click(screen.getByText("Member login"));
+    expect(screen.getByText("Dashboard view: profile; account: member-1")).toBeInTheDocument();
+
+    await act(async () => {
+      finishLookup({ user: { id: "old-member", role: "member", mustChangePassword: false, profileSetupRequired: false }, permissions: [] });
+    });
+    expect(screen.getByText("Dashboard view: profile; account: member-1")).toBeInTheDocument();
+    expect(screen.queryByText(/old-member/)).not.toBeInTheDocument();
+  });
+
+  it("keeps a private route hidden until its session lookup completes", async () => {
+    window.history.replaceState({}, "", "/members");
+    let finishLookup;
+    mockAuthMe.mockReturnValue(new Promise((resolve) => { finishLookup = resolve; }));
+
+    render(<App />);
+
+    expect(screen.getByLabelText("Đang tải tài khoản")).toBeInTheDocument();
+    expect(screen.queryByText("Member login")).not.toBeInTheDocument();
+    finishLookup({ user: { id: "member-1", role: "member", mustChangePassword: false, profileSetupRequired: false }, permissions: [] });
+    expect(await screen.findByText("Dashboard view: members; account: member-1")).toBeInTheDocument();
   });
 
   it("does not restore an Admin session on the main portal", async () => {

@@ -41,16 +41,16 @@ function ImageField({ block, onChange }) {
   </div>;
 }
 
-export function BlockEditor({ block, index, onChange, onMove, onRemove }) {
+export function BlockEditor({ block, index, total, onChange, onMove, onRemove }) {
   const field = (name, label, multiline = false) => <BlockField block={block} field={name} label={label} multiline={multiline} onChange={onChange} />;
 
-  return <article className="site-admin__block">
+  return <article className="site-admin__block site-admin__block--inspector">
     <header>
       <strong>{index + 1}. {blockNames[block.type]}</strong>
       <div>
         <label className="site-admin__check"><input checked={block.active} onChange={(event) => onChange({ active: event.target.checked })} type="checkbox" />Hiển thị</label>
-        <button onClick={() => onMove(-1)} type="button" aria-label={`Đưa khối ${index + 1} lên`}>↑</button>
-        <button onClick={() => onMove(1)} type="button" aria-label={`Đưa khối ${index + 1} xuống`}>↓</button>
+        <button disabled={index === 0} onClick={() => onMove(-1)} type="button" aria-label={`Đưa khối ${index + 1} lên`}>↑</button>
+        <button disabled={index === total - 1} onClick={() => onMove(1)} type="button" aria-label={`Đưa khối ${index + 1} xuống`}>↓</button>
         <button onClick={onRemove} type="button">Xóa</button>
       </div>
     </header>
