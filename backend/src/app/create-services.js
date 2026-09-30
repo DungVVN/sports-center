@@ -30,6 +30,7 @@ import { rolePermissionRepository, createRolePermissionService } from "../module
 import { facilityRepository } from "../modules/facilities/index.js";
 import { createFacilityService } from "../modules/facilities/index.js";
 import { auditService } from "../shared/audit/audit.service.js";
+import { siteRepository, createCloudinaryMediaService, createSiteService } from "../modules/site/index.js";
 
 export function createServices({
   authService = createAuthService({ repository: authRepository, verificationDelivery: verificationDeliveryService, auditService }),
@@ -49,6 +50,8 @@ export function createServices({
   assignmentService = createAssignmentService({ repository: assignmentRepository, auditService }),
   auditLogService = createAuditLogService({ repository: auditRepository }),
   rolePermissionService = createRolePermissionService({ repository: rolePermissionRepository }),
+  siteService = createSiteService({ repository: siteRepository }),
+  cloudinaryMediaService = createCloudinaryMediaService({ repository: siteRepository }),
 } = {}) {
-  return { authService, staffService, memberService, membershipService, classService, bookingService, facilityService, attendanceService, paymentService, supportService, notificationPreferenceService, aiAssistService, trainingService, insightService, assignmentService, auditLogService, rolePermissionService };
+  return { authService, staffService, memberService, membershipService, classService, bookingService, facilityService, attendanceService, paymentService, supportService, notificationPreferenceService, aiAssistService, trainingService, insightService, assignmentService, auditLogService, rolePermissionService, siteService, cloudinaryMediaService };
 }

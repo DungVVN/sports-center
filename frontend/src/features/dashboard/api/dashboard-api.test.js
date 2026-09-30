@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { dashboardApi } from "./dashboard-api.js";
 import { errorMessageFor } from "../../../shared/api/error-message.js";
 
+vi.mock("../../../config/portal.js", () => ({ portalSurface: () => "admin" }));
+
 afterEach(() => vi.unstubAllGlobals());
 
 describe("dashboardApi.exportCsv", () => {
@@ -13,6 +15,10 @@ describe("dashboardApi.exportCsv", () => {
 
     const error = await dashboardApi.exportCsv("revenue", { period: "custom" }).catch((caught) => caught);
     expect(errorMessageFor(error, "Không thể tải báo cáo doanh thu.")).toBe("Ngày kết thúc phải sau ngày bắt đầu.");
+    expect(fetch).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({
+      credentials: "include",
+      headers: { "x-sports-center-portal": "admin" },
+    }));
   });
 
   it("explains an unstructured server response and includes its request ID", async () => {
