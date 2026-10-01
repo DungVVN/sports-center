@@ -1,0 +1,24 @@
+User-agent: *
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /login
+Disallow: /register
+Disallow: /verify
+Disallow: /pending
+Disallow: /profile
+Disallow: /members
+Disallow: /registrations
+Disallow: /packages
+Disallow: /classes
+Disallow: /bookings
+Disallow: /facilities
+Disallow: /attendance
+Disallow: /payments
+Disallow: /staff
+Disallow: /training
+Disallow: /reports
+Disallow: /audit-logs
+Disallow: /support
+Disallow: /my/
+
+Sitemap: https://kineticsports.io.vn/sitemap.xml

@@ -1,25 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { publicSiteApi, siteCmsPublicEnabled } from "../../api/site-public-api.js";
+import { corePages } from "../../model/core-pages.js";
 import "./public-menu.css";
 
-const fallbackHeader = [
-  { id: "about", label: "Về Chúng Tôi", kind: "link", href: "/#about", active: true, children: [] },
-  { id: "facilities", label: "Dịch Vụ", kind: "link", href: "/#facilities", active: true, children: [] },
-  { id: "pricing", label: "Bảng Giá", kind: "link", href: "/#pricing", active: true, children: [] },
-  { id: "contact", label: "Liên Hệ", kind: "link", href: "/#contact", active: true, children: [] },
-];
+const fallbackHeader = corePages.map((page) => ({ id: page.path, label: page.label, kind: "link", href: page.path, active: true, children: [] }));
 const fallbackFooter = [
-  { id: "football", label: "Sân Bóng Đá", kind: "link", href: "/#facilities", active: true, children: [] },
-  { id: "gym", label: "Phòng Gym", kind: "link", href: "/#facilities", active: true, children: [] },
-  { id: "yoga", label: "Yoga & Group X", kind: "link", href: "/#facilities", active: true, children: [] },
-  { id: "tennis", label: "Sân Tennis", kind: "link", href: "/#facilities", active: true, children: [] },
+  { id: "football", label: "Sân Bóng Đá", kind: "link", href: "/dich-vu", active: true, children: [] },
+  { id: "gym", label: "Phòng Gym", kind: "link", href: "/dich-vu", active: true, children: [] },
+  { id: "yoga", label: "Yoga & Group X", kind: "link", href: "/dich-vu", active: true, children: [] },
+  { id: "pricing", label: "Bảng Giá", kind: "link", href: "/bang-gia", active: true, children: [] },
 ];
-const cmsFallbackHeader = [
-  { id: "home", label: "Trang Chủ", kind: "link", href: "/", active: true, children: [] },
-  { id: "gallery", label: "Thư Viện", kind: "link", href: "/gallery", active: true, children: [] },
-  { id: "calendar", label: "Lịch Hoạt Động", kind: "link", href: "/calendar", active: true, children: [] },
-  { id: "pricing", label: "Bảng Giá", kind: "link", href: "/#pricing", active: true, children: [] },
-];
+const cmsFallbackHeader = fallbackHeader;
 const cmsFallbackFooter = [
   { id: "home", label: "Trang Chủ", kind: "link", href: "/", active: true, children: [] },
   { id: "gallery", label: "Thư Viện", kind: "link", href: "/gallery", active: true, children: [] },

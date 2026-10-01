@@ -15,6 +15,7 @@ test-results/
 playwright-report/
 backup-restore-results/
 .vercel/
+.wrangler/
 
 # Local tooling
 *.log

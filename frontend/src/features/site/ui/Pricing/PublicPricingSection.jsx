@@ -2,9 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Check } from "lucide-react";
 import { publicMembershipPackages } from "../../../memberships/index.js";
 
-export function PublicPricingSection({ onRegisterClick }) {
+export function PublicPricingSection({ onRegisterClick, initialPackages }) {
   const { data: packages = [], isPending, isError, refetch } = useQuery({
-    queryKey: ["public-membership-packages"], queryFn: publicMembershipPackages, retry: false,
+    queryKey: ["public-membership-packages"], queryFn: publicMembershipPackages, initialData: initialPackages, retry: false,
   });
   return <section id="pricing" className="section-pricing">
     <div className="section-header center"><span className="section-subtitle">ĐẦU TƯ CHO SỨC KHỎE</span><h2>Gói Hội Viên Linh Hoạt</h2><p className="max-w-xl">Giá và quyền lợi theo từng thời hạn gói. Tạo tài khoản để bắt đầu; nhân viên sẽ hỗ trợ đăng ký và thanh toán gói sau khi tài khoản được duyệt.</p></div>

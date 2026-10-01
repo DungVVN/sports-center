@@ -142,7 +142,10 @@ export function App() {
     window.addEventListener("storage", handleSessionChange);
     return () => { currentRequest += 1; window.removeEventListener("storage", handleSessionChange); };
   }, [isAdminPortal, navigate]);
-  useEffect(() => { document.title = isAdminPortal ? "Kinetic Admin" : "Kinetic Sports Center"; }, [isAdminPortal]);
+  useEffect(() => {
+    if (isAdminPortal) document.title = "Kinetic Admin";
+    else if (view !== "site-page" && view !== "landing") document.title = ({ gallery: "Thư viện hình ảnh | Kinetic Sports Center", calendar: "Lịch hoạt động | Kinetic Sports Center" })[view] || "Kinetic Sports Center";
+  }, [isAdminPortal, view]);
   const onMfaRequired = (challenge) => { setMfaChallenge(challenge); navigate("mfa"); };
   const onLoggedIn = (currentSession) => {
     if ((currentSession.user.role === "admin") !== isAdminPortal) return;
@@ -164,7 +167,7 @@ export function App() {
     : session && view !== "notFound" && view !== "site-page" ? <DashboardPlaceholder key={session.user.id} initialView={dashboardView(window.location.pathname) ?? (session.user.profileSetupRequired ? "profile" : "dashboard")} session={session} onProfileSaved={() => setSession((current) => ({ ...current, user: { ...current.user, profileSetupRequired: false } }))} onLogout={() => { sessionChangeVersion.current += 1; setIsRestoringSession(false); queryClient.clear(); setSession(null); navigate("login"); notifyOtherTabsOfSessionChange(); }} /> : {
     login: loginPage,
     landing: <HomeRoute onLoginClick={() => navigate("login")} onRegisterClick={() => navigate("register")} onGalleryClick={() => navigate("gallery")} onCalendarClick={() => navigate("calendar")} onHomeClick={() => navigate("landing")} />,
-    "site-page": <ManagedPublicPage path={window.location.pathname} onHomeClick={() => navigate("landing")} onLoginClick={() => navigate("login")} />,
+    "site-page": <ManagedPublicPage path={window.location.pathname} onHomeClick={() => navigate("landing")} onLoginClick={() => navigate("login")} onRegisterClick={() => navigate("register")} />,
     gallery: <GalleryPage onLoginClick={() => navigate("login")} onHomeClick={() => navigate("landing")} />,
     calendar: <CalendarPage onLoginClick={() => navigate("login")} onHomeClick={() => navigate("landing")} />,
     notFound: <NotFoundPage onHome={() => navigate("landing")} onLogin={() => navigate("login")} />,

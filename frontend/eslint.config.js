@@ -7,6 +7,10 @@ export default [
   { ignores: ["node_modules/**", "dist/**", "coverage/**", "test-results/**", "playwright-report/**", ".wrangler/**"] },
   eslint.configs.recommended,
   {
+    files: ["functions/**/*.js"],
+    languageOptions: { globals: { HTMLRewriter: "readonly" } },
+  },
+  {
     files: ["**/*.{js,jsx}"],
     languageOptions: {
       ecmaVersion: "latest",

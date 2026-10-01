@@ -27,7 +27,11 @@ Admin dùng `Trang website` và `Menu website` trên cổng quản trị hiện 
 
 `VITE_SITE_CMS_PUBLIC_ENABLED=false` là mặc định. Chỉ bật `true` sau khi API/backend đã triển khai cùng migration, kiểm thử trình duyệt và nội dung đầu tiên đã xuất bản. Nếu trang chủ hoặc menu chưa được xuất bản, giao diện công khai dùng nội dung/đường dẫn dự phòng. Trình biên tập ảnh nhận URL nội bộ/HTTPS hoặc tải trực tiếp lên Cloudinary; cấu hình ba biến `CLOUDINARY_*` ở backend trước khi dùng nút tải ảnh.
 
+Bốn trang công khai `/ve-chung-toi`, `/dich-vu`, `/bang-gia`, `/lien-he` tải bản đã xuất bản từ CMS ngay cả khi cờ triển khai CMS toàn website còn tắt. Tạo và sửa nội dung trong `Trang website`, lưu nháp rồi xuất bản. Menu dự phòng dẫn đến bốn đường dẫn này. Trang `/bang-gia` tự hiển thị thêm bảng giá lấy từ API gói hội viên; giá và quyền lợi vẫn sửa ở mục nghiệp vụ gói tập. Metadata SEO và canonical lấy theo từng trang; `public/sitemap.xml` liệt kê bốn đường dẫn công khai.
+
 ## Triển khai frontend trên Cloudflare Pages
+
+`functions/_middleware.js` phục vụ HTML công khai có nội dung CMS đã xuất bản, H1, metadata, canonical, Open Graph và JSON-LD trước khi chạy JavaScript. `/bang-gia` dùng giá hiện tại từ API công khai. `VITE_API_BASE_URL` và `VITE_SITE_CMS_PUBLIC_ENABLED` cần có cả trong build variables và runtime bindings của Pages Functions. Trang không tồn tại trả HTTP 404; lỗi API trả 503/noindex; cổng admin, trang tài khoản và URL preview không được lập chỉ mục. `www` và đường dẫn có dấu `/` cuối chuyển hướng 308 về URL chuẩn. Backend Express/Prisma vẫn chạy trên Render.
 
 Giai đoạn chuyển frontend chỉ thay nơi phục vụ React/Vite. Backend tiếp tục chạy trên Render và dữ liệu tiếp tục ở Neon; **không** đưa API Express/Prisma lên Workers trong giai đoạn này. Một bản build frontend phục vụ cả website chính và cổng admin; ứng dụng phân biệt cổng bằng hostname `admin.kineticsports.io.vn`.
 

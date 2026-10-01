@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { Activity, Star, Trophy, Users, Check, ChevronRight, Menu, X } from "lucide-react";
+import { Activity, Trophy, Menu, X } from "lucide-react";
 import { PublicFooter } from "../PublicFooter/PublicFooter.jsx";
-import { PublicPricingSection } from "../Pricing/PublicPricingSection.jsx";
+import { corePages } from "../../model/core-pages.js";
 import { PublicMenuLinks } from "../PublicNavigation/PublicMenuLinks.jsx";
 import "./LandingPage.css";
 
-export function LandingPage({ onLoginClick, onRegisterClick, onGalleryClick, onCalendarClick }) {
+export function LandingPage({ onLoginClick, onRegisterClick }) {
    const [scrolled, setScrolled] = useState(false);
    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -100,111 +100,15 @@ export function LandingPage({ onLoginClick, onRegisterClick, onGalleryClick, onC
             </div>
          </header>
 
-         {/* About Section */}
-         <section id="about" className="section-about">
-            <div className="about-grid">
-               <div className="about-images">
-                  <img src="https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?q=80&w=1000&auto=format&fit=crop" alt="Huấn luyện viên hỗ trợ hội viên" className="img-main" width="1000" height="667" loading="lazy" />
-                  <img src="https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?q=80&w=800&auto=format&fit=crop" alt="Trang thiết bị tập luyện hiện đại" className="img-sub" width="800" height="533" loading="lazy" />
-                  <div className="experience-badge">
-                     <span className="years">10+</span>
-                     <span className="text">Năm KInh Nghiệm</span>
-                  </div>
-               </div>
-               <div className="about-content">
-                  <span className="section-subtitle">VỀ CHÚNG TÔI</span>
-                  <h2>Hành Trình Kiến Tạo <br /> Sức Khỏe Cộng Đồng</h2>
-                  <p className="about-desc">
-                     Kinetic Sports Center không chỉ là một trung tâm thể thao, mà là một hệ sinh thái chăm sóc sức khỏe toàn diện. Chúng tôi tin rằng một cơ thể khỏe mạnh là nền tảng cho một cuộc sống hạnh phúc và thành công.
-                  </p>
-                  <p className="about-desc">
-                     Với sự đầu tư mạnh mẽ vào cơ sở vật chất, 100% trang thiết bị nhập khẩu từ châu Âu cùng đội ngũ huấn luyện viên đạt chuẩn quốc tế, Kinetic cam kết mang lại trải nghiệm luyện tập an toàn, chuyên nghiệp và hiệu quả nhất cho từng hội viên.
-                  </p>
-                  <div className="about-features">
-                     <div className="feature">
-                        <div className="icon-wrapper"><Star size={20} /></div>
-                        <span>Chất lượng 5 sao</span>
-                     </div>
-                     <div className="feature">
-                        <div className="icon-wrapper"><Users size={20} /></div>
-                        <span>Cộng đồng tinh hoa</span>
-                     </div>
-                  </div>
-               </div>
-            </div>
-         </section>
-
-         {/* Stats Divider */}
-         <div className="stats-divider">
-            <div className="stat-block">
-               <h3>5+</h3>
-               <p>Môn Thể Thao</p>
-            </div>
-            <div className="stat-block">
-               <h3>5,000 m²</h3>
-               <p>Diện Tích Mặt Sàn</p>
-            </div>
-            <div className="stat-block">
-               <h3>50+</h3>
-               <p>HLV Quốc Tế</p>
-            </div>
-            <div className="stat-block">
-               <h3>100%</h3>
-               <p>Thiết Bị Nhập Khẩu</p>
-            </div>
-         </div>
-
-         {/* Facilities - Zig Zag Layout */}
-         <section id="facilities" className="section-zigzag">
+         <section className="section-zigzag" aria-label="Khám phá Kinetic">
             <div className="section-header center">
-               <span className="section-subtitle">DỊCH VỤ NỔI BẬT</span>
-               <h2>Trải Nghiệm Đỉnh Cao</h2>
-               <p className="max-w-xl">Mỗi khu vực đều được thiết kế tỉ mỉ, tối ưu hóa không gian và công năng để mang lại trải nghiệm tuyệt vời nhất.</p>
+               <span className="section-subtitle">KHÁM PHÁ KINETIC</span>
+               <h2>Tìm thông tin cho hành trình tập luyện</h2>
             </div>
-
-            {/* Feature 1 */}
-            <div className="zigzag-row">
-               <div className="zigzag-image">
-                  <div className="image-wrapper bg-soccer" role="img" aria-label="Sân bóng đá cỏ nhân tạo">
-                     <div className="image-overlay"></div>
-                  </div>
-               </div>
-               <div className="zigzag-content">
-                  <div className="content-badge">Premium</div>
-                  <h3>Sân Bóng Đá Cỏ Nhân Tạo</h3>
-                  <p>Tận hưởng cảm giác thi đấu trên mặt cỏ đạt chuẩn FIFA. Hệ thống thoát nước tối ưu và dàn đèn chiếu sáng LED chống chói giúp các trận đấu diễn ra hoàn hảo bất kể thời tiết hay ngày đêm.</p>
-                  <ul className="feature-list">
-                     <li><Check size={18} className="list-icon" /> Cỏ nhân tạo thế hệ mới, êm ái, chống chấn thương.</li>
-                     <li><Check size={18} className="list-icon" /> Băng ghế huấn luyện viên có mái che chuẩn chuyên nghiệp.</li>
-                     <li><Check size={18} className="list-icon" /> Cung cấp bóng thi đấu và nước uống miễn phí.</li>
-                  </ul>
-                  <button className="btn-text mt-4" onClick={onCalendarClick}>Xem lịch trống <ChevronRight size={18} /></button>
-               </div>
-            </div>
-
-            {/* Feature 2 */}
-            <div className="zigzag-row reverse">
-               <div className="zigzag-image">
-                  <div className="image-wrapper bg-gym" role="img" aria-label="Phòng tập Gym hiện đại">
-                     <div className="image-overlay"></div>
-                  </div>
-               </div>
-               <div className="zigzag-content">
-                  <div className="content-badge">Fitness</div>
-                  <h3>Phòng Gym & Yoga 360°</h3>
-                  <p>Không gian mở với vách kính cường lực nhìn toàn cảnh thành phố. Được trang bị 100% thiết bị từ Technogym, đáp ứng mọi nhu cầu từ Cardio, Free-weight đến các lớp Group X năng động.</p>
-                  <ul className="feature-list">
-                     <li><Check size={18} className="list-icon" /> Hơn 100 máy tập đa dạng, không phải chờ đợi.</li>
-                     <li><Check size={18} className="list-icon" /> Inbody miễn phí, lên phác đồ tập luyện cá nhân hóa.</li>
-                     <li><Check size={18} className="list-icon" /> Phòng Studio Yoga rộng 200m2 với thảm tập kháng khuẩn.</li>
-                  </ul>
-                  <button className="btn-text mt-4" onClick={onGalleryClick}>Tham quan phòng tập <ChevronRight size={18} /></button>
-               </div>
+            <div className="public-page-directory">
+               {corePages.map((page) => <a className="public-page-directory__link" href={page.path} key={page.path}><h3>{page.label}</h3><p>{page.description}</p><span>Xem chi tiết →</span></a>)}
             </div>
          </section>
-
-         <PublicPricingSection onRegisterClick={onRegisterClick} />
-
          {/* CTA Banner */}
          <section className="section-cta-banner">
             <div className="cta-banner-container">
