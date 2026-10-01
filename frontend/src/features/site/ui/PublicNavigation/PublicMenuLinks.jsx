@@ -11,13 +11,18 @@ const fallbackFooter = [
   { id: "pricing", label: "Bảng Giá", kind: "link", href: "/bang-gia", active: true, children: [] },
 ];
 const cmsFallbackHeader = fallbackHeader;
-const cmsFallbackFooter = [
+const cmsFallbackFooter = [...fallbackFooter,
   { id: "home", label: "Trang Chủ", kind: "link", href: "/", active: true, children: [] },
   { id: "gallery", label: "Thư Viện", kind: "link", href: "/gallery", active: true, children: [] },
   { id: "calendar", label: "Lịch Hoạt Động", kind: "link", href: "/calendar", active: true, children: [] },
+  ...corePages.map((page) => ({ id: `footer-${page.path}`, label: page.label, kind: "link", href: page.path, active: true, children: [] })),
+  { id: "guide", label: "Hướng dẫn đăng ký", kind: "link", href: "/huong-dan-dang-ky-tap-luyen", active: true, children: [] },
+  { id: "login", label: "Đăng nhập", kind: "link", href: "/login", active: true, children: [] },
+  { id: "register", label: "Đăng ký", kind: "link", href: "/register", active: true, children: [] },
 ];
 
 function MenuLinks({ items, location, onNavigate }) {
+  if (location === "footer") return <nav aria-label="Điều hướng chân trang" className="public-menu-links public-menu-links--footer">{items.filter((item) => item.active).map((item) => item.kind === "group" ? <section className="public-menu-links__footer-group" key={item.id}><h5>{item.label}</h5><div className="public-menu-links__footer-children">{item.children.filter((child) => child.active).map((child) => <a href={child.href} key={child.id} onClick={onNavigate}>{child.label}</a>)}</div></section> : <a href={item.href} key={item.id} onClick={onNavigate}>{item.label}</a>)}</nav>;
   return <div className={location === "header" ? "public-menu-links" : "public-menu-links public-menu-links--footer"}>{items.map((item) => item.kind === "group" ? <details className="public-menu-links__group" key={item.id}><summary>{item.label}</summary><div className="public-menu-links__children">{item.children.filter((child) => child.active).map((child) => <a href={child.href} key={child.id} onClick={onNavigate}>{child.label}</a>)}</div></details> : <a href={item.href} key={item.id} onClick={onNavigate}>{item.label}</a>)}</div>;
 }
 
@@ -29,5 +34,5 @@ function PublishedMenuLinks({ location, onNavigate }) {
 
 export function PublicMenuLinks({ location = "header", onNavigate }) {
   if (siteCmsPublicEnabled) return <PublishedMenuLinks location={location} onNavigate={onNavigate} />;
-  return <MenuLinks items={location === "header" ? fallbackHeader : fallbackFooter} location={location} onNavigate={onNavigate} />;
+  return <MenuLinks items={location === "header" ? fallbackHeader : cmsFallbackFooter} location={location} onNavigate={onNavigate} />;
 }

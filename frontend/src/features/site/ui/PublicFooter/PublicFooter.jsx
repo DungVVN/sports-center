@@ -1,4 +1,4 @@
-import { Activity, ArrowRight } from 'lucide-react';
+import { Activity } from 'lucide-react';
 import { PublicMenuLinks } from "../PublicNavigation/PublicMenuLinks.jsx";
 
 export function PublicFooter() {
@@ -17,19 +17,9 @@ export function PublicFooter() {
           </p>
         </div>
 
-        <div className="footer-col">
-          <h4>Dịch Vụ</h4>
+        <div className="footer-col footer-col--navigation">
+          <h4>Điều hướng website</h4>
           <PublicMenuLinks location="footer" />
-        </div>
-
-        <div className="footer-col">
-          <h4>Hỗ Trợ</h4>
-          <ul className="contact-list">
-            <li><ArrowRight size={18} /><a href="/lien-he">Tư vấn dịch vụ và gói hội viên</a></li>
-            <li><ArrowRight size={18} /><a href="/huong-dan-dang-ky-tap-luyen">Hướng dẫn đăng ký tập luyện</a></li>
-            <li><ArrowRight size={18} /><a href="/gallery">Thư viện ảnh</a></li>
-            <li><ArrowRight size={18} /><a href="/calendar">Lịch hoạt động & đặt sân</a></li>
-          </ul>
         </div>
       </div>
 

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../../../shared/ui/Button.jsx";
+import { Dialog } from "../../../shared/ui/Dialog.jsx";
 import { errorMessageFor } from "../../../shared/api/error-message.js";
 import { siteAdminApi } from "../api/site-admin-api.js";
 import { MenuItemEditor } from "./MenuItemEditor.jsx";
@@ -22,6 +23,7 @@ export function SiteMenuPage() {
   const [preview, setPreview] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
+  const [confirmPublish, setConfirmPublish] = useState(false);
 
   function changeLocation(next) {
     if (next === location) return;
@@ -51,9 +53,9 @@ export function SiteMenuPage() {
   }
 
   async function publish() {
-    if (draft.dirty || draft.revision === 0 || !window.confirm(`Xuất bản menu ${location === "header" ? "đầu trang" : "chân trang"}?`)) return;
+    if (!confirmPublish || working || draft.dirty || draft.revision === 0) return;
     const result = await action(() => siteAdminApi.publishMenu(location, draft.revision), "Đã xuất bản menu.");
-    if (result) draft.clearDraft();
+    if (result) { draft.clearDraft(); setConfirmPublish(false); }
   }
 
   async function restore(revisionId) {
@@ -82,6 +84,10 @@ export function SiteMenuPage() {
 
       {notice && <p className="site-admin__notice" role="status">{notice}</p>}
       {error && <p className="site-admin__error" role="alert">{error}</p>}
+      <Dialog isOpen={confirmPublish} onClose={() => { if (!working) setConfirmPublish(false); }} title="Xuất bản menu">
+        <p>Xuất bản menu {location === "header" ? "đầu trang" : "chân trang"} đã lưu lên website?</p>
+        <div className="site-admin__actions"><Button variant="outline" disabled={working} onClick={() => setConfirmPublish(false)}>Hủy</Button><Button disabled={working || draft.dirty} onClick={publish}>Xác nhận xuất bản</Button></div>
+      </Dialog>
 
       {query.isPending ? (
         <p role="status">Đang tải menu...</p>
@@ -98,7 +104,7 @@ export function SiteMenuPage() {
             </div>
             <div className="site-admin__actions">
               <Button disabled={!draft.dirty || working} onClick={save} variant="secondary">Lưu nháp</Button>
-              <Button disabled={draft.dirty || !draft.revision || !hasVisibleLink(draft.items) || working} onClick={publish}>Xuất bản</Button>
+              <Button disabled={draft.dirty || !draft.revision || !hasVisibleLink(draft.items) || working} onClick={() => setConfirmPublish(true)}>Xuất bản</Button>
             </div>
           </div>
           <p className="site-admin__workflow-note">
