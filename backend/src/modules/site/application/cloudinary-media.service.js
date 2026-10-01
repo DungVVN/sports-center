@@ -1,4 +1,4 @@
-import { createHmac } from "node:crypto";
+import { createHash } from "node:crypto";
 import { AppError } from "../../../shared/errors/app-error.js";
 
 const siteFolder = "kinetic-sports/site";
@@ -20,7 +20,8 @@ export function createCloudinaryMediaService({ repository, now = () => Math.floo
     createUploadSignature(folder = siteFolder) {
       const { cloudName, apiKey, apiSecret } = configuration();
       const timestamp = now();
-      const signature = createHmac("sha1", apiSecret).update(`folder=${folder}&timestamp=${timestamp}`).digest("hex");
+      // Cloudinary signs sorted upload parameters followed directly by the API secret.
+      const signature = createHash("sha1").update(`folder=${folder}&timestamp=${timestamp}${apiSecret}`).digest("hex");
       return {
         cloudName,
         apiKey,

@@ -20,7 +20,24 @@ describe("Cloudinary site media", () => {
     const service = createCloudinaryMediaService({ repository: {}, now: () => 1700000000 });
     expect(service.createUploadSignature()).toEqual(expect.objectContaining({
       cloudName: "kinetic-demo", apiKey: "12345", timestamp: 1700000000, folder: "kinetic-sports/site",
-      signature: "b59163072599a49d171d4db82d7c30c426ae74be",
+      signature: "c899c3477a4a5f5bf8142f8eabb432914086e48d",
+    }));
+    expect(service.createUploadSignature()).not.toHaveProperty("apiSecret");
+  });
+
+  it("signs avatar uploads using the avatar folder rather than the CMS folder", () => {
+    const service = createCloudinaryMediaService({ repository: {}, now: () => 1700000000 });
+    expect(service.createProfileUploadSignature()).toEqual(expect.objectContaining({
+      folder: "kinetic-sports/avatars",
+      signature: "6f2852083a52ecaf0485f7edae7f9b44260b8461",
+    }));
+  });
+
+  it.each(["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"])("rejects uploads when %s is absent", (key) => {
+    delete process.env[key];
+    const service = createCloudinaryMediaService({ repository: {} });
+    expect(() => service.createProfileUploadSignature()).toThrow(expect.objectContaining({
+      statusCode: 503, code: "CLOUDINARY_NOT_CONFIGURED",
     }));
   });
 
