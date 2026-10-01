@@ -30,13 +30,11 @@ project/
 docs/
 *.md
 
-# Keep local test reports out of Git without hiding project documentation.
-/TEST_REPORT.md
-/TEST_REPORT_recovered.md
-
 # Local QA artifacts and editor state
 /qa-evidence/
 /.cursor/
+/backend/scripts/seed-local-qa.mjs
+/backend/scripts/integration/
 
 # Requirements workbooks are maintained locally, outside deploy and CI
 /backend/docs/
