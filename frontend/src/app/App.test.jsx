@@ -37,6 +37,24 @@ describe("first login routing", () => {
     mockPortalSurface.mockReturnValue("main");
   });
   afterEach(cleanup);
+  it.each(["/gallery", "/calendar"])("preserves the published CMS SEO title at %s", async (path) => {
+    window.history.replaceState({}, "", path);
+    const previousTitle = document.title;
+    const bootstrap = document.createElement("script");
+    bootstrap.id = "public-page-data";
+    bootstrap.type = "application/json";
+    bootstrap.textContent = JSON.stringify({ path, page: { title: "Trang hoạt động", seoTitle: "Tiêu đề SEO do admin xuất bản", blocks: [{ id: "activity-hero", type: "hero", active: true, title: "Nội dung quản lý bằng CMS" }] } });
+    document.head.appendChild(bootstrap);
+    const result = render(<App />);
+    try {
+      expect(await screen.findByRole("heading", { name: "Nội dung quản lý bằng CMS" })).toBeInTheDocument();
+      expect(document.title).toBe("Tiêu đề SEO do admin xuất bản");
+    } finally {
+      result.unmount();
+      bootstrap.remove();
+      document.title = previousTitle;
+    }
+  });
   it("opens the profile for a self-registered Member without a password-change step", async () => {
     render(<App />);
     fireEvent.click(await screen.findByRole("button", { name: /đăng nhập/i }));

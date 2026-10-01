@@ -144,7 +144,7 @@ export function App() {
   }, [isAdminPortal, navigate]);
   useEffect(() => {
     if (isAdminPortal) document.title = "Kinetic Admin";
-    else if (view !== "site-page" && view !== "landing") document.title = ({ gallery: "Thư viện hình ảnh | Kinetic Sports Center", calendar: "Lịch hoạt động | Kinetic Sports Center" })[view] || "Kinetic Sports Center";
+    else if (!["site-page", "landing", "gallery", "calendar"].includes(view)) document.title = "Kinetic Sports Center";
   }, [isAdminPortal, view]);
   const onMfaRequired = (challenge) => { setMfaChallenge(challenge); navigate("mfa"); };
   const onLoggedIn = (currentSession) => {
