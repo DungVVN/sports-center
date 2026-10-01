@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SitePagesPage } from "./SitePagesPage.jsx";
 import { siteAdminApi } from "../api/site-admin-api.js";
@@ -17,6 +17,7 @@ function renderPage() {
 
 describe("site pages admin draft", () => {
   beforeEach(() => {
+    cleanup();
     vi.clearAllMocks();
     siteAdminApi.pages.mockResolvedValue([{ id: draft.id, route_key: "home", path: "/", kind: "home" }]);
     siteAdminApi.page.mockResolvedValue({ page: { path: "/" }, draft, published: null, revisions: [] });
@@ -45,6 +46,33 @@ describe("site pages admin draft", () => {
     expect(screen.getByRole("button", { name: "Xuất bản" })).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: "Lưu nháp" }));
     await waitFor(() => expect(siteAdminApi.savePageDraft).toHaveBeenCalledWith("home", expect.objectContaining({ blocks: expect.arrayContaining([expect.objectContaining({ type: "faq" })]) })));
+  });
+
+  it("keeps the page unpublished when the publish dialog is cancelled", async () => {
+    renderPage();
+    fireEvent.click(await screen.findByRole("button", { name: "Sửa trang Trang chủ" }));
+    await screen.findByLabelText("Tiêu đề trang");
+    fireEvent.click(screen.getByRole("button", { name: "Xuất bản", exact: true }));
+    const dialog = screen.getByRole("dialog", { name: "Xuất bản trang" });
+    expect(siteAdminApi.publishPage).not.toHaveBeenCalled();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Hủy" }));
+    expect(screen.queryByRole("dialog", { name: "Xuất bản trang" })).not.toBeInTheDocument();
+    expect(siteAdminApi.publishPage).not.toHaveBeenCalled();
+  });
+
+  it("publishes the saved revision only after explicit dialog confirmation", async () => {
+    siteAdminApi.publishPage.mockImplementation(async () => {
+      siteAdminApi.page.mockResolvedValue({ page: { path: "/" }, draft: null, published: draft, revisions: [] });
+      return draft;
+    });
+    renderPage();
+    fireEvent.click(await screen.findByRole("button", { name: "Sửa trang Trang chủ" }));
+    await screen.findByLabelText("Tiêu đề trang");
+    fireEvent.click(screen.getByRole("button", { name: "Xuất bản", exact: true }));
+    fireEvent.click(within(screen.getByRole("dialog", { name: "Xuất bản trang" })).getByRole("button", { name: "Xác nhận xuất bản" }));
+    await waitFor(() => expect(siteAdminApi.publishPage).toHaveBeenCalledExactlyOnceWith("home", 1));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Xuất bản trang" })).not.toBeInTheDocument());
+    expect(screen.getByText("Đã xuất bản trang.")).toBeInTheDocument();
   });
 
   it("keeps the draft canvas before page settings in keyboard order without a hidden page sidebar", async () => {

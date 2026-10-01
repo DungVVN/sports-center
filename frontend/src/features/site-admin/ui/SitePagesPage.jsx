@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../../../shared/ui/Button.jsx";
+import { Dialog } from "../../../shared/ui/Dialog.jsx";
 import { errorMessageFor } from "../../../shared/api/error-message.js";
 import { SiteBlockView } from "../../site/index.js";
 import { siteAdminApi } from "../api/site-admin-api.js";
@@ -28,6 +29,7 @@ export function SitePagesPage() {
   const librarySearchRef = useRef(null);
   const [selectedBlockId, setSelectedBlockId] = useState(null);
   const [working, setWorking] = useState(false);
+  const [publishConfirmationOpen, setPublishConfirmationOpen] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [createForm, setCreateForm] = useState({ routeKey: "", path: "", title: "" });
@@ -90,9 +92,9 @@ export function SitePagesPage() {
     if (result) setFormState(null);
   }
   async function publish() {
-    if (!form || dirty || !window.confirm("Xuất bản nội dung này lên website công khai?")) return;
+    if (!publishConfirmationOpen || !form || dirty || working || !form.blocks.some((block) => block.active)) return;
     const result = await action(() => siteAdminApi.publishPage(selected, form.editRevision), "Đã xuất bản trang.");
-    if (result) setFormState(null);
+    if (result) { setFormState(null); setPublishConfirmationOpen(false); }
   }
   async function restore(revisionId) {
     if (!window.confirm("Chọn lại phiên bản này làm nội dung công khai?")) return;
@@ -110,8 +112,17 @@ export function SitePagesPage() {
     <header className="site-admin__header"><div><button className="site-admin__back" type="button" onClick={backToCatalog}>← Danh mục trang</button><p className="site-admin__eyebrow">NỘI DUNG WEBSITE / TRANG</p><h1>{form?.title ?? detail?.published?.title ?? (selected === "home" ? "Trang chủ" : selected)}</h1><p>Chỉnh sửa nội dung trang; website chỉ thay đổi sau khi xuất bản.</p></div></header>
     {notice && <p className="site-admin__notice" role="status">{notice}</p>}
     {error && <p className="site-admin__error" role="alert">{error}</p>}
+    <Dialog isOpen={publishConfirmationOpen} onClose={() => { if (!working) setPublishConfirmationOpen(false); }} title="Xuất bản trang">
+      <p>Xuất bản nội dung đã lưu của trang <strong>{form?.title}</strong> ({detail?.page.path}) lên website công khai?</p>
+      <p>Bản nháp sẽ trở thành nội dung khách truy cập nhìn thấy. Bạn có thể chọn lại phiên bản trước trong lịch sử.</p>
+      {error && <p role="alert" className="site-admin__error">{error}</p>}
+      <div className="site-admin__actions">
+        <Button variant="outline" disabled={working} onClick={() => setPublishConfirmationOpen(false)}>Hủy</Button>
+        <Button disabled={working || dirty || !form} onClick={publish}>{working ? "Đang xuất bản..." : "Xác nhận xuất bản"}</Button>
+      </div>
+    </Dialog>
     <div className="site-admin__main">{detailQuery.isPending ? <p role="status">Đang tải trang...</p> : detailQuery.isError ? <p role="alert">{errorMessageFor(detailQuery.error, "Không tải được trang.")}</p> : detail && <>
-        <div className="site-admin__panel site-admin__toolbar"><div><p className="site-admin__eyebrow">BỐ CỤC TRANG</p><h2>{selected === "home" ? "Trang chủ" : form?.title ?? detail.published?.title ?? detail.page.path}</h2><p>{detail.page.path} · {detail.published ? "Đã có bản công khai" : "Chưa xuất bản"} · {detail.draft ? "Có bản nháp" : "Không có bản nháp"}{dirty ? " · Chưa lưu" : ""}</p></div><div className="site-admin__actions">{form && <Button disabled={form.blocks.length >= 30} onClick={() => setLibraryOpen(true)} variant="outline">+ Thêm phần</Button>}<Button onClick={() => setPreview((value) => !value)} variant="outline">{preview ? "Đóng xem trước" : "Xem trước"}</Button>{!detail.draft && <Button disabled={working} onClick={startDraft}>Tạo bản nháp</Button>}{form && <><Button disabled={!dirty || working} onClick={save} variant="secondary">Lưu nháp</Button><Button disabled={dirty || working || !form.blocks.some((block) => block.active)} onClick={publish}>Xuất bản</Button></>}</div></div>
+        <div className="site-admin__panel site-admin__toolbar"><div><p className="site-admin__eyebrow">BỐ CỤC TRANG</p><h2>{selected === "home" ? "Trang chủ" : form?.title ?? detail.published?.title ?? detail.page.path}</h2><p>{detail.page.path} · {detail.published ? "Đã có bản công khai" : "Chưa xuất bản"} · {detail.draft ? "Có bản nháp" : "Không có bản nháp"}{dirty ? " · Chưa lưu" : ""}</p></div><div className="site-admin__actions">{form && <Button disabled={form.blocks.length >= 30} onClick={() => setLibraryOpen(true)} variant="outline">+ Thêm phần</Button>}<Button onClick={() => setPreview((value) => !value)} variant="outline">{preview ? "Đóng xem trước" : "Xem trước"}</Button>{!detail.draft && <Button disabled={working} onClick={startDraft}>Tạo bản nháp</Button>}{form && <><Button disabled={!dirty || working} onClick={save} variant="secondary">Lưu nháp</Button><Button disabled={dirty || working || !form.blocks.some((block) => block.active)} onClick={() => setPublishConfirmationOpen(true)}>Xuất bản</Button></>}</div></div>
         <p className="site-admin__workflow-note">Bản đang sửa chỉ nằm trong CMS. Lưu nháp không thay đổi website; bạn chủ động bấm Xuất bản sau khi kiểm tra.</p>
         {preview && <div className="site-admin__panel site-admin__full-preview"><div className="site-admin__subhead"><div><p className="site-admin__eyebrow">XEM TRƯỚC</p><h3>Bản đang sửa</h3></div><Button onClick={() => setPreview(false)} variant="outline">Đóng</Button></div><SiteBlockView blocks={form?.blocks ?? detail.published?.blocks ?? []} /></div>}
         {form && <>
