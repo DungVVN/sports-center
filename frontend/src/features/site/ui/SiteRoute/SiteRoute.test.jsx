@@ -18,7 +18,7 @@ describe("separate CMS public pages", () => {
   afterEach(cleanup);
   beforeEach(() => { vi.clearAllMocks(); publicSiteApi.pageByPath.mockResolvedValue(page); publicMembershipPackages.mockResolvedValue([{ code: "BASIC", name: "Basic", priceVnd: "490000", durationDays: 30, benefits: ["Phòng tập"] }]); });
 
-  it.each(["/ve-chung-toi", "/dich-vu", "/bang-gia", "/lien-he"])("loads the published page at %s while general CMS rollout is disabled", async (path) => {
+  it.each(["/ve-chung-toi", "/dich-vu", "/bang-gia", "/lien-he", "/huong-dan-dang-ky-tap-luyen"])("loads the published page at %s while general CMS rollout is disabled", async (path) => {
     renderPage(path);
     expect(await screen.findByRole("heading", { name: "Bảng giá gói hội viên" })).toBeInTheDocument();
     expect(publicSiteApi.pageByPath).toHaveBeenCalledWith(path);
@@ -38,8 +38,10 @@ describe("separate CMS public pages", () => {
   });
 
   it("does not expose unpublished or unknown routes", async () => {
+    publicSiteApi.pageByPath.mockRejectedValueOnce(new Error("NOT_FOUND"));
     renderPage("/unpublished");
-    expect(publicSiteApi.pageByPath).not.toHaveBeenCalled();
+    await screen.findByRole("heading", { name: /không tìm thấy/i });
+    expect(publicSiteApi.pageByPath).toHaveBeenCalledWith("/unpublished");
     expect(screen.queryByRole("heading", { name: "Bảng giá gói hội viên" })).not.toBeInTheDocument();
   });
 

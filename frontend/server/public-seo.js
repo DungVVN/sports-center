@@ -1,6 +1,6 @@
 import { escapeHtml, pageHead, serializeJson } from "../src/features/site/model/seo-head.js";
 export { pageHead, serializeJson };
-import { corePages, homeSeo, isCorePage } from "../src/features/site/model/core-pages.js";
+import { corePages, homeSeo } from "../src/features/site/model/core-pages.js";
 
 export const homePage = {
   ...homeSeo,
@@ -49,14 +49,12 @@ export function errorDocument(path, status) {
 }
 
 export async function loadPublicDocument(path, env, fetcher = fetch) {
-  if (path === "/") return { path, page: homePage, status: 200 };
   const builtIn = { "/gallery": ["Thư viện hình ảnh", "Khám phá hình ảnh không gian tập luyện tại Kinetic Sports Center."], "/calendar": ["Lịch hoạt động", "Xem lịch hoạt động và lịch sân tại Kinetic Sports Center."] }[path];
   if (builtIn) return { path, status: 200, page: { title: builtIn[0], seoTitle: `${builtIn[0]} | Kinetic Sports Center`, seoDescription: builtIn[1], blocks: [{ type: "hero", active: true, title: builtIn[0], description: builtIn[1] }] } };
-  if (!isCorePage(path) && env.VITE_SITE_CMS_PUBLIC_ENABLED !== "true") return errorDocument(path, 404);
   const api = (env.VITE_API_BASE_URL || "https://api.kineticsports.io.vn/api/v1").replace(/\/$/, "");
   try {
     const response = await fetcher(`${api}/site/page?path=${encodeURIComponent(path)}`, { headers: { Accept: "application/json" }, signal: AbortSignal.timeout(8000) });
-    if (response.status === 404 || response.status === 400) return errorDocument(path, 404);
+    if (response.status === 404 || response.status === 400) return path === "/" ? { path, page: homePage, status: 200 } : errorDocument(path, 404);
     if (!response.ok) return errorDocument(path, 503);
     const payload = await response.json();
     if (!payload.success || !Array.isArray(payload.data?.blocks)) return errorDocument(path, 503);

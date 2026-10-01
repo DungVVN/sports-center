@@ -57,17 +57,23 @@ describe("public HTML SEO", () => {
     expect(document.status).toBe(503);
   });
 
-  it("does not make API requests for unknown routes when general CMS rollout is off", async () => {
-    const fetcher = vi.fn();
+  it("looks up arbitrary CMS paths but keeps unpublished pages at 404", async () => {
+    const fetcher = vi.fn().mockResolvedValue(response(null, 404));
     expect((await loadPublicDocument("/unknown", {}, fetcher)).status).toBe(404);
-    expect(fetcher).not.toHaveBeenCalled();
+    expect(fetcher).toHaveBeenCalledOnce();
   });
 
-  it("serves a crawlable home directory without waiting for the backend", async () => {
-    const fetcher = vi.fn();
+  it("keeps the legacy home fallback when no CMS home has been published", async () => {
+    const fetcher = vi.fn().mockResolvedValue(response(null, 404));
     const document = await loadPublicDocument("/", {}, fetcher);
     expect(renderPageBody(document)).toContain('href="/bang-gia"');
     expect(document.page.seoTitle).toContain("Gym, Yoga");
-    expect(fetcher).not.toHaveBeenCalled();
+    expect(fetcher).toHaveBeenCalledOnce();
+  });
+  it.each(["/", "/huong-dan-dang-ky-tap-luyen"])("serves published CMS content and metadata at %s", async (path) => {
+    const document = await loadPublicDocument(path, {}, vi.fn().mockResolvedValue(response(page)));
+    expect(document.page).toEqual(page);
+    expect(document.status).toBe(200);
+    expect(renderPageBody(document)).toContain("<h1>Gym &amp; Yoga</h1>");
   });
 });
