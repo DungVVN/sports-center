@@ -18,10 +18,10 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       "/api/v1": {
-        target: "https://api.kineticsports.io.vn",
+        target: "http://localhost:8880",
         changeOrigin: true,
         headers: {
-          origin: "https://www.kineticsports.io.vn",
+          origin: "http://localhost:5173",
         },
       },
     },

@@ -21,6 +21,22 @@ function renderShell() {
 describe("AppShell mobile navigation", () => {
   afterEach(cleanup);
 
+  it("opens the active group, allows collapsing it and reopens it for a new destination", () => {
+    const props = {
+      navigation: [{ id: "operations", label: "Lịch & hoạt động", children: [{ id: "classes", label: "Lớp học" }, { id: "bookings", label: "Đặt chỗ" }] }],
+      notifications: [], onNavigate: vi.fn(), onLogout: vi.fn(), onReadNotification: vi.fn(), roleLabel: "Quản lý",
+    };
+    const { rerender } = render(<AppShell {...props} currentView="classes" />);
+    const group = screen.getByRole("button", { name: "Lịch & hoạt động, thu gọn" });
+    expect(screen.getByRole("button", { name: "Lớp học" })).toHaveAttribute("aria-current", "page");
+    expect(group).toHaveAttribute("aria-controls", "desktop-nav-operations");
+    fireEvent.click(group);
+    expect(screen.queryByRole("button", { name: "Lớp học" })).not.toBeInTheDocument();
+    rerender(<AppShell {...props} currentView="bookings" />);
+    fireEvent.click(screen.getByRole("button", { name: "Đặt chỗ" }));
+    expect(props.onNavigate).toHaveBeenCalledWith("bookings");
+  });
+
   it("moves focus into the modal menu, traps Tab and restores focus when closed", () => {
     renderShell();
     const trigger = screen.getByRole("button", { name: "Mở menu" });

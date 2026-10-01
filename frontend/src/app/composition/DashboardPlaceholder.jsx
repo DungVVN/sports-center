@@ -19,25 +19,35 @@ const labels = {
 const navigationItems = [
   { id: "dashboard", label: "Tổng quan" },
   { id: "profile", label: "Hồ sơ" },
-  { id: "rolePermissions", label: "Phân quyền chức năng" },
-  { id: "sitePages", label: "Trang website" },
-  { id: "siteMenu", label: "Menu website" },
-  { id: "members", label: "Hội viên" },
-  { id: "registrations", label: "Duyệt đăng ký" },
+  { id: "website", label: "Website", children: [
+    { id: "sitePages", label: "Trang website" },
+    { id: "siteMenu", label: "Menu website" },
+  ] },
+  { id: "memberManagement", label: "Quản lý hội viên", children: [
+    { id: "members", label: "Hội viên" },
+    { id: "registrations", label: "Duyệt đăng ký" },
+  ] },
   { id: "packages", label: "Gói tập", children: [
     { id: "packageCreate", label: "Tạo gói tập" },
     { id: "packageCatalog", label: "Danh mục gói" },
     { id: "memberMemberships", label: "Gán gói hội viên" },
   ] },
-  { id: "classes", label: "Lớp học" },
-  { id: "bookings", label: "Đặt chỗ" },
-  { id: "facility-calendar", label: "Lịch sân" },
-  { id: "attendance", label: "Điểm danh" },
-  { id: "payments", label: "Thanh toán" },
-  { id: "staff", label: "Danh tính & nhân sự" },
+  { id: "operations", label: "Lịch & hoạt động", children: [
+    { id: "classes", label: "Lớp học" },
+    { id: "bookings", label: "Đặt chỗ" },
+    { id: "facility-calendar", label: "Lịch sân" },
+    { id: "attendance", label: "Điểm danh" },
+  ] },
   { id: "training", label: "Giáo án" },
-  { id: "reports", label: "Báo cáo" },
-  { id: "audit", label: "Nhật kí hoạt động" },
+  { id: "payments", label: "Thanh toán" },
+  { id: "administration", label: "Nhân sự & phân quyền", children: [
+    { id: "staff", label: "Danh tính & nhân sự" },
+    { id: "rolePermissions", label: "Phân quyền chức năng" },
+  ] },
+  { id: "insights", label: "Báo cáo & nhật kí", children: [
+    { id: "reports", label: "Báo cáo" },
+    { id: "audit", label: "Nhật kí hoạt động" },
+  ] },
   { id: "support", label: "Hỗ trợ" },
 ];
 const memberSelfItems = [
@@ -61,9 +71,11 @@ export function DashboardPlaceholder({ initialView = "dashboard", session, onLog
   const showToast = useToast();
   const granted = useMemo(() => new Set(session.permissions ?? []), [session.permissions]);
   const navigation = useMemo(() => {
-    const allowed = (id) => session.user.role === "admin" || !accessByView[id] || accessByView[id].some((permission) => granted.has(permission));
+    const allowed = (id) => {
+      if (["rolePermissions", "sitePages", "siteMenu"].includes(id)) return session.user.role === "admin";
+      return session.user.role === "admin" || !accessByView[id] || accessByView[id].some((permission) => granted.has(permission));
+    };
     const items = navigationItems.flatMap((item) => {
-      if (["rolePermissions", "sitePages", "siteMenu"].includes(item.id) && session.user.role !== "admin") return [];
       if (item.children) {
         const children = item.children.filter((child) => allowed(child.id));
         return children.length ? [{ ...item, children }] : [];
@@ -96,7 +108,7 @@ export function DashboardPlaceholder({ initialView = "dashboard", session, onLog
     try {
       const data = await dashboardApi.notifications();
       if (notificationIds.current !== null) {
-        data.filter((item) => !item.read && !notificationIds.current.has(item.id))
+        data.filter((item) => !item.read_at && !notificationIds.current.has(item.id))
           .forEach((item) => showToast(item.title || "Có thông báo mới", "info"));
       }
       notificationIds.current = new Set(data.map((item) => item.id));

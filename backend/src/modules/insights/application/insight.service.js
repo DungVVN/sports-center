@@ -1,14 +1,8 @@
 import { AppError } from "../../../shared/errors/app-error.js";
+import { reportingDay as isoDay, reportingRange as range } from "../domain/reporting-day.js";
 
-function range(query = {}) {
-  const now = new Date(); const from = new Date(now); const to = new Date(now); const period = query.period ?? "day";
-  if (period === "custom") { from.setTime(new Date(`${query.from}T00:00:00.000Z`).getTime()); to.setTime(new Date(`${query.to}T23:59:59.999Z`).getTime()); }
-  else { from.setHours(0, 0, 0, 0); to.setHours(23, 59, 59, 999); if (period === "week") from.setDate(from.getDate() - ((from.getDay() + 6) % 7)); if (period === "month") from.setDate(1); if (period === "quarter") from.setMonth(Math.floor(from.getMonth() / 3) * 3, 1); if (period === "year") from.setMonth(0, 1); }
-  return { from, to, period };
-}
 function previousRange(from, to) { const duration = to.getTime() - from.getTime() + 1; const previousTo = new Date(from.getTime() - 1); return { from: new Date(previousTo.getTime() - duration + 1), to: previousTo }; }
 function change(current, previous) { return previous === 0 ? null : Math.round(((current - previous) / previous) * 1000) / 10; }
-function isoDay(value) { return value.toISOString().slice(0, 10); }
 function csvCell(value) { return `"${String(value ?? "").replaceAll('"', '""')}"`; }
 function asCsv(rows) { return `\uFEFF${rows.map((row) => row.map(csvCell).join(",")).join("\r\n")}\r\n`; }
 function revenueTrend(rows, from, to) { const totals = new Map(); for (let cursor = new Date(from); cursor <= to; cursor.setUTCDate(cursor.getUTCDate() + 1)) totals.set(isoDay(cursor), BigInt(0)); for (const row of rows) { const key = isoDay(row.paid_at); totals.set(key, (totals.get(key) ?? BigInt(0)) + row.amount_vnd); } return [...totals].map(([date, amountVnd]) => ({ date, amountVnd: amountVnd.toString() })); }

@@ -68,10 +68,20 @@ describe("booking service", () => {
     const repository = {
       find: vi.fn().mockResolvedValue({ id: "booking-1", status: "confirmed", member_id: "member-1", class_session_id: "class-1" }),
       class: vi.fn().mockResolvedValue({ starts_at: new Date(Date.now() + 60 * 60 * 1000) }),
-      cancel: vi.fn().mockResolvedValue({ id: "booking-1", status: "cancelled" }),
-      promoteWaitlisted: vi.fn().mockResolvedValue(null),
+      cancelAndPromote: vi.fn().mockResolvedValue({ id: "booking-1", status: "cancelled", promotedBookingId: null }),
     };
     const service = createBookingService({ repository, auditService: { record: vi.fn().mockResolvedValue(undefined) } });
     await expect(service.cancel("booking-1", "Hỗ trợ vận hành", { id: "receptionist-1", role: "receptionist" })).resolves.toMatchObject({ status: "cancelled" });
+  });
+
+  it("does not record a second cancellation when the transaction finds it already cancelled", async () => {
+    const repository = {
+      find: vi.fn().mockResolvedValue({ id: "booking-1", status: "confirmed", class_session_id: "class-1" }),
+      class: vi.fn().mockResolvedValue({ starts_at: new Date(Date.now() + 86400000) }),
+      cancelAndPromote: vi.fn().mockResolvedValue(null),
+    };
+    const auditService = { record: vi.fn() };
+    await expect(createBookingService({ repository, auditService }).cancel("booking-1", "reason", { id: "u", role: "receptionist" })).rejects.toMatchObject({ code: "BOOKING_NOT_FOUND" });
+    expect(auditService.record).not.toHaveBeenCalled();
   });
 });

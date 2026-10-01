@@ -1,0 +1,209 @@
+/* Training follows its workflow: template first, then plan and progress side by side. */
+.ai-review {
+  container: ai-review / inline-size;
+}
+
+.ai-review__grid {
+  display: grid;
+  gap: var(--space-12);
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.ai-review__item {
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  min-width: 0;
+  padding: var(--space-16);
+}
+
+.ai-review__item > strong {
+  font-size: 14px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.ai-review__item > p {
+  line-height: 1.5;
+  margin: 0;
+  max-width: 65ch;
+  overflow-wrap: anywhere;
+}
+
+.ai-review__item > small {
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+  margin-top: auto;
+}
+
+.ai-review__item > button {
+  align-self: flex-start;
+}
+
+.ai-review > .training-action-form {
+  margin-top: var(--space-20);
+}
+
+@container ai-review (min-width: 48rem) {
+  .ai-review__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ai-review__item:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+}
+
+@container ai-review (min-width: 80rem) {
+  .ai-review__grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .ai-review__item:last-child:nth-child(odd) {
+    grid-column: auto;
+  }
+}
+
+.training-template-form {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.training-template-form h2,
+.training-template-form > button {
+  grid-column: 1 / -1;
+}
+
+.training-template-form > button,
+.training-action-form > button {
+  justify-self: start;
+  min-width: 12rem;
+}
+
+.training-action-grid {
+  display: grid;
+  gap: var(--space-24);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.training-action-form {
+  align-content: start;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.training-action-form h2,
+.training-action-form > button,
+.training-result-form label:has(textarea) {
+  grid-column: 1 / -1;
+}
+
+.training-session-form {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 1024px) {
+  .training-session-form {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.training-form-heading,
+.training-field-group,
+.training-creation-metadata {
+  grid-column: 1 / -1;
+}
+
+.training-form-heading {
+  display: grid;
+  gap: var(--space-4);
+  padding-bottom: var(--space-12);
+}
+
+.training-form-heading span {
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.06em;
+}
+
+.training-form-heading h2 {
+  font-size: 18px;
+  margin: 0;
+}
+
+.training-creation-metadata {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  display: grid;
+  gap: var(--space-16);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: var(--space-12) var(--space-16);
+}
+
+.training-creation-metadata div {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.training-creation-metadata span {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+}
+
+.training-creation-metadata strong {
+  font-size: 13px;
+}
+
+.training-field-group {
+  display: grid;
+  gap: var(--space-12);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.training-field-group h3 {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: var(--font-weight-semibold);
+  grid-column: 1 / -1;
+  letter-spacing: 0.04em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.training-field-group fieldset {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  display: grid;
+  gap: var(--space-12);
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  min-inline-size: 0;
+  padding: var(--space-16);
+}
+
+.training-field-group legend {
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: var(--font-weight-semibold);
+  padding: 0 var(--space-4);
+}
+
+.training-field-group fieldset > label:first-of-type,
+.training-field-group fieldset > .button {
+  grid-column: 1 / -1;
+}
+
+.training-field-group > .button,
+.training-session-form > .button[type="submit"] {
+  grid-column: 1 / -1;
+  justify-self: start;
+  min-width: 10rem;
+  width: auto;
+}

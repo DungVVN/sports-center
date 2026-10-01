@@ -11,7 +11,7 @@ process.env.DATABASE_URL = testUrl;
 
 const { prisma } = await import("../../src/database.js");
 const { bookingRepository } = await import("../../src/modules/bookings/index.js");
-const ids = { coach: randomUUID(), memberUsers: [randomUUID(), randomUUID()], members: [], memberships: [], package: null, room: null, class: null };
+const ids = { coach: randomUUID(), memberUsers: Array.from({ length: 5 }, () => randomUUID()), members: [], memberships: [], package: null, room: null, class: null };
 const suffix = randomUUID().slice(0, 8);
 
 try {
@@ -35,13 +35,42 @@ try {
   const startsAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
   const session = await prisma.class_sessions.create({ data: { code: `BOOK-CLASS-${suffix}`, name: `Booking class ${suffix}`, type: "group", coach_user_id: ids.coach, room_id: ids.room, starts_at: startsAt, ends_at: new Date(startsAt.getTime() + 60 * 60 * 1000), capacity: 1, status: "published" } });
   ids.class = session.id;
-  const results = await Promise.all(ids.members.map((memberId, index) => bookingRepository.createWithCapacity({ bookingCode: `BOOK-RACE-${index}-${suffix}`, memberId, classId: ids.class, bookedBy: ids.memberUsers[index] })));
+  const results = await Promise.all(ids.members.slice(0, 2).map((memberId, index) => bookingRepository.createWithCapacity({ bookingCode: `BOOK-RACE-${index}-${suffix}`, memberId, classId: ids.class, bookedBy: ids.memberUsers[index] })));
   assert.deepEqual(results.map((result) => result.booking.status).sort(), ["confirmed", "waitlisted"]);
   assert.equal(await prisma.bookings.count({ where: { class_session_id: ids.class, status: "confirmed" } }), 1);
   const duplicate = await bookingRepository.createWithCapacity({ bookingCode: `BOOK-DUP-${suffix}`, memberId: ids.members[0], classId: ids.class, bookedBy: ids.memberUsers[0] });
   assert.equal(duplicate.duplicate, true);
   assert.equal(await prisma.bookings.count({ where: { class_session_id: ids.class } }), 2);
-  console.log("Isolated PostgreSQL booking capacity race passed: one confirmed, one waitlisted, duplicate suppressed.");
+  for (const index of [2, 3]) await bookingRepository.createWithCapacity({ bookingCode: `BOOK-WAIT-${index}-${suffix}`, memberId: ids.members[index], classId: ids.class, bookedBy: ids.memberUsers[index] });
+  const confirmed = results.find((result) => result.booking.status === "confirmed").booking;
+
+  // A notification failure must roll back both cancellation and promotion.
+  await prisma.$executeRaw`ALTER TABLE notifications ADD CONSTRAINT qa_booking_notification_failure CHECK (title <> 'Đã có chỗ trong lớp')`;
+  try {
+    await assert.rejects(bookingRepository.cancelAndPromote(confirmed.id, ids.class, "Rollback QA"));
+    assert.equal((await prisma.bookings.findUnique({ where: { id: confirmed.id } })).status, "confirmed");
+    assert.equal(await prisma.bookings.count({ where: { class_session_id: ids.class, status: "waitlisted" } }), 3);
+  } finally {
+    await prisma.$executeRaw`ALTER TABLE notifications DROP CONSTRAINT qa_booking_notification_failure`;
+  }
+
+  const cancelled = await Promise.all([
+    bookingRepository.cancelAndPromote(confirmed.id, ids.class, "Concurrent cancel A"),
+    bookingRepository.cancelAndPromote(confirmed.id, ids.class, "Concurrent cancel B"),
+  ]);
+  assert.equal(cancelled.filter(Boolean).length, 1);
+  assert.equal(cancelled.filter((result) => result?.promotedBookingId).length, 1);
+  assert.equal(await prisma.bookings.count({ where: { class_session_id: ids.class, status: "confirmed" } }), 1);
+  assert.equal(await prisma.bookings.count({ where: { class_session_id: ids.class, status: "waitlisted" } }), 2);
+  assert.equal(await bookingRepository.promoteWaitlisted(ids.class), null);
+
+  const nextConfirmed = await prisma.bookings.findFirst({ where: { class_session_id: ids.class, status: "confirmed" } });
+  await Promise.all([
+    bookingRepository.cancelAndPromote(nextConfirmed.id, ids.class, "Cancel alongside new booking"),
+    bookingRepository.createWithCapacity({ bookingCode: `BOOK-NEW-${suffix}`, memberId: ids.members[4], classId: ids.class, bookedBy: ids.memberUsers[4] }),
+  ]);
+  assert.equal(await prisma.bookings.count({ where: { class_session_id: ids.class, status: "confirmed" } }), 1);
+  console.log("Isolated PostgreSQL booking checks passed: capacity, duplicates, atomic rollback, duplicate cancellation and cancellation alongside a new booking.");
 } finally {
   await prisma.notifications.deleteMany({ where: { recipient_user_id: { in: ids.memberUsers } } });
   if (ids.class) await prisma.bookings.deleteMany({ where: { class_session_id: ids.class } });

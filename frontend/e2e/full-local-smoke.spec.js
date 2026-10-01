@@ -53,9 +53,10 @@ async function clickNavigation(page, label, mobile) {
   if (mobile) await page.getByRole("button", { name: "Mở menu" }).click();
   const nav = mobile ? page.locator("#mobile-navigation nav") : page.locator(".app-sidebar nav");
   const target = nav.getByRole("button", { name: label, exact: true });
-  if (label === "Tạo gói tập" || label === "Danh mục gói" || label === "Gán gói hội viên") {
-    if (!(await target.isVisible().catch(() => false))) {
-      await nav.getByRole("button", { name: /^Gói tập, (mở rộng|thu gọn)$/ }).click();
+  if (!(await target.isVisible().catch(() => false))) {
+    for (const group of await nav.locator('button[aria-expanded="false"]').all()) {
+      await group.click();
+      if (await target.isVisible().catch(() => false)) break;
     }
   }
   if (process.env.E2E_QA_ISOLATED === "1" && !(await target.count())) {

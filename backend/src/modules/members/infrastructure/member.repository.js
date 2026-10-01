@@ -55,6 +55,10 @@ export const memberRepository = {
   find(id) { return prisma.members.findUnique({ where: { id } }); },
   findByUserId(userId) { return prisma.members.findUnique({ where: { user_id: userId } }); },
   contacts(memberId) { return prisma.member_emergency_contacts.findMany({ where: { member_id: memberId }, orderBy: { is_primary: "desc" } }); },
+  contactsForMembers(memberIds) {
+    if (!memberIds.length) return Promise.resolve([]);
+    return prisma.member_emergency_contacts.findMany({ where: { member_id: { in: memberIds } }, orderBy: { is_primary: "desc" } });
+  },
   async findWithContacts(id) { const member = await this.find(id); return member ? { member, contacts: await this.contacts(id) } : null; },
   create(data) { return prisma.$transaction(async (tx) => {
     const { account, contacts = [], ...memberData } = data;

@@ -15,7 +15,7 @@ const matrix = {
     { code: "member", label: "Hội viên", version: 0, permissionCodes: [] },
   ],
 };
-function renderPage() { const client = new QueryClient({ defaultOptions: { queries: { retry: false } } }); return render(<QueryClientProvider client={client}><RolePermissionPage /></QueryClientProvider>); }
+function renderPage() { const client = new QueryClient({ defaultOptions: { queries: { retry: false } } }); return { ...render(<QueryClientProvider client={client}><RolePermissionPage /></QueryClientProvider>), client }; }
 
 describe("Admin role permission matrix", () => {
   afterEach(cleanup);
@@ -37,6 +37,50 @@ describe("Admin role permission matrix", () => {
     fireEvent.click(await screen.findByRole("checkbox", { name: "Xem thanh toán — manager" }));
     fireEvent.click(screen.getByRole("button", { name: "Lưu thay đổi" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("tải lại");
+  });
+
+  it("discards old edits after an explicit successful reload", async () => {
+    renderPage();
+    const checkbox = await screen.findByRole("checkbox", { name: "Xem thanh toán — manager" });
+    fireEvent.click(checkbox);
+    expect(checkbox).toBeChecked();
+    rolePermissionApi.matrix.mockResolvedValue({ ...matrix, roles: matrix.roles.map((role) => ({ ...role, version: role.version + 1 })) });
+    fireEvent.click(screen.getByRole("button", { name: "Tải lại" }));
+    await waitFor(() => expect(checkbox).not.toBeChecked());
+    expect(screen.getByRole("button", { name: "Lưu thay đổi" })).toBeDisabled();
+  });
+
+  it("keeps the original draft version after a background refresh", async () => {
+    const { client } = renderPage();
+    fireEvent.click(await screen.findByRole("checkbox", { name: "Xem thanh toán — manager" }));
+    rolePermissionApi.matrix.mockResolvedValue({ ...matrix, roles: matrix.roles.map((role) => ({ ...role, version: role.version + 1 })) });
+    await client.refetchQueries({ queryKey: ["role-permissions"] });
+    await waitFor(() => expect(screen.getByRole("button", { name: "Lưu thay đổi" })).not.toBeDisabled());
+    fireEvent.click(screen.getByRole("button", { name: "Lưu thay đổi" }));
+    await waitFor(() => expect(rolePermissionApi.replace).toHaveBeenCalledWith("manager", { version: 2, permissionCodes: ["payment.read"] }));
+  });
+
+  it("retains unsaved edits when reload fails", async () => {
+    renderPage();
+    const checkbox = await screen.findByRole("checkbox", { name: "Xem thanh toán — manager" });
+    fireEvent.click(checkbox);
+    rolePermissionApi.matrix.mockRejectedValue(new Error("offline"));
+    fireEvent.click(screen.getByRole("button", { name: "Tải lại" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("offline");
+    expect(checkbox).toBeChecked();
+  });
+
+  it("keeps committed roles in cache when a later role fails", async () => {
+    rolePermissionApi.replace.mockResolvedValueOnce({ version: 3, permissionCodes: ["payment.read"] }).mockRejectedValueOnce({ status: 409 });
+    renderPage();
+    fireEvent.click(await screen.findByRole("checkbox", { name: "Xem thanh toán — manager" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Xem thanh toán — receptionist" }));
+    fireEvent.click(screen.getByRole("button", { name: "Lưu thay đổi" }));
+    await screen.findByRole("alert");
+    rolePermissionApi.replace.mockResolvedValue({ version: 1, permissionCodes: ["payment.read"] });
+    fireEvent.click(screen.getByRole("button", { name: "Lưu thay đổi" }));
+    await waitFor(() => expect(rolePermissionApi.replace).toHaveBeenCalledTimes(3));
+    expect(rolePermissionApi.replace.mock.calls[2][0]).toBe("receptionist");
   });
 
   it("selects role-specific dependencies and disables inapplicable functions", async () => {

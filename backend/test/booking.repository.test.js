@@ -2,12 +2,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const prisma = {
   $transaction: vi.fn(),
+  $queryRaw: vi.fn(),
   bookings: {
     findFirst: vi.fn(),
     findMany: vi.fn(),
     count: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
+    updateMany: vi.fn(),
+    findUnique: vi.fn(),
   },
   class_sessions: { findUnique: vi.fn() },
   member_memberships: { findMany: vi.fn() },
@@ -32,6 +35,8 @@ describe("booking repository entitlement inheritance", () => {
     vi.clearAllMocks();
     prisma.$transaction.mockImplementation(async (callback) => callback(prisma));
     prisma.membership_freeze_requests.findMany.mockResolvedValue([]);
+    prisma.$queryRaw.mockResolvedValue([]);
+    prisma.bookings.count.mockResolvedValue(0);
   });
 
   it("uses a lower-tier booking entitlement when the current package does not duplicate it", async () => {
@@ -101,7 +106,7 @@ describe("booking repository entitlement inheritance", () => {
   });
 
   it("skips an ineligible waiter and confirms the earliest eligible waiter", async () => {
-    prisma.class_sessions.findUnique.mockResolvedValue({ starts_at: new Date("2026-10-01T09:00:00.000Z") });
+    prisma.class_sessions.findUnique.mockResolvedValue({ status: "published", capacity: 1, starts_at: new Date(Date.now() + 86400000) });
     prisma.bookings.findMany.mockResolvedValue([
       { id: "booking-ineligible", member_id: "member-ineligible" },
       { id: "booking-eligible", member_id: "member-eligible" },
@@ -145,12 +150,44 @@ describe("booking repository entitlement inheritance", () => {
   });
 
   it("skips a waitlisted member frozen on the class date", async () => {
-    prisma.class_sessions.findUnique.mockResolvedValue({ starts_at: new Date("2026-10-04T01:00:00.000Z") });
+    prisma.class_sessions.findUnique.mockResolvedValue({ status: "published", capacity: 1, starts_at: new Date(Date.now() + 86400000) });
     prisma.bookings.findMany.mockResolvedValue([{ id: "booking-frozen", member_id: "member-frozen" }]);
     prisma.member_memberships.findMany.mockResolvedValue([{ id: "membership-frozen", package_id: "premium" }]);
     prisma.membership_freeze_requests.findMany.mockResolvedValue([{ membership_id: "membership-frozen" }]);
 
     await expect(bookingRepository.promoteWaitlisted("class-1")).resolves.toBeNull();
     expect(prisma.bookings.update).not.toHaveBeenCalled();
+  });
+
+  it("does not promote when confirmed and attended bookings already fill the class", async () => {
+    prisma.class_sessions.findUnique.mockResolvedValue({ status: "published", capacity: 1, starts_at: new Date(Date.now() + 86400000) });
+    prisma.bookings.count.mockResolvedValue(1);
+    await expect(bookingRepository.promoteWaitlisted("class-1")).resolves.toBeNull();
+    expect(prisma.bookings.findMany).not.toHaveBeenCalled();
+    expect(prisma.bookings.count).toHaveBeenCalledWith({ where: { class_session_id: "class-1", status: { in: ["confirmed", "attended"] } } });
+  });
+
+  it.each(["cancelled", "attended", "absent"])("does not cancel or promote a %s booking", async (status) => {
+    prisma.class_sessions.findUnique.mockResolvedValue({ status: "published" });
+    prisma.bookings.findUnique.mockResolvedValue({ id: "booking-1", status });
+    await expect(bookingRepository.cancelAndPromote("booking-1", "class-1", "reason")).resolves.toBeNull();
+    expect(prisma.bookings.updateMany).not.toHaveBeenCalled();
+    expect(prisma.bookings.findMany).not.toHaveBeenCalled();
+  });
+
+  it("does not promote when the conditional cancellation loses a race", async () => {
+    prisma.class_sessions.findUnique.mockResolvedValue({ status: "published" });
+    prisma.bookings.findUnique.mockResolvedValue({ id: "booking-1", status: "confirmed" });
+    prisma.bookings.updateMany.mockResolvedValue({ count: 0 });
+    await expect(bookingRepository.cancelAndPromote("booking-1", "class-1", "reason")).resolves.toBeNull();
+    expect(prisma.bookings.findMany).not.toHaveBeenCalled();
+  });
+
+  it("cancels a waitlisted booking without freeing a confirmed seat", async () => {
+    prisma.class_sessions.findUnique.mockResolvedValue({ status: "published" });
+    prisma.bookings.findUnique.mockResolvedValueOnce({ id: "booking-1", status: "waitlisted" }).mockResolvedValueOnce({ id: "booking-1", status: "cancelled" });
+    prisma.bookings.updateMany.mockResolvedValue({ count: 1 });
+    await expect(bookingRepository.cancelAndPromote("booking-1", "class-1", "reason")).resolves.toMatchObject({ status: "cancelled", promotedBookingId: null });
+    expect(prisma.bookings.findMany).not.toHaveBeenCalled();
   });
 });

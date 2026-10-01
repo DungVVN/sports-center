@@ -2,6 +2,28 @@ import { describe, expect, it, vi } from "vitest";
 import { createMemberService } from "../src/modules/members/index.js";
 
 describe("Member service contacts", () => {
+  it("keeps contacts scoped and primary-first using one batch lookup", async () => {
+    const repository = {
+      listWithOverview: vi.fn().mockResolvedValue(["one", "two", "empty"].map((id) => ({ member: { id } }))),
+      contactsForMembers: vi.fn().mockResolvedValue([
+        { id: "primary", member_id: "one", full_name: "Primary", is_primary: true },
+        { id: "other-member", member_id: "two", full_name: "Other member", is_primary: true },
+        { id: "secondary", member_id: "one", full_name: "Secondary", is_primary: false },
+      ]),
+      contacts: vi.fn(),
+    };
+    const result = await createMemberService({ repository }).list();
+    expect(result.map((member) => member.contacts.map((contact) => contact.id))).toEqual([["primary", "secondary"], ["other-member"], []]);
+    expect(repository.contactsForMembers).toHaveBeenCalledExactlyOnceWith(["one", "two", "empty"]);
+    expect(repository.contacts).not.toHaveBeenCalled();
+  });
+
+  it("does not query contacts for an empty member list", async () => {
+    const repository = { listWithOverview: vi.fn().mockResolvedValue([]), contactsForMembers: vi.fn() };
+    expect(await createMemberService({ repository }).list()).toEqual([]);
+    expect(repository.contactsForMembers).not.toHaveBeenCalled();
+  });
+
   it("returns an actionable conflict when an updated phone is already used", async () => {
     const member = { id: "member-1", member_code: "MBR-1", full_name: "An", email: null, phone: "0900000000", date_of_birth: null, gender: null, joined_at: new Date() };
     const repository = {
@@ -67,7 +89,7 @@ describe("Member service contacts", () => {
     const member = { id: "member-1", member_code: "MBR-1", full_name: "An", email: "an@example.test", phone: "0900000000", date_of_birth: null, gender: null, joined_at: new Date() };
     const repository = {
       listWithOverview: vi.fn().mockResolvedValue([{ member, overview: { coachName: "Coach Bình", membership: { package_name_snapshot: "Gói Tiêu chuẩn", status: "active", expires_on: new Date("2026-12-12") } } }]),
-      contacts: vi.fn().mockResolvedValue([]),
+      contactsForMembers: vi.fn().mockResolvedValue([]),
     };
     const result = await createMemberService({ repository, auditService: { record: vi.fn() } }).list();
     expect(result).toEqual([expect.objectContaining({ coachName: "Coach Bình", registeredPackageName: "Gói Tiêu chuẩn", membershipStatus: "active", membershipExpiresOn: new Date("2026-12-12") })]);

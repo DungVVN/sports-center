@@ -42,15 +42,15 @@ export function createBookingService({ repository, auditService }) {
     },
     async cancel(id, reason, actor) {
       const booking = await repository.find(id);
-      if (!booking || booking.status === "cancelled") throw new AppError({ statusCode: 404, code: "BOOKING_NOT_FOUND", message: "Không tìm thấy đặt chỗ còn hiệu lực." });
+      if (!booking || !["confirmed", "waitlisted"].includes(booking.status)) throw new AppError({ statusCode: 404, code: "BOOKING_NOT_FOUND", message: "Không tìm thấy đặt chỗ còn hiệu lực." });
       const memberId = await scopedMemberId(actor);
       if (isMember(actor) && booking.member_id !== memberId) throw new AppError({ statusCode: 403, code: "BOOKING_ACCESS_DENIED", message: "Bạn chỉ có thể hủy lịch của chính mình." });
       const session = await repository.class(booking.class_session_id);
       if (!session || (isMember(actor) && session.starts_at.getTime() - Date.now() < 5 * 60 * 60 * 1000)) throw new AppError({ statusCode: 422, code: "BOOKING_CANCELLATION_TOO_LATE", message: "Hội viên chỉ được tự hủy trước giờ học ít nhất 5 giờ." });
-      const result = await repository.cancel(id, reason);
-      const promoted = booking.status === "confirmed" ? await repository.promoteWaitlisted(booking.class_session_id) : null;
-      await auditService.record({ actorUserId: actor.id, action: "booking.cancelled", entityType: "booking", entityId: id, summary: promoted ? "Đã hủy booking và tự động xác nhận danh sách chờ." : "Đã hủy đặt chỗ lớp học.", reason });
-      return { ...result, promotedBookingId: promoted?.id ?? null };
+      const result = await repository.cancelAndPromote(id, booking.class_session_id, reason);
+      if (!result) throw new AppError({ statusCode: 404, code: "BOOKING_NOT_FOUND", message: "Không tìm thấy đặt chỗ còn hiệu lực." });
+      await auditService.record({ actorUserId: actor.id, action: "booking.cancelled", entityType: "booking", entityId: id, summary: result.promotedBookingId ? "Đã hủy booking và tự động xác nhận danh sách chờ." : "Đã hủy đặt chỗ lớp học.", reason });
+      return result;
     },
   };
 }

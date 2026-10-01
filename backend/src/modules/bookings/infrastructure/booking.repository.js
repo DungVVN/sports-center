@@ -34,6 +34,27 @@ async function eligibleMembership(database, memberId, accessAt) {
   return memberships.find((membership) => !frozenIds.has(membership.id)) ?? null;
 }
 
+async function lockClass(database, classId) {
+  await database.$queryRaw`SELECT id FROM class_sessions WHERE id = ${classId}::uuid FOR UPDATE`;
+  return database.class_sessions.findUnique({ where: { id: classId } });
+}
+
+async function promoteEligibleWaiter(database, classId, session) {
+  if (!session || session.status !== "published" || session.starts_at <= new Date()) return null;
+  const occupied = await database.bookings.count({ where: { class_session_id: classId, status: { in: ["confirmed", "attended"] } } });
+  if (occupied >= session.capacity) return null;
+  const waitlisted = await database.bookings.findMany({ where: { class_session_id: classId, status: "waitlisted" }, orderBy: [{ booked_at: "asc" }, { id: "asc" }] });
+  for (const candidate of waitlisted) {
+    const membership = await eligibleMembership(database, candidate.member_id, session.starts_at);
+    if (!membership || !await bookingEntitlement(database, membership.package_id)) continue;
+    const booking = await database.bookings.update({ where: { id: candidate.id }, data: { status: "confirmed" } });
+    const member = await database.members.findUnique({ where: { id: candidate.member_id }, select: { user_id: true } });
+    if (member?.user_id) await database.notifications.create({ data: { recipient_user_id: member.user_id, category: "member", title: "Đã có chỗ trong lớp", body: "Bạn đã được xác nhận từ danh sách chờ vì có chỗ trống.", link_path: `/bookings/${booking.id}` } });
+    return booking;
+  }
+  return null;
+}
+
 export const bookingRepository = {
   list: async ({ memberId, coachUserId } = {}) => {
     const classIds = coachUserId
@@ -87,8 +108,8 @@ export const bookingRepository = {
   createWithCapacity: ({ bookingCode, memberId, classId, bookedBy }) => serializable(async (tx) => {
     const existing = await tx.bookings.findFirst({ where: { member_id: memberId, class_session_id: classId, status: { in: ["confirmed", "waitlisted"] } } });
     if (existing) return { duplicate: true, booking: existing };
-    const session = await tx.class_sessions.findUnique({ where: { id: classId } });
-    const confirmed = await tx.bookings.count({ where: { class_session_id: classId, status: "confirmed" } });
+    const session = await lockClass(tx, classId);
+    const confirmed = await tx.bookings.count({ where: { class_session_id: classId, status: { in: ["confirmed", "attended"] } } });
     const status = confirmed >= session.capacity ? "waitlisted" : "confirmed";
     const booking = await tx.bookings.create({ data: { booking_code: bookingCode, member_id: memberId, class_session_id: classId, status, booked_by: bookedBy } });
     if (status === "waitlisted") {
@@ -97,19 +118,17 @@ export const bookingRepository = {
     }
     return { duplicate: false, booking };
   }),
-  cancel: (id, reason) => prisma.bookings.update({ where: { id }, data: { status: "cancelled", cancelled_at: new Date(), cancel_reason: reason } }),
+  cancelAndPromote: (id, classId, reason) => serializable(async (tx) => {
+    const session = await lockClass(tx, classId);
+    const current = await tx.bookings.findUnique({ where: { id } });
+    if (!current || !["confirmed", "waitlisted"].includes(current.status)) return null;
+    const changed = await tx.bookings.updateMany({ where: { id, status: current.status }, data: { status: "cancelled", cancelled_at: new Date(), cancel_reason: reason } });
+    if (!changed.count) return null;
+    const booking = await tx.bookings.findUnique({ where: { id } });
+    const promoted = current.status === "confirmed" ? await promoteEligibleWaiter(tx, classId, session) : null;
+    return { ...booking, promotedBookingId: promoted?.id ?? null };
+  }),
   promoteWaitlisted: async (classId) => serializable(async (tx) => {
-    const session = await tx.class_sessions.findUnique({ where: { id: classId }, select: { starts_at: true } });
-    if (!session) return null;
-    const waitlisted = await tx.bookings.findMany({ where: { class_session_id: classId, status: "waitlisted" }, orderBy: { booked_at: "asc" } });
-    for (const candidate of waitlisted) {
-      const membership = await eligibleMembership(tx, candidate.member_id, session.starts_at);
-      if (!membership || !await bookingEntitlement(tx, membership.package_id)) continue;
-      const booking = await tx.bookings.update({ where: { id: candidate.id }, data: { status: "confirmed" } });
-      const member = await tx.members.findUnique({ where: { id: candidate.member_id }, select: { user_id: true } });
-      if (member?.user_id) await tx.notifications.create({ data: { recipient_user_id: member.user_id, category: "member", title: "Đã có chỗ trong lớp", body: "Bạn đã được xác nhận từ danh sách chờ vì có chỗ trống.", link_path: `/bookings/${booking.id}` } });
-      return booking;
-    }
-    return null;
+    return promoteEligibleWaiter(tx, classId, await lockClass(tx, classId));
   }),
 };

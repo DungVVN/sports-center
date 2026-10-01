@@ -12,6 +12,16 @@ vi.mock("../../shared/ui/useToast.js", () => ({ useToast: () => showToast }));
 describe("role navigation", () => {
   afterEach(() => { cleanup(); vi.useRealTimers(); vi.clearAllMocks(); dashboardApi.notifications.mockResolvedValue([]); });
 
+  it("filters children inside groups and hides empty admin groups", () => {
+    render(<DashboardPlaceholder session={{ user: { role: "coach" }, permissions: ["class.read"] }} />);
+    expect(screen.getByText("Lịch & hoạt động")).toBeInTheDocument();
+    expect(screen.getByText("Lớp học")).toBeInTheDocument();
+    expect(screen.queryByText("Đặt chỗ")).not.toBeInTheDocument();
+    expect(screen.queryByText("Website")).not.toBeInTheDocument();
+    expect(screen.queryByText("Nhân sự & phân quyền")).not.toBeInTheDocument();
+    expect(screen.queryByText("Báo cáo & nhật kí")).not.toBeInTheDocument();
+  });
+
   it("does not invent a cash payment notification on a timer", async () => {
     vi.useFakeTimers();
     render(<DashboardPlaceholder session={{ user: { role: "receptionist" }, permissions: [] }} />);
@@ -22,11 +32,13 @@ describe("role navigation", () => {
 
   it("toasts only a newly returned unread notification", async () => {
     vi.useFakeTimers();
-    dashboardApi.notifications.mockResolvedValueOnce([]).mockResolvedValue([{ id: "new-1", title: "Phiếu thu mới", read: false }]);
+    dashboardApi.notifications.mockResolvedValueOnce([]).mockResolvedValue([{ id: "new-1", title: "Phiếu thu mới", read_at: null }, { id: "read-1", title: "Đã đọc ở phiên khác", read_at: "2026-10-02T00:00:00Z" }]);
     render(<DashboardPlaceholder session={{ user: { role: "receptionist" }, permissions: [] }} />);
     await act(async () => { await Promise.resolve(); });
     await act(async () => { await vi.advanceTimersByTimeAsync(30_000); });
     expect(showToast).toHaveBeenCalledExactlyOnceWith("Phiếu thu mới", "info");
+    await act(async () => { await vi.advanceTimersByTimeAsync(30_000); });
+    expect(showToast).toHaveBeenCalledTimes(1);
   });
 
   it("hides registration approval from Manager when the permission was removed", () => {

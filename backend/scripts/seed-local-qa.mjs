@@ -3,7 +3,9 @@ import { prisma } from "../src/database.js";
 
 const databaseUrl = new URL(process.env.DATABASE_URL ?? "");
 const qaPort = process.env.QA_SEED_PORT ?? "54329";
-if (databaseUrl.hostname !== "127.0.0.1" || databaseUrl.port !== qaPort || databaseUrl.pathname !== "/sports_center_qa" || process.env.QA_SEED_CONFIRM !== "LOCAL_QA_ONLY") {
+const qaDatabase = process.env.QA_SEED_DATABASE ?? "sports_center_qa";
+const isQaName = qaDatabase === "sports_center_qa" || /^sports_center_arch_qa_[a-z0-9_]+$/.test(qaDatabase);
+if (!["127.0.0.1", "localhost"].includes(databaseUrl.hostname) || databaseUrl.port !== qaPort || !isQaName || databaseUrl.pathname !== `/${qaDatabase}` || process.env.QA_SEED_CONFIRM !== "LOCAL_QA_ONLY") {
   throw new Error("Refusing to seed a database other than the isolated local QA database.");
 }
 

@@ -28,7 +28,7 @@ export function ReportsPage() {
   const attendance = reportQuery.data?.attendance ?? null;
   const loading = reportQuery.isLoading;
 
-  const dateRange = !canRequestReport ? "Chưa chọn khoảng ngày hợp lệ" : report ? `${new Date(report.from).toLocaleDateString("vi-VN")} – ${new Date(report.to).toLocaleDateString("vi-VN")}` : "Đang tải…";
+  const dateRange = !canRequestReport ? "Chưa chọn khoảng ngày hợp lệ" : report ? `${new Date(report.from).toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })} – ${new Date(report.to).toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })}` : "Đang tải…";
   async function download(type) {
     const label = type === "revenue" ? "doanh thu" : "điểm danh";
     try {
