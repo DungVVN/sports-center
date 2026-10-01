@@ -111,6 +111,16 @@ export function SiteMenuPage() {
             Lưu nháp không đổi điều hướng hiện tại. Website chỉ dùng menu đã xuất bản khi CMS công khai được bật.
           </p>
 
+          <section className="site-admin__panel" aria-label="Danh sách liên kết menu">
+            <h2>Các trang trong menu {location === "header" ? "đầu trang" : "chân trang"}</h2>
+            <div className="site-admin__menu-catalog">
+              {draft.items.map((item) => <div key={item.id} className="site-admin__menu-catalog-group">
+                <button type="button" onClick={() => draft.setSelectedItemId(item.id)}>{item.label}{!item.active && " · Đang ẩn"}</button>
+                {(item.kind === "group" ? item.children : [item]).map((link) => <div key={link.id}><span>{link.label}{!link.active && " · Đang ẩn"}</span><code>{link.href}</code></div>)}
+              </div>)}
+            </div>
+          </section>
+
           {preview && (
             <nav className="site-admin__panel site-admin__menu-preview" aria-label="Xem trước menu nháp">
               {draft.items.filter((item) => item.active).map((item) => (
