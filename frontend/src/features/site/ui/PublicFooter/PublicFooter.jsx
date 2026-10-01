@@ -1,4 +1,4 @@
-import { Activity, MapPin, Phone, Mail } from 'lucide-react';
+import { Activity, ArrowRight } from 'lucide-react';
 import { PublicMenuLinks } from "../PublicNavigation/PublicMenuLinks.jsx";
 
 export function PublicFooter() {
@@ -13,7 +13,7 @@ export function PublicFooter() {
             <span className="logo-text">Kinetic Sports</span>
           </div>
           <p className="footer-desc mt-4">
-            Hệ sinh thái thể thao 5 sao, mang đến môi trường tập luyện lý tưởng. Nơi khơi nguồn năng lượng và kết nối cộng đồng yêu thể thao.
+            Khám phá Gym, Yoga và bóng đá. Lựa chọn hoạt động phù hợp với lịch tập của bạn và kết nối cộng đồng yêu thể thao.
           </p>
         </div>
 
@@ -23,11 +23,10 @@ export function PublicFooter() {
         </div>
 
         <div className="footer-col">
-          <h4>Liên Hệ</h4>
+          <h4>Hỗ Trợ</h4>
           <ul className="contact-list">
-            <li><MapPin size={18} /> 123 Đường Thể Thao, Quận 1, TP.HCM</li>
-            <li><Phone size={18} /> 1900 1234</li>
-            <li><Mail size={18} /> contact@kineticsports.io.vn</li>
+            <li><ArrowRight size={18} /><a href="/lien-he">Tư vấn dịch vụ và gói hội viên</a></li>
+            <li><ArrowRight size={18} /><a href="/huong-dan-dang-ky-tap-luyen">Hướng dẫn đăng ký tập luyện</a></li>
           </ul>
         </div>
       </div>
