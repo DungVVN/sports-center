@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { openApiSpec } from "../src/openapi/spec.js";
 import { routeSourceFiles } from "./helpers/route-source-files.js";
+import { pageCreateSchema, pageDraftSchema, menuDraftSchema } from "../src/modules/site/domain/site-content.js";
 
 const modulesDirectory = fileURLToPath(new URL("../src/modules/", import.meta.url));
 const mounts = { "auth.routes.js": "/auth", "staff.routes.js": "/staff", "member.routes.js": "/members" };
@@ -22,6 +23,41 @@ function backendOperations() {
 }
 
 describe("OpenAPI contract", () => {
+  it("provides CMS examples accepted by the actual request validators", () => {
+    for (const [path, method, schema] of [
+      ["/admin/site/pages", "post", pageCreateSchema],
+      ["/admin/site/pages/{routeKey}/draft", "put", pageDraftSchema],
+      ["/admin/site/menus/{location}/draft", "put", menuDraftSchema],
+    ]) {
+      const example = openApiSpec.paths[path][method].requestBody.content["application/json"].example;
+      expect(schema.safeParse(example).success).toBe(true);
+    }
+  });
+  it("resolves every schema reference in the CMS contract", () => {
+    const visit = (node) => {
+      if (!node || typeof node !== "object") return;
+      if (node.$ref?.startsWith("#/components/schemas/")) expect(openApiSpec.components.schemas[node.$ref.split("/").at(-1)]).toBeDefined();
+      for (const value of Object.values(node)) visit(value);
+    };
+    for (const [path, item] of Object.entries(openApiSpec.paths)) if (path.includes("/site/")) visit(item);
+    for (const [name, schema] of Object.entries(openApiSpec.components.schemas)) if (name.startsWith("Site")) visit(schema);
+  });
+  it("documents CMS portal authentication and draft publication boundaries", () => {
+    expect(openApiSpec.components.securitySchemes.adminSessionCookie.name).toBe("sports_center_admin_session");
+    for (const [path, item] of Object.entries(openApiSpec.paths)) {
+      if (!path.includes("/site/")) continue;
+      for (const method of methods) {
+        const operation = item[method];
+        if (!operation) continue;
+        expect(operation.security).toEqual(path.startsWith("/admin/") ? [{ adminSessionCookie: [] }, { sessionBearer: [] }] : []);
+        expect(operation.responses[200].content["application/json"].schema.properties.data).toBeDefined();
+        if (path.startsWith("/admin/") && ["put", "post"].includes(method) && !path.endsWith("/signature") && !(path.endsWith("/draft") && method === "post")) expect(operation.requestBody).toBeDefined();
+      }
+    }
+    expect(openApiSpec.components.schemas.SiteMenuDraftRequest.properties.editRevision.minimum).toBe(0);
+    expect(openApiSpec.components.schemas.SitePublishRequest.properties.editRevision.minimum).toBe(1);
+    expect(openApiSpec.paths["/admin/site/pages/{routeKey}/publish"].post.responses[409]).toBeDefined();
+  });
   it("documents the unauthenticated public package response", () => {
     const operation = openApiSpec.paths["/public/membership-packages"].get;
     expect(operation.security).toEqual([]);

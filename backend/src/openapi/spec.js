@@ -1,4 +1,5 @@
 import { env } from "../config/env.js";
+import { applySiteContract } from "./site-contract.js";
 
 const uuid = { type: "string", format: "uuid" };
 const jsonBody = (schema) => ({ required: true, content: { "application/json": { schema } } });
@@ -28,25 +29,11 @@ export const openApiSpec = {
   openapi: "3.1.0",
   info: {
     title: "Sports Center API",
-    version: "0.1.0",
+    version: "0.2.0",
     description: "API contract for Sports Center. Admin receives every permission code; identity-bound Member/Coach endpoints still enforce their own role scope. A temporary-password account must change password before normal API access.",
   },
   servers: [{ url: env.apiBasePath }],
   paths: {
-    "/site/page": { get: { tags: ["Site CMS"], summary: "Đọc trang đã xuất bản theo đường dẫn", security: [], parameters: [{ name: "path", in: "query", required: true, schema: { type: "string" } }], responses: { 200: { description: "Bản trang công khai" }, 404: { description: "Trang chưa xuất bản" } } } },
-    "/site/pages/{routeKey}": { get: { tags: ["Site CMS"], summary: "Đọc trang đã xuất bản", security: [], parameters: [{ name: "routeKey", in: "path", required: true, schema: { type: "string" } }], responses: { 200: { description: "Bản trang công khai" }, 404: { description: "Trang chưa được xuất bản" } } } },
-    "/site/menus/{location}": { get: { tags: ["Site CMS"], summary: "Đọc menu đã xuất bản", security: [], parameters: [{ name: "location", in: "path", required: true, schema: { type: "string", enum: ["header", "footer"] } }], responses: { 200: { description: "Cây menu công khai" }, 404: { description: "Menu chưa được xuất bản" } } } },
-    "/admin/site/pages": { get: { tags: ["Site CMS"], summary: "Admin liệt kê trang", security: [{ sessionCookie: [] }], responses: { 200: { description: "Danh sách trang" }, 403: { description: "Chỉ admin" } } }, post: { tags: ["Site CMS"], summary: "Admin tạo trang và bản nháp đầu tiên", security: [{ sessionCookie: [] }], responses: { 200: { description: "Trang đã tạo" }, 409: { description: "Route hoặc đường dẫn trùng" } } } },
-    "/admin/site/media/cloudinary/signature": { post: { tags: ["Site CMS"], summary: "Cấp chữ ký Cloudinary ngắn hạn cho admin tải ảnh", security: [{ sessionCookie: [] }], responses: { 200: { description: "Thông số upload trực tiếp" }, 403: { description: "Chỉ admin" }, 503: { description: "Cloudinary chưa cấu hình" } } } },
-    "/admin/site/media/cloudinary": { post: { tags: ["Site CMS"], summary: "Lưu metadata ảnh Cloudinary đã tải", security: [{ sessionCookie: [] }], responses: { 200: { description: "Metadata ảnh" }, 422: { description: "Ảnh không thuộc thư mục hoặc không hợp lệ" } } } },
-    "/admin/site/pages/{routeKey}": { get: { tags: ["Site CMS"], summary: "Admin xem bản nháp, bản công khai và lịch sử", security: [{ sessionCookie: [] }], parameters: [{ name: "routeKey", in: "path", required: true, schema: { type: "string" } }], responses: { 200: { description: "Chi tiết trang" } } } },
-    "/admin/site/pages/{routeKey}/draft": { post: { tags: ["Site CMS"], summary: "Tạo bản nháp từ bản gần nhất", security: [{ sessionCookie: [] }], responses: { 200: { description: "Bản nháp" } } }, put: { tags: ["Site CMS"], summary: "Lưu bản nháp, không xuất bản", description: "Yêu cầu editRevision để tránh ghi đè từ tab cũ.", security: [{ sessionCookie: [] }], responses: { 200: { description: "Bản nháp đã lưu" }, 409: { description: "Bản nháp đã thay đổi" }, 422: { description: "Nội dung không hợp lệ" } } } },
-    "/admin/site/pages/{routeKey}/publish": { post: { tags: ["Site CMS"], summary: "Admin xuất bản bản nháp trang", security: [{ sessionCookie: [] }], responses: { 200: { description: "Đã xuất bản" }, 422: { description: "Trang chưa sẵn sàng" } } } },
-    "/admin/site/pages/{routeKey}/restore": { post: { tags: ["Site CMS"], summary: "Chọn lại phiên bản trang đã xuất bản", security: [{ sessionCookie: [] }], responses: { 200: { description: "Đã khôi phục" } } } },
-    "/admin/site/menus/{location}": { get: { tags: ["Site CMS"], summary: "Admin xem menu nháp, công khai và lịch sử", security: [{ sessionCookie: [] }], responses: { 200: { description: "Chi tiết menu" } } } },
-    "/admin/site/menus/{location}/draft": { put: { tags: ["Site CMS"], summary: "Lưu menu nháp, không xuất bản", security: [{ sessionCookie: [] }], responses: { 200: { description: "Menu nháp đã lưu" }, 409: { description: "Bản nháp đã thay đổi" } } } },
-    "/admin/site/menus/{location}/publish": { post: { tags: ["Site CMS"], summary: "Xuất bản menu đã kiểm tra liên kết", security: [{ sessionCookie: [] }], responses: { 200: { description: "Đã xuất bản" }, 422: { description: "Liên kết chưa sẵn sàng" } } } },
-    "/admin/site/menus/{location}/restore": { post: { tags: ["Site CMS"], summary: "Chọn lại phiên bản menu đã xuất bản", security: [{ sessionCookie: [] }], responses: { 200: { description: "Đã khôi phục" } } } },
     "/public/membership-packages": {
       get: {
         tags: ["Memberships"],
@@ -358,6 +345,8 @@ const bodyContracts = [
 for (const [path, method, schema] of bodyContracts) {
   openApiSpec.paths[path][method].requestBody = jsonBody(schema);
 }
+
+applySiteContract(openApiSpec);
 
 for (const [path, operations] of Object.entries(openApiSpec.paths)) {
   const names = [...path.matchAll(/\{([^}]+)\}/g)].map((match) => match[1]);
