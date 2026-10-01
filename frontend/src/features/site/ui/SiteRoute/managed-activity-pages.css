@@ -9,7 +9,7 @@
 .public-cms-calendar .site-blocks__section--hero { padding-bottom: 36px; }
 .public-cms-calendar .site-blocks__section--richText { padding-top: 24px; padding-bottom: 32px; }
 .public-cms-calendar .site-blocks__copy p { max-width: 85ch; }
-.public-cms-calendar > .facility-calendar { width: 100%; max-width: none; padding: 36px clamp(20px, 5vw, 80px) 72px; margin: 0; background: #f2f6fc; }
+.public-cms-calendar > .facility-calendar { width: 100%; max-width: none; min-height: auto; padding: 36px clamp(20px, 5vw, 80px) 72px; margin: 0; background: #f2f6fc; }
 .public-cms-calendar .facility-calendar__header h2 { font-size: clamp(26px, 3vw, 40px); line-height: 1.2; }
 .public-cms-calendar .facility-calendar__table { font-variant-numeric: tabular-nums; }
 @media (max-width: 700px) {
