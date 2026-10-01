@@ -1,0 +1,32 @@
+{
+  "name": "sports-center-api-staging",
+  "main": "src/worker/index.js",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat", "enable_nodejs_http_server_modules"],
+  "workers_dev": true,
+  "alias": { "swagger-ui-express": "./src/worker/swagger-ui.js" },
+  "assets": { "directory": ".wrangler/swagger-assets", "binding": "ASSETS", "run_worker_first": true },
+  "observability": { "enabled": true },
+  "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "6e1fb4167c9841d1888b49261df2c1db" }],
+  "vars": {
+    "NODE_ENV": "production",
+    "API_BASE_PATH": "/api/v1",
+    "PUBLIC_API_ORIGIN": "https://api.kineticsports.io.vn",
+    "JOBS_ENABLED": "false"
+  },
+  "durable_objects": { "bindings": [{ "name": "LOGIN_ATTEMPTS", "class_name": "LoginAttempts" }, { "name": "API_RUNTIME", "class_name": "ApiRuntime" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["LoginAttempts"] }, { "tag": "v2", "new_sqlite_classes": ["ApiRuntime"] }],
+  "env": {
+    "production": {
+      "name": "sports-center-api",
+      "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "6e1fb4167c9841d1888b49261df2c1db" }],
+      "vars": {
+        "NODE_ENV": "production",
+        "API_BASE_PATH": "/api/v1",
+        "PUBLIC_API_ORIGIN": "https://api.kineticsports.io.vn",
+        "JOBS_ENABLED": "false"
+      },
+      "durable_objects": { "bindings": [{ "name": "LOGIN_ATTEMPTS", "class_name": "LoginAttempts" }, { "name": "API_RUNTIME", "class_name": "ApiRuntime" }] }
+    }
+  }
+}

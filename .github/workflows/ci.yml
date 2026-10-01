@@ -33,6 +33,7 @@ jobs:
       - run: npm test
       - run: npm run lint
       - run: npm run build
+      - run: npm run worker:build
 
   frontend:
     name: Frontend quality gates
