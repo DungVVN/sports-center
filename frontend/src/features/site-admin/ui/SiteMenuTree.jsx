@@ -8,7 +8,8 @@ const LEVEL_GAP = 88;
 const PADDING = 42;
 
 function buildMenuTreeLayout(items, location) {
-  const root = { id: "root", label: location === "header" ? "Trang chủ · Header" : "Trang chủ · Footer", children: items.map((item) => ({ ...item, children: item.children ?? [] })) };
+  const cloneNode = (item) => ({ ...item, children: (item.children ?? []).map(cloneNode) });
+  const root = { id: "root", label: location === "header" ? "Trang chủ · Header" : "Trang chủ · Footer", children: items.map(cloneNode) };
   function width(node) {
     const children = node.children ?? [];
     node.treeWidth = children.length ? Math.max(NODE_WIDTH, children.reduce((sum, child) => sum + width(child), 0) + SIBLING_GAP * (children.length - 1)) : NODE_WIDTH;
