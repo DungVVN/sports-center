@@ -7,6 +7,7 @@ import { publicMembershipPackages } from "../../../memberships/index.js";
 
 vi.mock("../../api/site-public-api.js", () => ({ siteCmsPublicEnabled: false, publicSiteApi: { pageByPath: vi.fn(), menu: vi.fn() } }));
 vi.mock("../../../memberships/index.js", () => ({ publicMembershipPackages: vi.fn() }));
+vi.mock("../../../facilities/index.js", () => ({ FacilityCalendarPage: ({ embedded }) => <section aria-label="Lịch sân nghiệp vụ">{embedded ? <h2>Giờ trống & lịch đã đặt</h2> : <h1>Giờ trống & lịch đã đặt</h1>}</section> }));
 
 const page = { title: "Bảng giá", seoTitle: "Bảng giá | Kinetic", seoDescription: "Giá gói đang mở bán", blocks: [{ id: "hero", type: "hero", active: true, title: "Bảng giá gói hội viên" }] };
 function renderPage(path) {
@@ -18,10 +19,15 @@ describe("separate CMS public pages", () => {
   afterEach(cleanup);
   beforeEach(() => { vi.clearAllMocks(); publicSiteApi.pageByPath.mockResolvedValue(page); publicMembershipPackages.mockResolvedValue([{ code: "BASIC", name: "Basic", priceVnd: "490000", durationDays: 30, benefits: ["Phòng tập"] }]); });
 
-  it.each(["/ve-chung-toi", "/dich-vu", "/bang-gia", "/lien-he", "/huong-dan-dang-ky-tap-luyen"])("loads the published page at %s while general CMS rollout is disabled", async (path) => {
+  it.each(["/ve-chung-toi", "/dich-vu", "/bang-gia", "/lien-he", "/huong-dan-dang-ky-tap-luyen", "/gallery", "/calendar"])("loads the published page at %s while general CMS rollout is disabled", async (path) => {
     renderPage(path);
     expect(await screen.findByRole("heading", { name: "Bảng giá gói hội viên" })).toBeInTheDocument();
     expect(publicSiteApi.pageByPath).toHaveBeenCalledWith(path);
+  });
+  it("keeps the live calendar below CMS content without duplicating the page heading", async () => {
+    const result = renderPage("/calendar");
+    expect(await screen.findByRole("heading", { name: "Giờ trống & lịch đã đặt", level: 2 })).toBeInTheDocument();
+    expect(result.container.querySelectorAll("h1")).toHaveLength(1);
   });
 
   it("keeps pricing connected to package data and restores SEO on unmount", async () => {

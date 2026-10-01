@@ -1,0 +1,18 @@
+.public-cms-gallery .site-blocks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.public-cms-gallery .site-blocks__section { background: transparent; }
+.public-cms-gallery .site-blocks__section:not(.site-blocks__section--imageText) { grid-column: 1 / -1; }
+.public-cms-gallery .site-blocks__section--imageText { padding: 24px clamp(20px, 5vw, 80px) 48px; }
+.public-cms-gallery .site-blocks__split { grid-template-columns: minmax(0, 1fr); gap: 24px; align-items: start; }
+.public-cms-gallery .site-blocks__split img { aspect-ratio: 4 / 3; max-height: none; border-radius: 14px; }
+.public-cms-gallery .site-blocks__split h2 { font-size: clamp(24px, 2.4vw, 34px); }
+.public-cms-gallery .site-blocks__split p { max-width: 65ch; margin-bottom: 0; }
+.public-cms-calendar .site-blocks__section--hero { padding-bottom: 36px; }
+.public-cms-calendar .site-blocks__section--richText { padding-top: 24px; padding-bottom: 32px; }
+.public-cms-calendar .site-blocks__copy p { max-width: 85ch; }
+.public-cms-calendar > .facility-calendar { width: 100%; max-width: none; padding: 36px clamp(20px, 5vw, 80px) 72px; margin: 0; background: #f2f6fc; }
+.public-cms-calendar .facility-calendar__header h2 { font-size: clamp(26px, 3vw, 40px); line-height: 1.2; }
+.public-cms-calendar .facility-calendar__table { font-variant-numeric: tabular-nums; }
+@media (max-width: 700px) {
+  .public-cms-gallery .site-blocks { grid-template-columns: minmax(0, 1fr); }
+  .public-cms-gallery .site-blocks__section--imageText { padding-top: 12px; padding-bottom: 32px; }
+}

@@ -70,10 +70,15 @@ describe("public HTML SEO", () => {
     expect(document.page.seoTitle).toContain("Gym, Yoga");
     expect(fetcher).toHaveBeenCalledOnce();
   });
-  it.each(["/", "/huong-dan-dang-ky-tap-luyen"])("serves published CMS content and metadata at %s", async (path) => {
+  it.each(["/", "/huong-dan-dang-ky-tap-luyen", "/gallery", "/calendar"])("serves published CMS content and metadata at %s", async (path) => {
     const document = await loadPublicDocument(path, {}, vi.fn().mockResolvedValue(response(page)));
     expect(document.page).toEqual(page);
     expect(document.status).toBe(200);
     expect(renderPageBody(document)).toContain("<h1>Gym &amp; Yoga</h1>");
+  });
+  it.each(["/gallery", "/calendar"])("retains the legacy route until %s has published content", async (path) => {
+    const document = await loadPublicDocument(path, {}, vi.fn().mockResolvedValue(response(null, 404)));
+    expect(document.status).toBe(200);
+    expect(document.legacy).toBe(true);
   });
 });

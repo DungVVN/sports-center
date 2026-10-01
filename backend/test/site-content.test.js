@@ -23,6 +23,10 @@ const siteService = () => ({
 });
 
 describe("site content contracts", () => {
+  it.each(["gallery", "calendar"])("allows CMS content at /%s while protecting child routes", (routeKey) => {
+    expect(pageCreateSchema.safeParse({ routeKey, path: `/${routeKey}`, kind: "static", title: "Nội dung website" }).success).toBe(true);
+    expect(pageCreateSchema.safeParse({ routeKey, path: `/${routeKey}/private`, kind: "static", title: "Sai" }).success).toBe(false);
+  });
   it("keeps public reading separate from admin writing", async () => {
     const service = siteService();
     const app = createApp({ authService: auth("member"), siteService: service });

@@ -13,7 +13,7 @@ const clock = (minute) => `${String(Math.floor(minute / 60)).padStart(2, "0")}:$
 const minute = (value) => { const [hour, part] = value.split(":").map(Number); return hour * 60 + part; };
 const labels = { pending: "Chờ duyệt", approved: "Đã duyệt", rejected: "Từ chối", cancelled: "Đã hủy" };
 
-export function FacilityCalendarPage({ session, onLoginClick }) {
+export function FacilityCalendarPage({ session, onLoginClick, embedded = false }) {
   const client = useQueryClient();
   const [from, setFrom] = useState(localDate());
   const [to, setTo] = useState(localDate(7));
@@ -26,6 +26,7 @@ export function FacilityCalendarPage({ session, onLoginClick }) {
   const [cancellation, setCancellation] = useState({ id: "", reason: "" });
   const feedback = useMutationFeedback();
   const [busy, setBusy] = useState(false);
+  const CalendarHeading = embedded ? "h2" : "h1";
   const granted = new Set(session?.permissions ?? []);
   const can = (code) => session?.user.role === "admin" || granted.has(code);
   const dateRangeValid = from <= to && (Date.parse(to) - Date.parse(from)) / 86400000 <= 30;
@@ -67,7 +68,7 @@ export function FacilityCalendarPage({ session, onLoginClick }) {
   }
 
   return <section id="facility-calendar" className="members-page facility-calendar">
-    <header className="facility-calendar__header"><p className="facility-calendar__eyebrow">LỊCH SÂN</p><h1>Giờ trống & lịch đã đặt</h1></header>
+    <header className="facility-calendar__header"><p className="facility-calendar__eyebrow">LỊCH SÂN</p><CalendarHeading>Giờ trống & lịch đã đặt</CalendarHeading></header>
     <section className="facility-calendar__filter-panel" aria-label="Bộ lọc lịch sân">
       <div className="facility-calendar__filters">
         <label>Loại sân<select value={typeId} onChange={(event) => setTypeId(event.target.value)}><option value="">Tất cả</option>{(calendar.data?.types ?? []).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>

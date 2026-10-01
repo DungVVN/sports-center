@@ -35,8 +35,9 @@ export const pageCreateSchema = z.object({
   kind: z.enum(["home", "static"]),
   title: nonempty(240),
 }).strict().superRefine(({ routeKey, path, kind }, ctx) => {
+  if (["/gallery", "/calendar"].some((route) => path.startsWith(`${route}/`))) ctx.addIssue({ code: "custom", path: ["path"], message: "Chỉ quản lý đường dẫn chính của trang thư viện và lịch." });
   if (kind === "home" ? routeKey !== "home" || path !== "/" : routeKey === "home" || path === "/") ctx.addIssue({ code: "custom", path: ["path"], message: "Chỉ trang chủ được dùng route home và đường dẫn /." });
-  if (["/admin", "/site", "/login", "/register", "/verify", "/pending", "/gallery", "/calendar", "/dashboard", "/profile", "/support", "/members", "/memberships", "/packages", "/classes", "/bookings", "/facilities", "/attendance", "/payments", "/staff", "/training", "/reports", "/audit-logs", "/my"].some((reserved) => path === reserved || path.startsWith(`${reserved}/`))) ctx.addIssue({ code: "custom", path: ["path"], message: "Đường dẫn đã dành cho chức năng hiện có." });
+  if (["/admin", "/site", "/login", "/register", "/verify", "/pending", "/dashboard", "/profile", "/support", "/members", "/memberships", "/packages", "/classes", "/bookings", "/facilities", "/attendance", "/payments", "/staff", "/training", "/reports", "/audit-logs", "/my"].some((reserved) => path === reserved || path.startsWith(`${reserved}/`))) ctx.addIssue({ code: "custom", path: ["path"], message: "Đường dẫn đã dành cho chức năng hiện có." });
 });
 
 const menuFields = {

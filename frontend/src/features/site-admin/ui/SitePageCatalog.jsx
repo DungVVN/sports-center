@@ -61,6 +61,7 @@ function PageCatalogTable({ pages, onOpen }) {
                   <LayoutTemplate size={14} aria-hidden="true" />
                   {page.block_count ?? 0} phần nội dung có thể chỉnh sửa
                 </small>
+                {page.path === "/calendar" && <small className="site-admin__table-caption">Lịch sân & đặt chỗ lấy từ dữ liệu nghiệp vụ</small>}
               </td>
               <td>
                 <span className={`site-admin__tag ${page.is_active === false ? "site-admin__tag--inactive" : "site-admin__tag--active"}`}>

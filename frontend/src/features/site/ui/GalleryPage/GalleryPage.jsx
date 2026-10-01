@@ -1,7 +1,12 @@
 import { PublicPageLayout } from '../PublicPageLayout/PublicPageLayout.jsx';
 import './GalleryPage.css';
+import { ManagedPublicPage } from '../SiteRoute/SiteRoute.jsx';
 
 export function GalleryPage({ onLoginClick, onHomeClick }) {
+  return <ManagedPublicPage path="/gallery" onLoginClick={onLoginClick} onHomeClick={onHomeClick} fallback={<LegacyGalleryPage onLoginClick={onLoginClick} onHomeClick={onHomeClick} />} />;
+}
+
+function LegacyGalleryPage({ onLoginClick, onHomeClick }) {
   return (
     <PublicPageLayout onHomeClick={onHomeClick} onLoginClick={onLoginClick}>
       <section id="gallery" className="section-gallery">

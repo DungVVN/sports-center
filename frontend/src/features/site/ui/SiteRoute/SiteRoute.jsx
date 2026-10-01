@@ -5,6 +5,8 @@ import { NotFoundPage } from "../NotFoundPage/NotFoundPage.jsx";
 import { PublicPageLayout } from "../PublicPageLayout/PublicPageLayout.jsx";
 import { PublicPricingSection } from "../Pricing/PublicPricingSection.jsx";
 import { SiteBlockView } from "../SiteBlocks/SiteBlockView.jsx";
+import { FacilityCalendarPage } from "../../../facilities/index.js";
+import "./managed-activity-pages.css";
 import { publicSiteApi } from "../../api/site-public-api.js";
 import { homeSeo } from "../../model/core-pages.js";
 import { pageHead } from "../../model/seo-head.js";
@@ -46,9 +48,9 @@ export function HomeRoute({ onLoginClick, onRegisterClick, onGalleryClick, onCal
   return <PublicPageLayout onHomeClick={onHomeClick} onLoginClick={onLoginClick} showBack={false}><PublishedContent page={query.data} /><PublicPricingSection onRegisterClick={onRegisterClick} /></PublicPageLayout>;
 }
 
-export function ManagedPublicPage({ onHomeClick, onLoginClick, onRegisterClick, path }) {
-  const query = useQuery({ queryKey: ["public-site-path", path], queryFn: () => publicSiteApi.pageByPath(path), initialData: () => serverPageData(path)?.page, retry: false, staleTime: 300_000 });
-  if (query.isError) return <NotFoundPage onHome={onHomeClick} onLogin={onLoginClick} />;
+export function ManagedPublicPage({ onHomeClick, onLoginClick, onRegisterClick, path, fallback }) {
+  const query = useQuery({ queryKey: ["public-site-path", path], queryFn: () => publicSiteApi.pageByPath(path), initialData: () => serverPageData(path)?.legacy ? undefined : serverPageData(path)?.page, retry: false, staleTime: 300_000 });
+  if (query.isError) return fallback ?? <NotFoundPage onHome={onHomeClick} onLogin={onLoginClick} />;
   if (query.isPending) return <main className="public-page-body" role="status">Đang tải trang...</main>;
-  return <PublicPageLayout onHomeClick={onHomeClick} onLoginClick={onLoginClick}><PublishedContent key={path} page={query.data} />{path === "/bang-gia" && <PublicPricingSection onRegisterClick={onRegisterClick} initialPackages={serverPageData(path)?.packages} />}</PublicPageLayout>;
+  return <PublicPageLayout onHomeClick={onHomeClick} onLoginClick={onLoginClick}><div className={path === "/gallery" ? "public-cms-gallery" : path === "/calendar" ? "public-cms-calendar" : undefined}><PublishedContent key={path} page={query.data} />{path === "/calendar" && <FacilityCalendarPage onLoginClick={onLoginClick} embedded />}</div>{path === "/bang-gia" && <PublicPricingSection onRegisterClick={onRegisterClick} initialPackages={serverPageData(path)?.packages} />}</PublicPageLayout>;
 }

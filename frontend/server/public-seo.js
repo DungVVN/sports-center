@@ -41,7 +41,9 @@ export function renderPackages(packages = []) {
 export function renderPageBody({ path, page, packages }) {
   const navigation = corePages.map((item) => `<a href="${item.path}">${escapeHtml(item.label)}</a>`).join(" ");
   const directory = path === "/" ? `<section class="section-zigzag"><h2>Tìm thông tin cho hành trình tập luyện</h2><div class="public-page-directory">${corePages.map((item) => `<a class="public-page-directory__link" href="${item.path}"><h3>${escapeHtml(item.label)}</h3><p>${escapeHtml(item.description)}</p></a>`).join("")}</div></section>` : "";
-  return `<div class="landing-container"><nav class="landing-navbar scrolled" aria-label="Điều hướng trang công khai"><a href="/">Kinetic</a><div class="navbar-links">${navigation}</div><a href="/login">Đăng nhập</a></nav><main class="public-page-body"><div class="site-blocks">${renderBlocks(page.blocks)}</div>${directory}${path === "/bang-gia" && Array.isArray(packages) ? renderPackages(packages) : ""}</main></div>`;
+  const activityClass = path === "/gallery" ? "public-cms-gallery" : path === "/calendar" ? "public-cms-calendar" : "";
+  const calendarLink = path === "/calendar" ? '<p class="site-blocks__section">Xem giờ trống và lịch đã đặt trong bảng lịch sân. Đăng nhập để gửi yêu cầu đặt sân.</p>' : "";
+  return `<div class="landing-container"><nav class="landing-navbar scrolled" aria-label="Điều hướng trang công khai"><a href="/">Kinetic</a><div class="navbar-links">${navigation}</div><a href="/login">Đăng nhập</a></nav><main class="public-page-body"><div class="${activityClass}"><div class="site-blocks">${renderBlocks(page.blocks)}</div>${calendarLink}</div>${directory}${path === "/bang-gia" && Array.isArray(packages) ? renderPackages(packages) : ""}</main><footer class="landing-footer"><a href="/gallery">Thư viện ảnh</a> <a href="/calendar">Lịch hoạt động &amp; đặt sân</a></footer></div>`;
 }
 
 export function errorDocument(path, status) {
@@ -50,11 +52,13 @@ export function errorDocument(path, status) {
 
 export async function loadPublicDocument(path, env, fetcher = fetch) {
   const builtIn = { "/gallery": ["Thư viện hình ảnh", "Khám phá hình ảnh không gian tập luyện tại Kinetic Sports Center."], "/calendar": ["Lịch hoạt động", "Xem lịch hoạt động và lịch sân tại Kinetic Sports Center."] }[path];
-  if (builtIn) return { path, status: 200, page: { title: builtIn[0], seoTitle: `${builtIn[0]} | Kinetic Sports Center`, seoDescription: builtIn[1], blocks: [{ type: "hero", active: true, title: builtIn[0], description: builtIn[1] }] } };
   const api = (env.VITE_API_BASE_URL || "https://api.kineticsports.io.vn/api/v1").replace(/\/$/, "");
   try {
     const response = await fetcher(`${api}/site/page?path=${encodeURIComponent(path)}`, { headers: { Accept: "application/json" }, signal: AbortSignal.timeout(8000) });
-    if (response.status === 404 || response.status === 400) return path === "/" ? { path, page: homePage, status: 200 } : errorDocument(path, 404);
+    if (response.status === 404 || response.status === 400) {
+      if (builtIn) return { path, status: 200, legacy: true, page: { title: builtIn[0], seoTitle: `${builtIn[0]} | Kinetic Sports Center`, seoDescription: builtIn[1], blocks: [{ type: "hero", active: true, title: builtIn[0], description: builtIn[1] }] } };
+      return path === "/" ? { path, page: homePage, status: 200 } : errorDocument(path, 404);
+    }
     if (!response.ok) return errorDocument(path, 503);
     const payload = await response.json();
     if (!payload.success || !Array.isArray(payload.data?.blocks)) return errorDocument(path, 503);
