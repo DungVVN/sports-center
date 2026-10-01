@@ -138,11 +138,11 @@ export function createAuthService({
 
     async login({ email: rawEmail, password, captchaToken, loginSurface = "main" }) {
       const email = normalizeEmail(rawEmail);
-      loginLimiter.assertAllowed(email);
+      await loginLimiter.assertAllowed(email);
       await captchaVerifier.assertValid(captchaToken);
       const user = await repository.findUserByEmail(email);
       if (!user || !await verifyPassword(password, user.password_hash)) {
-        loginLimiter.recordFailure(email);
+        await loginLimiter.recordFailure(email);
         await auditService.record({ action: "auth.login_failed", entityType: "auth_attempt", summary: "Đăng nhập thất bại." });
         throw new AppError({ statusCode: 401, code: "INVALID_CREDENTIALS", message: "Email hoặc mật khẩu không đúng." });
       }
@@ -164,13 +164,13 @@ export function createAuthService({
       if (factor) {
         const expiresAt = new Date(Date.now() + env.authMfaChallengeTtlMinutes * 60_000);
         const challenge = await repository.createMfaLoginChallenge({ userId: user.id, expiresAt, loginSurface });
-        loginLimiter.clear(email);
+        await loginLimiter.clear(email);
         await auditService.record({ actorUserId: user.id, action: "auth.mfa_challenge_created", entityType: "auth_mfa_login_challenge", entityId: challenge.id, summary: "Đã yêu cầu mã Authenticator để hoàn tất đăng nhập." });
         return { mfaRequired: true, mfaChallengeId: challenge.id, expiresAt };
       }
       const expiresAt = new Date(Date.now() + env.authSessionTtlHours * 60 * 60_000);
       const session = await repository.createSession({ expiresAt, userId: user.id });
-      loginLimiter.clear(email);
+      await loginLimiter.clear(email);
       await auditService.record({
         actorUserId: user.id,
         action: "auth.login_succeeded",

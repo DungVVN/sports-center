@@ -1,5 +1,17 @@
 # Sports Center Backend
 
+## Cloudflare Workers + existing Neon database
+
+The Workers entry is `src/worker/index.js`; `src/server.js` remains the Render/Node rollback entry. PostgreSQL schema and migrations stay unchanged. No migration runs at Worker request startup. Requests use separate Prisma clients through AsyncLocalStorage; Node retains a shared pool. Workers use Durable Objects for login limits across isolates and Cron Triggers for lifecycle/email jobs.
+
+Run `npm run worker:dev` for local work and `npm run worker:build` for bundle verification. Swagger assets are prepared from the installed dependency; no remote CDN is needed. The default Wrangler target is staging, with jobs disabled and no API-domain route. `production` is a separate Worker target, also with jobs disabled until cutover. Confirm the live `JOB_INTERVAL_MINUTES` before adding its matching cron.
+
+Before deploying, configure only the required existing production settings through Wrangler secrets or the Cloudflare dashboard: database runtime URL (or Hyperdrive with caching disabled), CORS origins, JWT/MFA/verification secrets, CAPTCHA settings, email provider settings, PayOS settings, and Cloudinary settings. Do not put secrets in Wrangler config or Git. Do not upload the migration-owner database URL or backup/test credentials to the Worker. Keep existing keys to preserve sessions and encrypted MFA data. Staging must never send scheduled production email.
+
+The current bcrypt work factor is 12. The edge Worker only forwards requests to 16 API Durable Object shards. Express, Prisma and password operations run inside SQLite-backed Durable Objects, available on Workers Free with a separate 30-second CPU budget. Neon remains the business database; Durable Object storage is only used for distributed login limits. A deployed Free probe successfully hashed and verified a disposable bcrypt-12 password. Validate the complete API on staging before cutover. Monitor Workers, Durable Object duration/request/storage, and Hyperdrive daily quotas: exceeding a Free quota fails requests rather than automatically upgrading the plan. Do not lower password hashing strength to fit a free plan.
+
+Cutover requires staged smoke tests covering authenticated admin/member sessions, CAPTCHA, MFA, bookings, payment webhooks, email, and media. Switch the API hostname only after passing them. Disable Render background jobs before enabling the Worker cron so only one scheduler runs. Keep Render available for rollback; restore its route and scheduler together if needed. Neither Neon nor its data is deleted during this migration.
+
 This folder contains the Node.js/Express API, Prisma database layer, OpenAPI contract, validation, permission middleware and domain modules for the Sports Center MVP. The `project/` folder at the repository root is only the original Figma UI reference and is not a deployment source.
 
 `src/app/create-services.js` owns service composition and `src/app/register-routes.js` owns route order. Each module exposes `index.js` and separates presentation, application, domain (where needed), and infrastructure. See [the migration plan](../ARCHITECTURE_MIGRATION.md). Run `npm run check` for lint, unit/contract tests and build validation; database and browser acceptance remain separate gates. `scripts/integration/support-flow.mjs` runs a write-flow check only when `TEST_DATABASE_URL` points to a localhost database named `sports_center_arch_qa*`.
