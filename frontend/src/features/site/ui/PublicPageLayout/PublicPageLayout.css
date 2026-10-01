@@ -38,6 +38,8 @@
 .public-page-back:hover { color: var(--color-primary-hover); }
 .public-page-back:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 4px; }
 .public-page-body > .facility-calendar { padding-top: 24px; }
+.public-page-body .pricing-grid,
+.public-page-body .section-pricing .max-w-xl { max-width: none; }
 
 @media (max-width: 768px) {
   .landing-navbar { padding: 12px 5%; }

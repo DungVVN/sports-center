@@ -25,10 +25,10 @@ export function renderBlocks(blocks = []) {
     const image = safeUrl(block.imageUrl);
     const imageHtml = image ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(block.imageAlt)}" loading="lazy">` : "";
     let html = "";
-    if (block.type === "hero") html = `<div class="site-blocks__hero">${imageHtml}<div><p class="site-blocks__eyebrow">${escapeHtml(block.eyebrow)}</p><h1>${title}</h1>${body}${button(block)}</div></div>`;
+    if (block.type === "hero") html = `<div class="site-blocks__hero${image ? " site-blocks__hero--with-image" : ""}">${imageHtml}<div><p class="site-blocks__eyebrow">${escapeHtml(block.eyebrow)}</p><h1>${title}</h1>${body}${button(block)}</div></div>`;
     if (block.type === "richText") html = `<div class="site-blocks__copy"><h2>${title}</h2>${body}</div>`;
-    if (block.type === "imageText") html = `<div class="site-blocks__split">${imageHtml}<div><h2>${title}</h2>${body}</div></div>`;
-    if (block.type === "cta") html = `<div class="site-blocks__cta"><div><h2>${title}</h2>${body}</div>${button(block)}</div>`;
+    if (block.type === "imageText") html = `<div class="site-blocks__split${image ? " site-blocks__split--with-image" : ""}">${imageHtml}<div><h2>${title}</h2>${body}</div></div>`;
+    if (block.type === "cta") html = `<div class="site-blocks__cta${button(block) ? " site-blocks__cta--with-action" : ""}"><div><h2>${title}</h2>${body}</div>${button(block)}</div>`;
     if (block.type === "faq") html = `<div class="site-blocks__copy"><h2>${title}</h2>${(block.items || []).map((item) => `<details><summary>${escapeHtml(item.question)}</summary><p>${escapeHtml(item.answer)}</p></details>`).join("")}</div>`;
     return html ? `<section class="site-blocks__section site-blocks__section--${escapeHtml(block.type)}">${html}</section>` : "";
   }).join("");
