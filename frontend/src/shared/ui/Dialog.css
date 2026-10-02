@@ -2,4 +2,4 @@
 .dialog-scrollable-form { display: flex; flex-direction: column; overflow: hidden; flex: 1; min-height: 0; }
 .dialog-scrollable-content { overflow-y: auto; padding-right: 4px; padding-bottom: var(--space-24); flex: 1; }
 .dialog-sticky-footer { position: sticky; bottom: 0; background: var(--color-surface); padding-top: var(--space-16); border-top: 1px solid var(--color-border); z-index: 10; margin-top: auto; display: flex; flex-direction: column; }
-@media(max-width:767px){.dialog-backdrop{align-items:flex-end;padding:0}.dialog{border-bottom-left-radius:0;border-bottom-right-radius:0;max-width:none;max-height:90vh;overflow:hidden;padding:var(--space-20)}.dialog__actions{flex-direction:column-reverse}.dialog__actions .button{width:100%}}
+@media(max-width:767px){.dialog-backdrop{padding:var(--space-16)}.dialog{max-height:calc(100dvh - 32px);padding:var(--space-20)}.dialog__actions{flex-direction:column-reverse}.dialog__actions .button{width:100%}}
