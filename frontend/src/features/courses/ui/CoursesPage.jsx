@@ -48,7 +48,7 @@ export function CoursesPage({ session, onNavigate }) {
           {errorMessageFor(mutation.error, "Không thể xử lý khóa học.")}
         </p>
       )}
-      <div className={`course-workspace${canManage ? " course-workspace--manage" : ""}`}>
+      <div className="course-workspace">
         {canManage && <CourseCreateForm mutation={mutation} onSubmit={submit} />}
         <section className="course-catalog" aria-label="Danh sách khóa học">
           <header className="course-catalog__header">

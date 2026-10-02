@@ -1,3 +1,4 @@
+import { PaymentReceiptDialog } from "./PaymentReceiptDialog.jsx";
 import { PageHeader } from "../../../shared/ui/PageHeader.jsx";
 import { ServiceReconciliation } from "./ServiceReconciliation.jsx";
 import { useMemo, useState } from "react";
@@ -32,6 +33,7 @@ function validatePaymentForm(form, memberships) {
 }
 
 export function PaymentsPage({ session }) {
+  const [receiptId, setReceiptId] = useState(null);
   const [selectedMemberId, setSelectedMemberId] = useState("");
   const [form, setForm] = useState(emptyForm);
   const [formTouched, setFormTouched] = useState({});
@@ -284,7 +286,7 @@ export function PaymentsPage({ session }) {
                     <SortableHeader activeSort={paymentSort.key} column="amountVnd" direction={paymentSort.direction} onSort={togglePaymentSort}>Số tiền</SortableHeader>
                     <th>Phương thức</th>
                     <th>Trạng thái</th>
-                    {isCashier && <th>Thao tác</th>}
+                    <th>Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -321,8 +323,9 @@ export function PaymentsPage({ session }) {
                       </td>
                       <td>{methodLabel[item.method] ?? item.method}</td>
                       <td>{paymentStatus[item.status] ?? item.status}</td>
-                      {isCashier && <td>
-                        {item.status === "pending" && item.method !== "online" && (
+                      <td className="record-table-actions">
+                        <Button onClick={() => setReceiptId(item.id)} size="sm" variant="secondary">Xem biên lai</Button>
+                        {isCashier && item.status === "pending" && item.method !== "online" && (
                           <div className="payment-table__actions">
                             {item.method === "bank_transfer" && <label>
                               Ghi chú đối soát sao kê
@@ -346,7 +349,7 @@ export function PaymentsPage({ session }) {
                           </div>
                         )}
                         {item.status === "pending" && item.method === "online" && <small>Chờ webhook PayOS</small>}
-                      </td>}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -357,6 +360,7 @@ export function PaymentsPage({ session }) {
           )}
         </section>
       </div>
+      <PaymentReceiptDialog paymentId={receiptId} onClose={() => setReceiptId(null)} canViewHistory={hasSessionPermission(session, "audit.read")} />
       <ServiceReconciliation session={session} payments={items} />
     </main>
   );

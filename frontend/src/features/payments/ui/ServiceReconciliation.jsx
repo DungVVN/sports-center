@@ -29,7 +29,6 @@ export function ServiceReconciliation({ session, payments }) {
   if (!canRead && !canReconcile) return null;
   return <section className="members-list service-reconciliation" aria-label="Đối soát và hoàn tiền dịch vụ">
     <h2>Đối soát và hoàn tiền dịch vụ</h2>
-    <p>Hoàn toàn bộ khóa/PT/sân chưa sử dụng hoặc khoản đã thu nhưng chưa cấp được dịch vụ. Giữ nguyên chính sách membership. Quản lý duyệt sẽ đóng quyền sử dụng; nhân viên chỉ xác nhận hoàn sau khi thực sự trả tiền.</p>
     {notice && <p role="status">{notice}</p>}
     {mutation.isError && <p role="alert">{errorMessageFor(mutation.error, "Không xử lý được giao dịch.")}</p>}
     {canRequest && <form className="service-reconciliation__request" onSubmit={(event) => { event.preventDefault(); send("requestRefund", form.paymentId, { reason: form.reason }); }}>

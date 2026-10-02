@@ -9,7 +9,7 @@ import { PaymentsPage } from "./PaymentsPage.jsx";
 
 vi.mock("../../members/index.js", () => ({ memberApi: { list: vi.fn() } }));
 vi.mock("../../memberships/index.js", () => ({ membershipApi: { byMember: vi.fn() } }));
-vi.mock("../api/payment-api.js", () => ({ paymentApi: { list: vi.fn(), create: vi.fn(), confirm: vi.fn() } }));
+vi.mock("../api/payment-api.js", () => ({ paymentApi: { list: vi.fn(), get: vi.fn(), create: vi.fn(), confirm: vi.fn() } }));
 
 const cashier = { user: { role: "receptionist" }, permissions: ["payment.read", "payment.record"] };
 const member = { id: "member-1", fullName: "Bình", memberCode: "HV-01" };
@@ -28,6 +28,27 @@ describe("PaymentsPage", () => {
     membershipApi.byMember.mockResolvedValue([membership]);
   });
   afterEach(cleanup);
+
+  it("lets a reader inspect a settled receipt without offering another collection", async () => {
+    const paid = { id: "payment-1", transaction_code: "PAY-01", amountVnd: 500000, method: "cash", status: "paid", member, events: [{ id: "event-1", event_type: "receptionist_cash_confirmation", previous_status: "pending", new_status: "paid", occurred_at: "2026-10-03T01:00:00Z" }] };
+    paymentApi.list.mockResolvedValue([paid]);
+    paymentApi.get.mockResolvedValue(paid);
+    renderPage({ user: { role: "receptionist" }, permissions: ["payment.read"] });
+    fireEvent.click(await screen.findByRole("button", { name: "Xem biên lai" }));
+    expect(await screen.findByRole("heading", { name: "Lịch sử thanh toán" })).toBeInTheDocument();
+    expect(screen.getByText("Xác nhận phiếu thu tiền mặt")).toBeInTheDocument();
+    expect(paymentApi.get).toHaveBeenCalledWith("payment-1");
+    expect(screen.queryByRole("button", { name: "Xác nhận đã thu" })).not.toBeInTheDocument();
+  });
+
+  it("shows a retry action when a receipt cannot load", async () => {
+    paymentApi.list.mockResolvedValue([{ id: "payment-1", transaction_code: "PAY-01", amountVnd: 1, status: "failed", method: "cash" }]);
+    paymentApi.get.mockRejectedValue(new Error("offline"));
+    renderPage();
+    fireEvent.click(await screen.findByRole("button", { name: "Xem biên lai" }));
+    expect(await screen.findByRole("button", { name: "Thử lại" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
 
   it("shows the empty payment state", async () => {
     renderPage();

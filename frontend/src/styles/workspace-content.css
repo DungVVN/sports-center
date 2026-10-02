@@ -363,7 +363,11 @@
   }
 
   .classes-create-form > label:has(textarea) {
-    grid-column: 2 / -1;
+    grid-column: 2 / 3;
+  }
+
+  .classes-create-form > label:has(input[name="type"]) {
+    grid-column: 1 / 2;
   }
 
   .membership-workspace--manager .members-form {

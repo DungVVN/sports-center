@@ -177,6 +177,9 @@ export function ProfilePage({ onSessionRevoked, onProfileSaved, session }) {
             />
 
           </div>
+          {hasSessionPermission(session, "notification.preference.manage") && (
+            <NotificationPreferencesPanel className="profile-page__notifications" />
+          )}
         </div>
 
         <div className="profile-page__side-col">
@@ -193,9 +196,6 @@ export function ProfilePage({ onSessionRevoked, onProfileSaved, session }) {
           {!isMember && <ProfileSummary profile={profile} />}
 
           <TotpEnrollmentPanel onEnrollmentCompleted={onSessionRevoked} />
-          {hasSessionPermission(session, "notification.preference.manage") && (
-            <NotificationPreferencesPanel className="profile-page__notifications" />
-          )}
         </div>
       </section>
     </main>

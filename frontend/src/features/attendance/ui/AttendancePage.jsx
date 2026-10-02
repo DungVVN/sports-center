@@ -1,3 +1,6 @@
+import { RecordDetails } from "../../../shared/ui/RecordDetails.jsx";
+import { recordDate } from "../../../shared/lib/record-date.js";
+import { RecordHistory } from "../../../shared/ui/RecordHistory.jsx";
 import { PageHeader } from "../../../shared/ui/PageHeader.jsx";
 import { useEffect, useMemo, useState } from "react";
 import { ClipboardCheck, Users } from "lucide-react";
@@ -24,6 +27,7 @@ const defaultCorrectionReason = "Điều chỉnh điểm danh";
 const emptyCorrection = { record: null, status: "present", reason: defaultCorrectionReason };
 
 export function AttendancePage({ session }) {
+  const [selectedRecord, setSelectedRecord] = useState(null);
   const [classId, setClassId] = useState("");
   const [draftStatuses, setDraftStatuses] = useState({});
   const [correction, setCorrection] = useState(emptyCorrection);
@@ -316,7 +320,8 @@ export function AttendancePage({ session }) {
                       </td>
                       <td>{record.checked_out_at ? new Date(record.checked_out_at).toLocaleString("vi-VN") : "—"}</td>
                       {canOperate && (
-                        <td>
+                        <td className="record-table-actions">
+                          <Button onClick={() => setSelectedRecord(record)} size="sm" variant="secondary">Xem chi tiết</Button>
                           {record.status === "not_marked" &&
                             isSessionOngoing && (
                               <Button
@@ -357,6 +362,12 @@ export function AttendancePage({ session }) {
           <Pagination {...attendancePagination} />
         </section>
       </div>
+      <RecordDetails isOpen={Boolean(selectedRecord)} onClose={() => setSelectedRecord(null)} title="Chi tiết điểm danh" fields={selectedRecord ? [
+        ["Hội viên", selectedRecord.member?.full_name], ["Mã đặt chỗ", selectedRecord.booking?.booking_code], ["Lớp học", selectedClass?.name],
+        ["Trạng thái", statusLabels[selectedRecord.status] ?? selectedRecord.status], ["Check-in", recordDate(selectedRecord.checked_in_at)], ["Check-out", recordDate(selectedRecord.checked_out_at)],
+      ] : []}>
+        {selectedRecord && !selectedRecord.id.startsWith("not-marked-") && hasSessionPermission(session, "audit.read") && <RecordHistory key={selectedRecord.id} entityType="attendance" entityId={selectedRecord.id} />}
+      </RecordDetails>
       <Dialog isOpen={Boolean(checkOutRecord)} onClose={() => { if (!submitting) setCheckOutRecord(null); }} title="Xác nhận check-out">
         <p>Check-out cho {checkOutRecord?.member?.full_name ?? "hội viên"}?</p>
         <Button disabled={submitting} onClick={() => workspace.checkOutAttendance.mutate(checkOutRecord.id, { onSuccess: () => setCheckOutRecord(null) })} type="button">

@@ -162,6 +162,7 @@ export function TrainingPage({ session }) {
         />
       </div>
       <TrainingPlanList
+        canViewHistory={hasSessionPermission(session, "audit.read")}
         submit={submit}
         submitting={submitting}
         workspace={workspace}

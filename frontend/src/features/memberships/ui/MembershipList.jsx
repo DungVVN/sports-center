@@ -1,3 +1,7 @@
+import { useState } from "react";
+import { RecordDetails } from "../../../shared/ui/RecordDetails.jsx";
+import { recordDate } from "../../../shared/lib/record-date.js";
+import { RecordHistory } from "../../../shared/ui/RecordHistory.jsx";
 import {
   membershipStatus,
   membershipGraceLabel,
@@ -9,11 +13,13 @@ import { usePagination } from "../../../shared/ui/usePagination.js";
 import "./membership-layout.css";
 export function MembershipList({
   embedded = false,
+  canViewHistory = false,
   items,
   loading,
   onCancel,
   submitting,
 }) {
+  const [selectedRecord, setSelectedRecord] = useState(null);
   const membershipPagination = usePagination(items);
   const content = (
     <>
@@ -58,7 +64,8 @@ export function MembershipList({
                       <small>{membershipGraceLabel(item)}</small>
                     )}
                   </td>
-                  <td>
+                  <td className="record-table-actions">
+                    <Button onClick={() => setSelectedRecord(item)} size="sm" variant="secondary">Xem chi tiết</Button>
                     {onCancel && item.status === "pending_payment" && (
                       <Button
                         disabled={submitting}
@@ -77,6 +84,13 @@ export function MembershipList({
         </div>
       )}
       <Pagination {...membershipPagination} />
+      <RecordDetails isOpen={Boolean(selectedRecord)} onClose={() => setSelectedRecord(null)} title="Chi tiết gói đã đăng ký" fields={selectedRecord ? [
+        ["Mã đăng ký", selectedRecord.id], ["Tên gói", selectedRecord.package_name_snapshot], ["Giá", Number(selectedRecord.priceVnd).toLocaleString("vi-VN") + " ₫"],
+        ["Trạng thái", membershipStatus[selectedRecord.status] ?? selectedRecord.status], ["Bắt đầu", recordDate(selectedRecord.starts_on)], ["Hết hạn", recordDate(selectedRecord.expires_on)],
+        ["Kích hoạt", recordDate(selectedRecord.activated_at)], ["Gia hạn thanh toán", membershipGraceLabel(selectedRecord)],
+      ] : []}>
+        {selectedRecord && canViewHistory && <RecordHistory key={selectedRecord.id} entityType="membership" entityId={selectedRecord.id} />}
+      </RecordDetails>
     </>
   );
   return embedded ? (

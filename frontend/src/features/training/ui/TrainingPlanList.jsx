@@ -1,16 +1,23 @@
-import { useMemo } from "react";
+import { RecordDetails } from "../../../shared/ui/RecordDetails.jsx";
+import { recordDate } from "../../../shared/lib/record-date.js";
+import { RecordHistory } from "../../../shared/ui/RecordHistory.jsx";
+import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
 import { usePagination } from "../../../shared/ui/usePagination.js";
 import { formatCreatedAt, planStatusLabels } from "../domain/training-form.js";
 import { Button } from "../../../shared/ui/Button.jsx";
 import { Pagination } from "../../../shared/ui/Pagination.jsx";
 import { trainingApi } from "../api/training-api.js";
 export function TrainingPlanList({
+  canViewHistory = false,
   submit,
   submitting,
   workspace,
   members,
   plans,
 }) {
+  const [selectedRecord, setSelectedRecord] = useState(null);
+  const sessionsQuery = useQuery({ queryKey: ["training", "record-sessions", selectedRecord?.id], queryFn: () => trainingApi.sessions(selectedRecord.id), enabled: Boolean(selectedRecord) });
   const membersById = useMemo(
     () => new Map(members.map((item) => [item.id, item])),
     [members],
@@ -59,7 +66,8 @@ export function TrainingPlanList({
                 <td>{item.creatorName ?? "—"}</td>
                 <td>{formatCreatedAt(item.createdAt)}</td>
                 <td>{planStatusLabels[item.status] ?? item.status}</td>
-                <td>
+                <td className="record-table-actions">
+                  <Button onClick={() => setSelectedRecord(item)} size="sm" variant="secondary">Xem chi tiết</Button>
                   {item.status === "active" && (
                     <Button
                       disabled={submitting}
@@ -85,6 +93,19 @@ export function TrainingPlanList({
         </table>
       </div>
       <Pagination {...plansPagination} />
+      <RecordDetails isOpen={Boolean(selectedRecord)} onClose={() => setSelectedRecord(null)} title="Chi tiết giáo án" fields={selectedRecord ? [
+        ["Tên giáo án", selectedRecord.name], ["Hội viên", memberName(selectedRecord.member_id)], ["Mục tiêu", selectedRecord.goal],
+        ["Người tạo", selectedRecord.creatorName], ["Ngày tạo", recordDate(selectedRecord.createdAt)], ["Trạng thái", planStatusLabels[selectedRecord.status] ?? selectedRecord.status],
+        ["Bắt đầu", recordDate(selectedRecord.starts_on)], ["Kết thúc", recordDate(selectedRecord.ends_on)],
+      ] : []}>
+        <section className="record-details__history"><h3>Buổi tập và bài tập</h3>
+          {sessionsQuery.isLoading && <p role="status">Đang tải buổi tập…</p>}
+          {sessionsQuery.isError && <><p role="alert">Không thể tải buổi tập.</p><Button onClick={() => sessionsQuery.refetch()} size="sm" variant="secondary">Thử lại</Button></>}
+          {sessionsQuery.data?.length === 0 && <p>Chưa có buổi tập.</p>}
+          {sessionsQuery.data?.map((item) => <article key={item.id}><strong>{item.name ?? item.title ?? "Buổi tập"}</strong><span>{recordDate(item.scheduled_on)}</span>{item.coach_comment && <p>{item.coach_comment}</p>}{item.exercises?.map((exercise) => <p key={exercise.id}>{exercise.name} · {exercise.sets ?? "—"} hiệp · {exercise.reps ?? "—"} lần{exercise.instructions ? " · " + exercise.instructions : ""}</p>)}</article>)}
+        </section>
+        {selectedRecord && canViewHistory && <RecordHistory key={selectedRecord.id} entityType="training_plan" entityId={selectedRecord.id} />}
+      </RecordDetails>
     </section>
   );
 }

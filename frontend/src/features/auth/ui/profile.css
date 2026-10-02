@@ -18,7 +18,6 @@
 }
 .profile-page__mfa { align-self: start; }
 .profile-page__mfa--expanded { align-self: stretch; }
-.profile-page__notifications { flex: 1 1 auto; }
 .profile-page__form {
   gap: var(--form-row-gap);
 }

@@ -2,12 +2,6 @@
   min-width: 79rem;
 }
 
-.audit-log-search-note {
-  color: var(--color-text-secondary);
-  font-size: 0.875rem;
-  margin: 0.5rem 0 1rem;
-}
-
 .audit-log-table th:nth-child(1),
 .audit-log-table th:nth-child(2) { min-width: 9rem; }
 .audit-log-table th:nth-child(3) { min-width: 10rem; }

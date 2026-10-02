@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { createFacilityService } from "../src/modules/facilities/index.js";
 
-const date = new Date(Date.now() + 24 * 60 * 60 * 1000);
+const date = new Date("2099-09-25T00:00:00Z");
 const dateText = date.toISOString().slice(0, 10);
 const auditService = { record: vi.fn() };
 

@@ -36,6 +36,18 @@ describe("TrainingPage", () => {
     expect(trainingApi.aiSuggestions).not.toHaveBeenCalled();
   });
 
+  it("keeps completed plans inspectable with their session exercises", async () => {
+    trainingApi.plans.mockResolvedValue([{ ...activePlan, status: "completed", goal: "Tập đều mỗi tuần" }]);
+    trainingApi.sessions.mockResolvedValue([{ id: "session-1", title: "Buổi sức bền", exercises: [{ id: "exercise-1", name: "Squat", sets: 3, reps: 12 }] }]);
+    renderPage();
+    fireEvent.click(await screen.findByRole("button", { name: "Xem chi tiết" }));
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByText("Tập đều mỗi tuần")).toBeInTheDocument();
+    expect(await within(dialog).findByText(/Squat · 3 hiệp · 12 lần/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Hoàn thành", exact: true })).not.toBeInTheDocument();
+    expect(trainingApi.updatePlan).not.toHaveBeenCalled();
+  });
+
   it("shows the empty AI state for an authorized reviewer", async () => {
     trainingApi.aiSuggestions.mockResolvedValue([]);
     renderPage({ user: { role: "coach" }, permissions: ["ai.assist.read"] });

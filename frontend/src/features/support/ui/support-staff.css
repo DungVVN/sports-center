@@ -1,0 +1,39 @@
+.support-ticket-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-24);
+  padding-block: var(--space-16);
+}
+
+.support-ticket-row + .support-ticket-row {
+  border-top: 1px solid var(--color-border);
+}
+
+.support-ticket-row__title,
+.support-ticket-row__details {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.support-ticket-row__details {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: .875rem;
+  line-height: 1.6;
+}
+
+.support-ticket-row > .button {
+  justify-self: end;
+}
+
+@media (max-width: 767px) {
+  .support-ticket-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-12);
+  }
+
+  .support-ticket-row > .button {
+    justify-self: start;
+  }
+}

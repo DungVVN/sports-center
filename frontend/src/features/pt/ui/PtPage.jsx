@@ -57,7 +57,7 @@ export function PtPage({ session, onNavigate }) {
       {(packages.isPending || purchases.isPending) && (
         <p role="status">Đang tải PT...</p>
       )}
-      <div className={`pt-workspace${canManage ? " pt-workspace--manage" : ""}`}>
+      <div className="pt-workspace">
         {canManage && (
           <PtPackageForm onSubmit={submit} pending={mutation.isPending} />
         )}

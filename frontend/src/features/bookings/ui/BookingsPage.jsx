@@ -1,3 +1,6 @@
+import { RecordDetails } from "../../../shared/ui/RecordDetails.jsx";
+import { recordDate } from "../../../shared/lib/record-date.js";
+import { RecordHistory } from "../../../shared/ui/RecordHistory.jsx";
 import { PageHeader } from "../../../shared/ui/PageHeader.jsx";
 import { useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
@@ -26,6 +29,7 @@ const labels = {
 };
 
 export function BookingsPage({ onNavigate, session }) {
+  const [selectedRecord, setSelectedRecord] = useState(null);
   const [listMemberId, setListMemberId] = useState(undefined);
   const [form, setForm] = useState(emptyForm);
   const [cancellation, setCancellation] = useState({
@@ -319,7 +323,7 @@ export function BookingsPage({ onNavigate, session }) {
                         >
                           Thời điểm đặt
                         </SortableHeader>
-                        {canCancelBooking && <th>Thao tác</th>}
+                        <th>Thao tác</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -347,8 +351,9 @@ export function BookingsPage({ onNavigate, session }) {
                           <td>
                             {new Date(item.booked_at).toLocaleString("vi-VN")}
                           </td>
-                          {canCancelBooking && <td>
-                            {["confirmed", "waitlisted"].includes(
+                          <td className="record-table-actions">
+                            <Button onClick={() => setSelectedRecord(item)} size="sm" variant="secondary">Xem chi tiết</Button>
+                            {canCancelBooking && ["confirmed", "waitlisted"].includes(
                               item.status,
                             ) ? (
                               <Button
@@ -358,8 +363,8 @@ export function BookingsPage({ onNavigate, session }) {
                               >
                                 {item.class_session?.pt_purchase_id ? "Quản lý lịch PT" : "Hủy"}
                               </Button>
-                            ) : "—"}
-                          </td>}
+                            ) : null}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -371,6 +376,15 @@ export function BookingsPage({ onNavigate, session }) {
           )}
         </section>
       </section>
+      <RecordDetails isOpen={Boolean(selectedRecord)} onClose={() => setSelectedRecord(null)} title="Chi tiết đặt chỗ" fields={selectedRecord ? [
+        ["Mã đặt chỗ", selectedRecord.booking_code], ["Hội viên", selectedRecord.member?.full_name],
+        ["Lớp học", selectedRecord.class_session?.name], ["Coach", selectedRecord.class_session?.coach?.display_name],
+        ["Bắt đầu", recordDate(selectedRecord.class_session?.starts_at)], ["Kết thúc", recordDate(selectedRecord.class_session?.ends_at)],
+        ["Trạng thái", labels[selectedRecord.status] ?? selectedRecord.status], ["Thời điểm đặt", recordDate(selectedRecord.booked_at)],
+        ["Thời điểm hủy", recordDate(selectedRecord.cancelled_at)], ["Lý do hủy", selectedRecord.cancel_reason],
+      ] : []}>
+        {selectedRecord && hasSessionPermission(session, "audit.read") && <RecordHistory key={selectedRecord.id} entityType="booking" entityId={selectedRecord.id} />}
+      </RecordDetails>
       <Dialog
         isOpen={Boolean(cancellation.booking)}
         onClose={closeCancellation}

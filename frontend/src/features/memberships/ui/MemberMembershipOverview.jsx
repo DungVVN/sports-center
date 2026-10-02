@@ -1,6 +1,7 @@
 import { MembershipList } from "./MembershipList.jsx";
 import "./membership-layout.css";
 export function MemberMembershipOverview({
+  canViewHistory = false,
   items,
   loading,
   members,
@@ -28,6 +29,7 @@ export function MemberMembershipOverview({
       </label>
       {selectedMemberId && (
         <MembershipList
+          canViewHistory={canViewHistory}
           embedded
           items={items}
           loading={loading}

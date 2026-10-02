@@ -8,11 +8,13 @@ function idsFor(logs, entityType) { return logs.filter((item) => item.entity_typ
 function actorIdsFor(logs) { return [...new Set(logs.map((item) => item.actor_user_id).filter(Boolean))]; }
 
 export const auditRepository = {
-  async list({ page, pageSize }) {
-    const total = await prisma.audit_logs.count();
+  async list({ page, pageSize, entityType, entityId }) {
+    const where = entityType && entityId ? { entity_type: entityType, entity_id: entityId } : {};
+    const total = await prisma.audit_logs.count({ where });
     const totalPages = Math.max(1, Math.ceil(total / pageSize));
     const resolvedPage = Math.min(page, totalPages);
     const logs = await prisma.audit_logs.findMany({
+      where,
       orderBy: { occurred_at: "desc" },
       skip: (resolvedPage - 1) * pageSize,
       take: pageSize,

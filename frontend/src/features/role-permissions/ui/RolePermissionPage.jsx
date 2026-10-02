@@ -90,7 +90,7 @@ export function RolePermissionPage() {
 
   return (
     <section className="role-permissions">
-      <PageHeader eyebrow="Quản trị" title="Phân quyền chức năng" description={<><p>Tích chọn chức năng cho bốn vai trò. Admin luôn có toàn quyền.</p><p>Quyền xem hồ sơ hội viên cho phép xem toàn trung tâm, kể cả khi cấp cho HLV. Quyền PT và giáo án vẫn giới hạn theo người được phân công.</p></>} actions={<Button disabled={saveMatrix.isPending} loading={matrixQuery.isFetching} onClick={reload} variant="secondary">Tải lại</Button>} />
+      <PageHeader eyebrow="Quản trị" title="Phân quyền chức năng" actions={<Button disabled={saveMatrix.isPending} loading={matrixQuery.isFetching} onClick={reload} variant="secondary">Tải lại</Button>} />
       {feedback.error && <p role="alert" className="role-permissions__error">{feedback.error}</p>}
       {feedback.notice && <p role="status" className="role-permissions__success">{feedback.notice}</p>}
       <div className="role-permissions__scroll">

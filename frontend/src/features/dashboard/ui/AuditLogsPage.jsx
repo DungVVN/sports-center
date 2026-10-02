@@ -92,7 +92,6 @@ export function AuditLogsPage() {
         ) : (
           <>
             <DataTableToolbar onClear={() => { setAuditSearch(""); setPage(1); }} resultCount={auditSearch ? visibleItems.length : pagination.total} search={auditSearch} searchPlaceholder="Tìm trong trang hiện tại..." setSearch={setAuditSearch} />
-            <p className="audit-log-search-note">Tìm kiếm chỉ áp dụng cho tối đa {pagination.pageSize} nhật ký trên trang hiện tại. Chuyển trang để xem các nhật ký khác.</p>
             {visibleItems.length === 0 ? <p>Không có nhật ký phù hợp với tìm kiếm.</p> : <div className="table-scroll">
             <table className="audit-log-table">
               <thead>

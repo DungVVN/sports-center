@@ -362,7 +362,7 @@ export function MembershipsPage({ mode = "workspace", session }) {
             requestFreeze={requestFreeze}
             submitting={submitting}
           />
-          <MembershipList items={memberships} loading={loading} />
+          <MembershipList canViewHistory={hasSessionPermission(session, "audit.read")} items={memberships} loading={loading} />
         </section>
       </main>
     );
@@ -422,6 +422,7 @@ export function MembershipsPage({ mode = "workspace", session }) {
           <aside className="membership-assignment-sidebar">
             {showAssignment && (
               <MemberMembershipOverview
+                canViewHistory={hasSessionPermission(session, "audit.read")}
                 items={memberships}
                 loading={loading}
                 members={members}

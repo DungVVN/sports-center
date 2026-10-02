@@ -6,6 +6,9 @@ import { classApi } from "../../classes/index.js";
 import { memberApi } from "../../members/index.js";
 import { bookingApi } from "../api/booking-api.js";
 import { BookingsPage } from "./BookingsPage.jsx";
+import { apiClient } from "../../../shared/api/client.js";
+
+vi.mock("../../../shared/api/client.js", () => ({ apiClient: { get: vi.fn() } }));
 
 vi.mock("../../classes/index.js", () => ({ classApi: { list: vi.fn() } }));
 vi.mock("../../members/index.js", () => ({ memberApi: { list: vi.fn() } }));
@@ -27,6 +30,18 @@ describe("BookingsPage", () => {
     memberApi.list.mockResolvedValue([]);
   });
   afterEach(cleanup);
+
+  it("lets Admin inspect a cancelled booking and its own history without cancelling twice", async () => {
+    const id = "11111111-1111-4111-8111-111111111111";
+    bookingApi.list.mockResolvedValue([{ id, booking_code: "BKG-01", status: "cancelled", booked_at: "2026-10-01T01:00:00Z", cancel_reason: "Hội viên đổi lịch", class_session: futureClass }]);
+    apiClient.get.mockResolvedValue({ items: [{ id: "log-1", summary: "Đã hủy đặt chỗ.", reason: "Hội viên đổi lịch", occurred_at: "2026-10-02T01:00:00Z", actor: { name: "Admin" } }], pagination: { page: 1, totalPages: 1 } });
+    renderPage({ user: { role: "admin" }, permissions: [] });
+    fireEvent.click(await screen.findByRole("button", { name: "Xem chi tiết" }));
+    expect(await screen.findByText("Đã hủy đặt chỗ.")).toBeInTheDocument();
+    expect(apiClient.get).toHaveBeenCalledWith(expect.stringContaining(`entityType=booking&entityId=${id}`));
+    expect(screen.queryByRole("button", { name: "Hủy", exact: true })).not.toBeInTheDocument();
+    expect(bookingApi.cancel).not.toHaveBeenCalled();
+  });
 
   it("shows the empty booking state", async () => {
     renderPage();

@@ -4,6 +4,7 @@ import { MessageSquare } from "lucide-react";
 import { Button } from "../../../shared/ui/Button.jsx";
 import { hasSessionPermission } from "../../auth/index.js";
 import { useSupportWorkspace } from "../api/useSupportWorkspace.js";
+import "./support-staff.css";
 
 const statusLabels = {
   open: "Đang mở",
@@ -56,16 +57,16 @@ export function SupportStaffPage({ session }) {
             <p>Không có ticket.</p>
           ) : (
             workspace.tickets.map((ticket) => (
-              <article key={ticket.id}>
-                <strong>
+              <article className="support-ticket-row" key={ticket.id}>
+                <strong className="support-ticket-row__title">
                   {ticket.ticket_code} · {ticket.subject}
                 </strong>
-                <p>
+                <p className="support-ticket-row__details">
                   Trạng thái: <strong>{statusLabels[ticket.status] ?? ticket.status}</strong> · Mức độ:{" "}
                   <strong>{priorityLabels[ticket.priority] ?? ticket.priority}</strong> ·{" "}
                   {ticket.assigned_to ? "Đã có người phụ trách" : "Chưa phân công"}
                 </p>
-                <Button onClick={() => setSelectedId(ticket.id)} size="sm" type="button" variant="secondary">
+                <Button aria-pressed={selectedId === ticket.id} onClick={() => setSelectedId(ticket.id)} size="sm" type="button" variant="secondary">
                   Xử lý
                 </Button>
               </article>

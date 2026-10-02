@@ -91,10 +91,6 @@ export function PackageCreateForm({
       ))}
       <fieldset className="entitlement-fieldset">
         <legend>Quyền sử dụng</legend>
-        <p>
-          Gói hạng cao kế thừa quyền sử dụng của các gói hạng thấp hơn. Các ô
-          bên dưới là quyền thêm riêng cho gói này.
-        </p>
         {Object.entries(entitlementLabels).map(([code, label]) => (
           <label key={code}>
             <input
