@@ -1,9 +1,16 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App.jsx";
+import { ApiError } from "../shared/api/api-error.js";
 
 const mockAuthMe = vi.hoisted(() => vi.fn());
 const mockPortalSurface = vi.hoisted(() => vi.fn(() => "main"));
+const mockPageByPath = vi.hoisted(() => vi.fn());
+
+vi.mock("../features/site/api/site-public-api.js", async (importOriginal) => {
+  const original = await importOriginal();
+  return { ...original, publicSiteApi: { ...original.publicSiteApi, pageByPath: mockPageByPath, menu: vi.fn().mockResolvedValue([]) } };
+});
 
 vi.mock("../config/portal.js", () => ({ portalSurface: mockPortalSurface }));
 
@@ -35,6 +42,7 @@ describe("first login routing", () => {
     mockAuthMe.mockReset();
     mockAuthMe.mockRejectedValue(new Error("No active session"));
     mockPortalSurface.mockReturnValue("main");
+    mockPageByPath.mockReset().mockRejectedValue(new ApiError({ status: 404, code: "NOT_FOUND" }));
   });
   afterEach(cleanup);
   it.each(["/gallery", "/calendar"])("preserves the published CMS SEO title at %s", async (path) => {
@@ -184,5 +192,13 @@ describe("first login routing", () => {
 
     expect(await screen.findByRole("heading", { name: "Không tìm thấy trang" })).toBeInTheDocument();
     expect(window.location.pathname).toBe("/khong-ton-tai");
+  });
+
+  it("keeps a database outage distinct from an unknown public route", async () => {
+    mockPageByPath.mockRejectedValue(new ApiError({ status: 503, code: "DATABASE_UNAVAILABLE" }));
+    window.history.replaceState({}, "", "/dich-vu");
+    render(<App />);
+    expect(await screen.findByRole("heading", { name: "Không thể tải trang" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Không tìm thấy trang" })).not.toBeInTheDocument();
   });
 });
