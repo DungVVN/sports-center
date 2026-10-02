@@ -158,7 +158,7 @@ export function ClassListContent({
                   </td>
                   <td>{new Date(item.starts_at).toLocaleString("vi-VN")}</td>
                   <td>
-                    {coachNameById.get(item.coach_user_id) ?? "Chưa phân công"}
+                    {item.coach_name ?? coachNameById.get(item.coach_user_id) ?? "Chưa phân công"}
                   </td>
                   <td>{roomNameById.get(item.room_id) ?? "Chưa có phòng"}</td>
                   <td className="classes-capacity-cell">{item.capacity}</td>

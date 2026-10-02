@@ -97,10 +97,11 @@ export function createFacilityService({ repository, auditService }) {
       try { const result = await repository.review({ id, approved: input.approved, startMinute, endMinute, reason: input.reason, actorUserId }); if (result.kind === "missing") fail(404, "FACILITY_REQUEST_NOT_FOUND", "Không tìm thấy đơn đặt sân."); if (result.kind === "invalid") fail(409, "FACILITY_REQUEST_FINAL", "Đơn không còn chờ duyệt."); return result.item; }
       catch (error) { if (overlap(error)) fail(409, "FACILITY_TIME_BOOKED", "Khoảng giờ đã có đơn được duyệt."); throw error; }
     },
-    async cancel(id, reason, actorUserId) {
+    async cancel(id, reason, actorUserId, actorRole) {
       const current = await repository.reservation(id);
       if (!current) fail(404, "FACILITY_REQUEST_NOT_FOUND", "Không tìm thấy đơn đặt sân.");
       const ownReservation = current.requester_user_id === actorUserId;
+      if (actorRole === "member" && !ownReservation) fail(403, "FACILITY_CANCELLATION_DENIED", "Bạn chỉ có thể hủy đơn đặt sân của bản thân.");
       const result = ownReservation ? await repository.cancel({ id, reason, actorUserId }) : await repository.requestCancellation({ id, reason, actorUserId });
       if (result.kind === "missing") fail(404, "FACILITY_REQUEST_NOT_FOUND", "Không tìm thấy đơn đặt sân.");
       if (result.kind === "invalid") fail(409, "FACILITY_CANCELLATION_NOT_AVAILABLE", "Đơn không thể hủy hoặc đang chờ người tạo đơn xác nhận.");

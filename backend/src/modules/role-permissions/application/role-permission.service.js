@@ -2,6 +2,11 @@ import { AppError } from "../../../shared/errors/app-error.js";
 import { permissionDependencies, permissionRoleDependencies, permissionRoleScopes } from "../domain/permission-catalog.js";
 
 export const configurableRoles = ["manager", "receptionist", "coach", "member"];
+const descriptions = {
+  "facility.booking.read": "Xem danh sách và chi tiết mọi đơn đặt sân (nhân viên)",
+  "facility.booking.self.read": "Xem danh sách và chi tiết đơn đặt sân của bản thân",
+  "facility.booking.cancel": "Hủy đơn đặt sân có lý do (Hội viên: chỉ đơn của mình)",
+};
 
 export function createRolePermissionService({ repository }) {
   return {
@@ -9,10 +14,10 @@ export function createRolePermissionService({ repository }) {
       const { permissions, roles, grants } = await repository.matrix();
       const visibleCodes = new Set(permissions.map((item) => item.code));
       return {
-        permissions: permissions.map(({ code, description }) => ({ code, description, group: code.split(".")[0], requires: permissionDependencies[code] ?? [], requiresByRole: permissionRoleDependencies[code] ?? {}, availableRoles: permissionRoleScopes[code] ?? configurableRoles })),
+        permissions: permissions.map(({ code, description }) => ({ code, description: descriptions[code] ?? description, group: code.split(".")[0], requires: permissionDependencies[code] ?? [], requiresByRole: permissionRoleDependencies[code] ?? {}, availableRoles: permissionRoleScopes[code] ?? configurableRoles })),
         roles: configurableRoles.map((code) => {
           const role = roles.find((item) => item.code === code);
-          return { code, label: role?.label ?? code, version: role?.permission_version ?? 0, permissionCodes: grants.filter((item) => item.role_code === code && visibleCodes.has(item.permission_code)).map((item) => item.permission_code).sort() };
+          return { code, label: role?.label ?? code, version: role?.permission_version ?? 0, permissionCodes: grants.filter((item) => item.role_code === code && visibleCodes.has(item.permission_code) && (!permissionRoleScopes[item.permission_code] || permissionRoleScopes[item.permission_code].includes(code))).map((item) => item.permission_code).sort() };
         }),
       };
     },

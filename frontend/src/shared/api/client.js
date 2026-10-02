@@ -35,36 +35,55 @@ export function apiErrorFromResponse(response, payload, { suppressAuthentication
   });
 }
 
-export async function request(path, { method = "GET", body, headers, signal, suppressAuthenticationExpiredEvent = false } = {}) {
+export async function request(path, { method = "GET", body, headers, signal, timeoutMs = 30_000, suppressAuthenticationExpiredEvent = false } = {}) {
+  const controller = new AbortController();
+  let timedOut = false;
+  const abort = () => controller.abort(signal.reason);
+  if (signal?.aborted) abort();
+  else signal?.addEventListener("abort", abort, { once: true });
+  const timer = setTimeout(() => { timedOut = true; controller.abort(); }, timeoutMs);
   let response;
   try {
-    response = await fetch(buildUrl(path), {
-      method,
-      credentials: "include",
-      signal,
-      headers: {
-        accept: "application/json",
-        "x-sports-center-portal": portalSurface(),
-        ...(body ? { "content-type": "application/json" } : {}),
-        ...headers,
-      },
-      ...(body ? { body: JSON.stringify(body) } : {}),
-    });
+    try {
+      response = await fetch(buildUrl(path), {
+        method,
+        credentials: "include",
+        signal: controller.signal,
+        headers: {
+          accept: "application/json",
+          "x-sports-center-portal": portalSurface(),
+          ...(body ? { "content-type": "application/json" } : {}),
+          ...headers,
+        },
+        ...(body ? { body: JSON.stringify(body) } : {}),
+      });
+    } catch (error) {
+      if (controller.signal.aborted) throw controller.signal.reason;
+      if (error?.name === "AbortError") throw error;
+      throw new ApiError({
+        code: "NETWORK_ERROR",
+        message: "Không nhận được phản hồi từ API. Kiểm tra kết nối mạng hoặc trạng thái máy chủ rồi thử lại.",
+        details: error,
+      });
+    }
+
+    const payload = await parseResponse(response);
+    if (controller.signal.aborted) throw controller.signal.reason;
+    if (!response.ok || !payload?.success) {
+      throw apiErrorFromResponse(response, payload, { suppressAuthenticationExpiredEvent });
+    }
+
+    return payload.data;
   } catch (error) {
-    if (error?.name === "AbortError") throw error;
-    throw new ApiError({
-      code: "NETWORK_ERROR",
-      message: "Không nhận được phản hồi từ API. Kiểm tra kết nối mạng hoặc trạng thái máy chủ rồi thử lại.",
-      details: error,
+    if (timedOut && !signal?.aborted) throw new ApiError({
+      code: "REQUEST_TIMEOUT",
+      message: "Máy chủ phản hồi quá lâu. Vui lòng thử lại.",
     });
+    throw error;
+  } finally {
+    clearTimeout(timer);
+    signal?.removeEventListener("abort", abort);
   }
-
-  const payload = await parseResponse(response);
-  if (!response.ok || !payload?.success) {
-    throw apiErrorFromResponse(response, payload, { suppressAuthenticationExpiredEvent });
-  }
-
-  return payload.data;
 }
 
 export const apiClient = Object.freeze({

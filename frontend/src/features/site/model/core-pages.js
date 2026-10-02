@@ -5,7 +5,6 @@ export const corePages = [
   { path: "/lien-he", label: "Liên Hệ", description: "Thông tin liên hệ và hỗ trợ đăng ký tập luyện." },
 ];
 
-export const isCorePage = (path) => corePages.some((page) => page.path === path);
 export const publicSiteOrigin = "https://kineticsports.io.vn";
 export const homeSeo = {
   title: "Kinetic Sports Center",

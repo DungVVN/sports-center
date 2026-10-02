@@ -33,6 +33,7 @@ export function errorMessageFor(error, fallback = "Không thể hoàn tất yêu
     const context = fallback.replace(/[.\s]+$/, "");
     const requestId = error.requestId ? ` Mã tra cứu: ${error.requestId}.` : "";
     if (error.code === "NETWORK_ERROR") return `${context}: ${error.message || "không kết nối được máy chủ. Kiểm tra mạng rồi thử lại."}`;
+    if (error.code === "REQUEST_TIMEOUT") return `${context}: ${error.message}`;
     if (error.status === 401 && error.code === "REQUEST_FAILED") return `${context}: phiên đăng nhập không còn hợp lệ. Vui lòng đăng nhập lại.`;
     if (error.status === 403 && error.code === "REQUEST_FAILED") return `${context}: tài khoản không có quyền thực hiện thao tác này.`;
     if (error.status === 403 && error.code === "FORBIDDEN") return `${context}: tài khoản chưa được cấp quyền cho chức năng này. Liên hệ quản trị viên để kiểm tra phân quyền.`;

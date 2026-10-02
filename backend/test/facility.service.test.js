@@ -6,6 +6,17 @@ const dateText = date.toISOString().slice(0, 10);
 const auditService = { record: vi.fn() };
 
 describe("facility calendar service", () => {
+  it("rejects a member cancelling somebody else's reservation before any mutation", async () => {
+    const repo = { reservation: vi.fn().mockResolvedValue({ requester_user_id: "other-member" }), cancel: vi.fn(), requestCancellation: vi.fn() };
+    const service = createFacilityService({ repository: repo, auditService });
+    await expect(service.cancel("res-1", "Đổi lịch sân", "member-1", "member")).rejects.toMatchObject({ statusCode: 403, code: "FACILITY_CANCELLATION_DENIED" });
+    expect(repo.cancel).not.toHaveBeenCalled();
+    expect(repo.requestCancellation).not.toHaveBeenCalled();
+  });
+  it("lets a member cancel their own reservation", async () => {
+    const repo = { reservation: vi.fn().mockResolvedValue({ requester_user_id: "member-1" }), cancel: vi.fn().mockResolvedValue({ kind: "updated", item: { status: "cancelled" } }) };
+    await expect(createFacilityService({ repository: repo, auditService }).cancel("res-1", "Đổi lịch sân", "member-1", "member")).resolves.toMatchObject({ status: "cancelled" });
+  });
   it("returns free and booked periods without personal data", async () => {
     const repository = {
       types: vi.fn().mockResolvedValue([{ id: "type-1", name: "Sân bóng", is_active: true }]),

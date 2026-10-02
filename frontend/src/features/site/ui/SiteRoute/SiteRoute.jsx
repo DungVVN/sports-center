@@ -11,6 +11,7 @@ import { publicSiteApi } from "../../api/site-public-api.js";
 import { homeSeo } from "../../model/core-pages.js";
 import { pageHead } from "../../model/seo-head.js";
 import { serverPageData } from "../../model/server-page-data.js";
+import { errorMessageFor } from "../../../../shared/api/error-message.js";
 import "../LandingPage/LandingPage.css";
 
 function usePageSeo(page) {
@@ -50,7 +51,16 @@ export function HomeRoute({ onLoginClick, onRegisterClick, onGalleryClick, onCal
 
 export function ManagedPublicPage({ onHomeClick, onLoginClick, onRegisterClick, path, fallback }) {
   const query = useQuery({ queryKey: ["public-site-path", path], queryFn: () => publicSiteApi.pageByPath(path), initialData: () => serverPageData(path)?.legacy ? undefined : serverPageData(path)?.page, retry: false, staleTime: 300_000 });
-  if (query.isError) return fallback ?? <NotFoundPage onHome={onHomeClick} onLogin={onLoginClick} />;
+  if (query.isError) {
+    if (query.error?.status === 404) return fallback ?? <NotFoundPage onHome={onHomeClick} onLogin={onLoginClick} />;
+    return <PublicPageLayout onHomeClick={onHomeClick} onLoginClick={onLoginClick}>
+      <section className="public-page-body" aria-labelledby="public-page-error-title">
+        <h1 id="public-page-error-title">Không thể tải trang</h1>
+        <p role="alert">{errorMessageFor(query.error, "Không thể tải nội dung trang.")}</p>
+        <button type="button" className="btn-primary" disabled={query.isFetching} onClick={() => query.refetch()}>{query.isFetching ? "Đang thử lại..." : "Thử lại"}</button>
+      </section>
+    </PublicPageLayout>;
+  }
   if (query.isPending) return <main className="public-page-body" role="status">Đang tải trang...</main>;
   return <PublicPageLayout onHomeClick={onHomeClick} onLoginClick={onLoginClick}><div className={path === "/gallery" ? "public-cms-gallery" : path === "/calendar" ? "public-cms-calendar" : undefined}><PublishedContent key={path} page={query.data} />{path === "/calendar" && <FacilityCalendarPage onLoginClick={onLoginClick} embedded />}</div>{path === "/bang-gia" && <PublicPricingSection onRegisterClick={onRegisterClick} initialPackages={serverPageData(path)?.packages} />}</PublicPageLayout>;
 }

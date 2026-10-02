@@ -4,6 +4,24 @@ import { createInsightService } from "../src/modules/insights/index.js";
 function repository() { return { revenue: vi.fn().mockResolvedValue([{ status: "paid", _sum: { amount_vnd: BigInt(500000) }, _count: { id: 1 } }]), paymentStatuses: vi.fn().mockResolvedValue([{ status: "pending", _sum: { amount_vnd: BigInt(300000) }, _count: { id: 2 } }]), attendance: vi.fn().mockResolvedValue([{ status: "present", _count: { id: 3 } }]), attendanceRecords: vi.fn().mockResolvedValue([]), todayClasses: vi.fn().mockResolvedValue(4), pendingPayments: vi.fn().mockResolvedValue(3), expiring: vi.fn().mockResolvedValue([{}, {}]), coachTodayClasses: vi.fn().mockResolvedValue(2), memberByUser: vi.fn().mockResolvedValue({ id: "member-1" }), memberTodayClasses: vi.fn().mockResolvedValue(1), memberPendingMemberships: vi.fn().mockResolvedValue(1), memberExpiringMemberships: vi.fn().mockResolvedValue(1), managerMetrics: vi.fn().mockResolvedValue({ revenueVnd: "500000", newMembers: 2, classes: 3, bookings: 4, capacity: 10, attendance: { present: 3, late: 1, absent: 1, marked: 5 } }), revenuePayments: vi.fn().mockResolvedValue([]) }; }
 
 describe("Insight dashboard service", () => {
+  it("does not report an attendance decrease when the current period has no records", async () => {
+    const repo = repository();
+    const previous = await repo.managerMetrics();
+    repo.managerMetrics.mockReset().mockResolvedValueOnce({ ...previous, attendance: { present: 0, late: 0, absent: 0, marked: 0 } }).mockResolvedValueOnce(previous);
+    const result = await createInsightService({ repository: repo }).dashboard("manager", { id: "manager-1", role: "manager" }, { period: "month" });
+    expect(result.metrics.attendanceRate).toBeNull();
+    expect(result.comparison.attendanceChange).toBeNull();
+  });
+
+  it("compares attendance rates independently of the number of records", async () => {
+    const repo = repository();
+    const previous = await repo.managerMetrics();
+    repo.managerMetrics.mockReset().mockResolvedValueOnce({ ...previous, attendance: { present: 6, late: 2, absent: 2, marked: 10 } }).mockResolvedValueOnce(previous);
+    const result = await createInsightService({ repository: repo }).dashboard("manager", { id: "manager-1", role: "manager" }, { period: "month" });
+    expect(result.metrics.attendanceRate).toBe(80);
+    expect(result.comparison.attendanceChange).toBe(0);
+  });
+
   afterEach(() => vi.useRealTimers());
 
   it.each([

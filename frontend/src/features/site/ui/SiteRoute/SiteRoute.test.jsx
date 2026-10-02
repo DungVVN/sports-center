@@ -1,9 +1,10 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ManagedPublicPage } from "./SiteRoute.jsx";
 import { publicSiteApi } from "../../api/site-public-api.js";
 import { publicMembershipPackages } from "../../../memberships/index.js";
+import { ApiError } from "../../../../shared/api/api-error.js";
 
 vi.mock("../../api/site-public-api.js", () => ({ siteCmsPublicEnabled: false, publicSiteApi: { pageByPath: vi.fn(), menu: vi.fn() } }));
 vi.mock("../../../memberships/index.js", () => ({ publicMembershipPackages: vi.fn() }));
@@ -44,11 +45,23 @@ describe("separate CMS public pages", () => {
   });
 
   it("does not expose unpublished or unknown routes", async () => {
-    publicSiteApi.pageByPath.mockRejectedValueOnce(new Error("NOT_FOUND"));
+    publicSiteApi.pageByPath.mockRejectedValueOnce(new ApiError({ status: 404, code: "NOT_FOUND" }));
     renderPage("/unpublished");
     await screen.findByRole("heading", { name: /không tìm thấy/i });
     expect(publicSiteApi.pageByPath).toHaveBeenCalledWith("/unpublished");
     expect(screen.queryByRole("heading", { name: "Bảng giá gói hội viên" })).not.toBeInTheDocument();
+  });
+
+  it.each([
+    new ApiError({ status: 503, code: "DATABASE_UNAVAILABLE", message: "Dữ liệu tạm thời gián đoạn." }),
+    new ApiError({ code: "NETWORK_ERROR", message: "Không nhận được phản hồi từ API." }),
+  ])("shows a retryable error instead of 404 when the API is unavailable", async (error) => {
+    publicSiteApi.pageByPath.mockRejectedValueOnce(error).mockResolvedValueOnce(page);
+    renderPage("/ve-chung-toi");
+    expect(await screen.findByRole("heading", { name: "Không thể tải trang" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /không tìm thấy/i })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
+    expect(await screen.findByRole("heading", { name: "Bảng giá gói hội viên" })).toBeInTheDocument();
   });
 
   it("uses server-rendered published content immediately without another page request", () => {

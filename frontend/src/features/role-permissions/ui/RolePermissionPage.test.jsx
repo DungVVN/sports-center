@@ -83,6 +83,25 @@ describe("Admin role permission matrix", () => {
     expect(rolePermissionApi.replace.mock.calls[2][0]).toBe("receptionist");
   });
 
+  it("keeps member cancellation tied to own reservations instead of staff-wide access", async () => {
+    rolePermissionApi.matrix.mockResolvedValueOnce({ ...matrix, permissions: [
+      { code: "facility.booking.read", description: "Xem mọi đơn", group: "facility", requires: [], availableRoles: ["manager", "receptionist", "coach"] },
+      { code: "facility.booking.self.read", description: "Xem đơn của mình", group: "facility", requires: [] },
+      { code: "facility.booking.cancel", description: "Hủy đơn", group: "facility", requires: [], requiresByRole: { member: ["facility.booking.self.read"], manager: ["facility.booking.read"] } },
+    ] });
+    renderPage();
+    const cancel = await screen.findByRole("checkbox", { name: "Hủy đơn — member" });
+    fireEvent.click(cancel);
+    expect(cancel).toBeChecked();
+    const own = screen.getByRole("checkbox", { name: "Xem đơn của mình — member" });
+    expect(own).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Xem mọi đơn — member" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Lưu thay đổi" }));
+    await waitFor(() => expect(rolePermissionApi.replace).toHaveBeenCalledWith("member", { version: 0, permissionCodes: ["facility.booking.cancel", "facility.booking.self.read"] }));
+    fireEvent.click(own);
+    expect(cancel).not.toBeChecked();
+  });
+
   it("selects role-specific dependencies and disables inapplicable functions", async () => {
     rolePermissionApi.matrix.mockResolvedValueOnce({ ...matrix, permissions: [
       { code: "class.read", description: "Xem lớp", group: "class", requires: [] },

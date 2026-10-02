@@ -32,11 +32,12 @@ export const permissionDependencies = Object.freeze({
   "ai.assist.deliver": ["ai.assist.read"],
   "facility.booking.request": ["facility.booking.self.read"],
   "facility.booking.approve": ["facility.booking.read"],
-  "facility.booking.cancel": ["facility.booking.read"],
 });
 
-// These APIs require a member profile and cannot operate for staff accounts.
+// Limit permissions to roles supported by their API workflows.
 export const permissionRoleScopes = Object.freeze({
+  "facility.booking.read": ["manager", "receptionist", "coach"],
+  "facility.booking.approve": ["manager", "receptionist", "coach"],
   "member.credentials.reset": ["manager", "receptionist", "coach"],
   "attendance.self.read": ["member"],
   "membership.self.read": ["member"],
@@ -47,7 +48,8 @@ export const permissionRoleScopes = Object.freeze({
   "support.ticket.respond": ["manager", "receptionist", "coach"],
 });
 
-// Staff booking form selects a member from the directory; Member books for self.
+// Dependency requirements differ between staff workflows and self-service.
 export const permissionRoleDependencies = Object.freeze({
+  "facility.booking.cancel": Object.freeze({ member: ["facility.booking.self.read"], manager: ["facility.booking.read"], receptionist: ["facility.booking.read"], coach: ["facility.booking.read"] }),
   "booking.write": Object.freeze({ manager: ["member.read"], receptionist: ["member.read"], coach: ["member.read"] }),
 });

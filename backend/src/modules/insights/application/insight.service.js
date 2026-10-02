@@ -3,6 +3,7 @@ import { reportingDay as isoDay, reportingRange as range } from "../domain/repor
 
 function previousRange(from, to) { const duration = to.getTime() - from.getTime() + 1; const previousTo = new Date(from.getTime() - 1); return { from: new Date(previousTo.getTime() - duration + 1), to: previousTo }; }
 function change(current, previous) { return previous === 0 ? null : Math.round(((current - previous) / previous) * 1000) / 10; }
+function attendanceRate(metrics) { return metrics.attendance.marked ? Math.round(((metrics.attendance.present + metrics.attendance.late) / metrics.attendance.marked) * 1000) / 10 : null; }
 function csvCell(value) { return `"${String(value ?? "").replaceAll('"', '""')}"`; }
 function asCsv(rows) { return `\uFEFF${rows.map((row) => row.map(csvCell).join(",")).join("\r\n")}\r\n`; }
 function revenueTrend(rows, from, to) { const totals = new Map(); for (let cursor = new Date(from); cursor <= to; cursor.setUTCDate(cursor.getUTCDate() + 1)) totals.set(isoDay(cursor), BigInt(0)); for (const row of rows) { const key = isoDay(row.paid_at); totals.set(key, (totals.get(key) ?? BigInt(0)) + row.amount_vnd); } return [...totals].map(([date, amountVnd]) => ({ date, amountVnd: amountVnd.toString() })); }
@@ -49,10 +50,12 @@ function attendanceTrend(rows, from, to) {
 
 async function managerDashboard(repository, current, previous) {
   const [metrics, previousMetrics, payments, pendingPayments, expiringMemberships] = await Promise.all([repository.managerMetrics(current.from, current.to), repository.managerMetrics(previous.from, previous.to), repository.revenuePayments(current.from, current.to), repository.pendingPayments(), repository.expiring(new Date(), new Date(Date.now() + 7 * 86400000))]);
+  const currentAttendanceRate = attendanceRate(metrics);
+  const previousAttendanceRate = attendanceRate(previousMetrics);
   return {
     period: current.period, from: current.from, to: current.to,
-    metrics: { ...metrics, occupancyRate: metrics.capacity ? Math.round((metrics.bookings / metrics.capacity) * 1000) / 10 : null, attendanceRate: metrics.attendance.marked ? Math.round(((metrics.attendance.present + metrics.attendance.late) / metrics.attendance.marked) * 1000) / 10 : null },
-    comparison: { revenueChange: change(Number(metrics.revenueVnd), Number(previousMetrics.revenueVnd)), newMembersChange: change(metrics.newMembers, previousMetrics.newMembers), bookingsChange: change(metrics.bookings, previousMetrics.bookings), attendanceChange: change(metrics.attendance.present + metrics.attendance.late, previousMetrics.attendance.present + previousMetrics.attendance.late) },
+    metrics: { ...metrics, occupancyRate: metrics.capacity ? Math.round((metrics.bookings / metrics.capacity) * 1000) / 10 : null, attendanceRate: currentAttendanceRate },
+    comparison: { revenueChange: change(Number(metrics.revenueVnd), Number(previousMetrics.revenueVnd)), newMembersChange: change(metrics.newMembers, previousMetrics.newMembers), bookingsChange: change(metrics.bookings, previousMetrics.bookings), attendanceChange: currentAttendanceRate === null || previousAttendanceRate === null ? null : change(currentAttendanceRate, previousAttendanceRate) },
     alerts: { pendingPayments, expiringMemberships: expiringMemberships.length }, revenueTrend: revenueTrend(payments, current.from, current.to),
   };
 }

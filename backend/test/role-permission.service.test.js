@@ -19,6 +19,14 @@ function setup() {
 }
 
 describe("role permission configuration", () => {
+  it("lets a member cancel with self-read without global read", async () => {
+    const { service, repository } = setup();
+    await service.replace({ role: "member", version: 0, permissionCodes: ["facility.booking.self.read", "facility.booking.cancel"], actorUserId: "admin-1" });
+    expect(repository.replace).toHaveBeenCalledWith(expect.objectContaining({ role: "member", permissionCodes: ["facility.booking.cancel", "facility.booking.self.read"] }));
+    await expect(service.replace({ role: "member", version: 0, permissionCodes: ["facility.booking.cancel"], actorUserId: "admin-1" })).rejects.toMatchObject({ code: "PERMISSION_DEPENDENCY_MISSING" });
+    await expect(service.replace({ role: "member", version: 0, permissionCodes: ["facility.booking.read"], actorUserId: "admin-1" })).rejects.toMatchObject({ code: "PERMISSION_ROLE_SCOPE_INVALID" });
+    await expect(service.replace({ role: "receptionist", version: 0, permissionCodes: ["facility.booking.cancel", "facility.booking.self.read"], actorUserId: "admin-1" })).rejects.toMatchObject({ code: "PERMISSION_DEPENDENCY_MISSING" });
+  });
   it("lists exactly the permission codes enforced by mounted routes", () => {
     const modules = fileURLToPath(new URL("../src/modules/", import.meta.url));
     const enforced = new Set();

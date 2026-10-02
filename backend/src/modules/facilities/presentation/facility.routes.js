@@ -3,6 +3,7 @@ import { z } from "zod";
 import { authenticate, requirePermission } from "../../../shared/auth/authentication.middleware.js";
 import { sendSuccess } from "../../../shared/http/response.js";
 import { validateRequest } from "../../../shared/validation/validate-request.js";
+import { AppError } from "../../../shared/errors/app-error.js";
 
 const id = z.string().uuid();
 const date = z.iso.date();
@@ -17,7 +18,10 @@ const guards = {
   "facility.booking.approve": requirePermission("facility.booking.approve"),
   "facility.booking.cancel": requirePermission("facility.booking.cancel"),
 };
-const secure = (authService, permission) => [authenticate(authService), guards[permission]];
+const secure = (authService, permission) => [authenticate(authService), (req, res, next) => {
+  if (req.auth.user.role === "member" && ["facility.booking.read", "facility.booking.approve"].includes(permission)) return next(new AppError({ statusCode: 403, code: "FORBIDDEN", message: "Hội viên chỉ được xem và hủy đơn đặt sân của bản thân." }));
+  return guards[permission](req, res, next);
+}];
 
 export function createFacilityRouter(service, authService) {
   const router = Router();
@@ -32,7 +36,7 @@ export function createFacilityRouter(service, authService) {
   router.post("/facility-reservations", ...secure(authService, "facility.booking.request"), validateRequest(z.object({ body: requestBody })), async (req, res, next) => { try { sendSuccess(res, { statusCode: 201, data: await service.request(req.validated.body, req.auth.user.id) }); } catch (error) { next(error); } });
   router.get("/facility-reservations", ...secure(authService, "facility.booking.read"), async (req, res, next) => { try { sendSuccess(res, { data: await service.reservations() }); } catch (error) { next(error); } });
   router.patch("/facility-reservations/:id/review", ...secure(authService, "facility.booking.approve"), validateRequest(z.object({ params: z.object({ id }), body: z.object({ approved: z.boolean(), startMinute: minute.optional(), endMinute: minute.optional(), reason: z.string().trim().min(3).max(500).optional() }).superRefine((value, context) => { if (!value.approved && !value.reason) context.addIssue({ code: "custom", message: "Cần lý do khi từ chối." }); if (value.startMinute !== undefined && value.endMinute !== undefined && value.endMinute <= value.startMinute) context.addIssue({ code: "custom", message: "Giờ kết thúc phải sau giờ bắt đầu." }); }) })), async (req, res, next) => { try { sendSuccess(res, { data: await service.review(req.validated.params.id, req.validated.body, req.auth.user.id) }); } catch (error) { next(error); } });
-  router.patch("/facility-reservations/:id/cancel", ...secure(authService, "facility.booking.cancel"), validateRequest(z.object({ params: z.object({ id }), body: z.object({ reason: z.string().trim().min(3).max(500) }) })), async (req, res, next) => { try { sendSuccess(res, { data: await service.cancel(req.validated.params.id, req.validated.body.reason, req.auth.user.id) }); } catch (error) { next(error); } });
+  router.patch("/facility-reservations/:id/cancel", ...secure(authService, "facility.booking.cancel"), validateRequest(z.object({ params: z.object({ id }), body: z.object({ reason: z.string().trim().min(3).max(500) }) })), async (req, res, next) => { try { sendSuccess(res, { data: await service.cancel(req.validated.params.id, req.validated.body.reason, req.auth.user.id, req.auth.user.role) }); } catch (error) { next(error); } });
   router.patch("/facility-reservations/:id/cancel/confirm", authenticate(authService), validateRequest(z.object({ params: z.object({ id }) })), async (req, res, next) => { try { sendSuccess(res, { data: await service.confirmCancellation(req.validated.params.id, req.auth.user.id) }); } catch (error) { next(error); } });
   return router;
 }

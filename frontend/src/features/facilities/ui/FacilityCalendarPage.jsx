@@ -28,7 +28,7 @@ export function FacilityCalendarPage({ session, onLoginClick, embedded = false }
   const [busy, setBusy] = useState(false);
   const CalendarHeading = embedded ? "h2" : "h1";
   const granted = new Set(session?.permissions ?? []);
-  const can = (code) => session?.user.role === "admin" || granted.has(code);
+  const can = (code) => session?.user.role === "admin" || (granted.has(code) && !(session?.user.role === "member" && ["facility.booking.read", "facility.booking.approve"].includes(code)));
   const dateRangeValid = from <= to && (Date.parse(to) - Date.parse(from)) / 86400000 <= 30;
   const calendar = useQuery({ queryKey: ["facility-calendar", from, to, typeId], queryFn: () => facilityApi.calendar({ from, to, typeId }), enabled: dateRangeValid, retry: false });
   const mine = useQuery({ queryKey: ["facility-reservations-me"], queryFn: facilityApi.mine, enabled: Boolean(session && can("facility.booking.self.read")), retry: false });

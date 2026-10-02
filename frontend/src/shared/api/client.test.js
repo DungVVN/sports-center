@@ -4,9 +4,49 @@ import { apiClient } from "./client.js";
 import { apiBaseUrl } from "../../config/runtime.js";
 import { errorMessageFor } from "./error-message.js";
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 describe("apiClient", () => {
+  it("ends a stalled request with a retryable timeout message", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("fetch", vi.fn((_url, { signal }) => new Promise((_resolve, reject) => {
+      signal.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")), { once: true });
+    })));
+    const result = apiClient.get("/classes", { timeoutMs: 100 }).catch((error) => error);
+    await vi.advanceTimersByTimeAsync(100);
+    const error = await result;
+    expect(error).toMatchObject({ code: "REQUEST_TIMEOUT" });
+    expect(errorMessageFor(error, "Không thể tải lớp học.")).toContain("Máy chủ phản hồi quá lâu");
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("preserves caller cancellation and removes its timeout", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("fetch", vi.fn((_url, { signal }) => new Promise((_resolve, reject) => {
+      signal.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")), { once: true });
+    })));
+    const controller = new AbortController();
+    const result = apiClient.get("/classes", { signal: controller.signal }).catch((error) => error);
+    controller.abort();
+    expect(await result).toMatchObject({ name: "AbortError" });
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("also times out when headers arrive but the response body stalls", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("fetch", vi.fn(async (_url, { signal }) => ({
+      ok: true,
+      headers: new Headers({ "content-type": "application/json" }),
+      json: () => new Promise((_resolve, reject) => {
+        signal.addEventListener("abort", () => reject(signal.reason), { once: true });
+      }),
+    })));
+    const result = apiClient.get("/classes", { timeoutMs: 100 }).catch((error) => error);
+    await vi.advanceTimersByTimeAsync(100);
+    expect(await result).toMatchObject({ code: "REQUEST_TIMEOUT" });
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it("returns the data envelope from a successful API response", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ success: true, data: { status: "ok" } }), { headers: { "content-type": "application/json" } }));
     vi.stubGlobal("fetch", fetchMock);

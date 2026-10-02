@@ -10,6 +10,13 @@ const result = { types: [{ id: "type-1", name: "Sân bóng" }], facilities: [{ i
 function mount(props = {}) { const client = new QueryClient({ defaultOptions: { queries: { retry: false } } }); return render(<QueryClientProvider client={client}><FacilityCalendarPage {...props} /></QueryClientProvider>); }
 
 describe("facility calendar", () => {
+  it("keeps member self-cancellation visible without fetching other people's reservations", async () => {
+    facilityApi.mine.mockResolvedValue([{ id: "mine-1", facilityName: "Sân của tôi", date: "2099-09-25", requestedStartMinute: 420, requestedEndMinute: 480, status: "approved" }]);
+    mount({ session: { user: { role: "member" }, permissions: ["facility.booking.self.read", "facility.booking.cancel", "facility.booking.read"] } });
+    expect(await screen.findByRole("button", { name: "Hủy đơn" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Yêu cầu đặt sân" })).not.toBeInTheDocument();
+    expect(facilityApi.reservations).not.toHaveBeenCalled();
+  });
   beforeEach(() => { vi.clearAllMocks(); facilityApi.calendar.mockResolvedValue(result); facilityApi.mine.mockResolvedValue([]); });
   afterEach(cleanup);
 

@@ -3,6 +3,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 import { normalizeDatabaseConnectionString } from "./database-url.js";
 import { currentRuntime } from "./shared/runtime/request-context.js";
+import { DatabasePool } from "./database-pool.js";
 
 export function createDatabaseClient(configuredConnectionString, { max = 10 } = {}) {
   if (!configuredConnectionString) throw new Error("DATABASE_URL is required to initialize the Sports Center database client.");
@@ -10,7 +11,14 @@ export function createDatabaseClient(configuredConnectionString, { max = 10 } = 
   const schemaMatch = connectionString.match(/[?&]schema=([^&]+)/);
   const schema = schemaMatch ? decodeURIComponent(schemaMatch[1]) : undefined;
   const options = schema ? `-c search_path="${schema}",public` : undefined;
-  const adapter = new PrismaPg({ connectionString, options, max }, schema ? { schema } : undefined);
+  const pool = new DatabasePool({
+    connectionString, options, max,
+    connectionTimeoutMillis: 10_000,
+    idleTimeoutMillis: 60_000,
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 10_000,
+  });
+  const adapter = new PrismaPg(pool, { ...(schema ? { schema } : {}), disposeExternalPool: true });
   return new PrismaClient({ adapter });
 }
 

@@ -1,4 +1,5 @@
 import { AppError } from "../errors/app-error.js";
+import { isDatabaseUnavailable } from "../errors/database-error.js";
 
 export function errorHandler(error, request, response, next) {
   if (response.headersSent) {
@@ -7,7 +8,11 @@ export function errorHandler(error, request, response, next) {
 
   const appError = error instanceof AppError
     ? error
-    : new AppError({
+    : isDatabaseUnavailable(error) ? new AppError({
+      statusCode: 503,
+      code: "DATABASE_UNAVAILABLE",
+      message: "Kết nối dữ liệu tạm thời gián đoạn. Vui lòng thử lại sau ít phút.",
+    }) : new AppError({
       statusCode: 500,
       code: "INTERNAL_ERROR",
       message: "Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau.",
