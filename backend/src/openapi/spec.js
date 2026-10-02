@@ -1,4 +1,5 @@
 import { env } from "../config/env.js";
+import { applyServiceContract } from "./service-contract.js";
 import { applySiteContract } from "./site-contract.js";
 
 const uuid = { type: "string", format: "uuid" };
@@ -29,8 +30,8 @@ export const openApiSpec = {
   openapi: "3.1.0",
   info: {
     title: "Sports Center API",
-    version: "0.2.0",
-    description: "API contract for Sports Center. Admin receives every permission code; identity-bound Member/Coach endpoints still enforce their own role scope. A temporary-password account must change password before normal API access.",
+    version: "0.3.0",
+    description: "Hệ thống quản lý dịch vụ và vận hành trung tâm thể thao: gói hội viên, khóa có hướng dẫn, huấn luyện cá nhân và đặt sân/phòng. Khóa học, PT và đặt sân/phòng không yêu cầu mua membership; mỗi dịch vụ có quy tắc sử dụng riêng. Admin receives every permission code; identity-bound Member/Coach endpoints still enforce their own role scope. A temporary-password account must change password before normal API access.",
   },
   servers: [{ url: env.apiBasePath }],
   paths: {
@@ -351,62 +352,7 @@ for (const [path, method, schema] of bodyContracts) {
 applySiteContract(openApiSpec);
 
 
-const courseSchema = { type: "object", properties: { id: uuid, name: { type: "string" }, status: { type: "string", enum: ["draft", "published", "cancelled", "completed"] }, priceVnd: { type: "string", pattern: "^\\d+$" }, capacity: { type: "integer" }, sessions: { type: "array", items: { type: "object" } }, reservedSeats: { type: "integer" } } };
-const refundOperation = (permission, summary, properties, required = []) => ({
-  tags: ["Payments"], summary, "x-required-permission": permission, security: [{ sessionCookie: [] }, { sessionBearer: [] }],
-  ...(properties && { parameters: [{ name: "id", in: "path", required: true, schema: uuid }], requestBody: jsonBody({ type: "object", properties, required }) }),
-  responses: { 200: { description: "Thành công" }, 403: { description: "Không đủ quyền hoặc sai vai trò" }, 409: { description: "Đã xử lý hoặc có yêu cầu hoàn tiền đang mở" }, 422: { description: "Dịch vụ đã sử dụng hoặc không đủ điều kiện" } },
-});
-const refundNote = { type: "string", minLength: 10, maxLength: 500 };
-Object.assign(openApiSpec.paths, {
-  "/service-refunds": { get: refundOperation("payment.refund.read", "Hoàn tiền dịch vụ: khách chỉ xem của mình") },
-  "/payments/{id}/refund-request": { post: refundOperation("payment.refund.request", "Yêu cầu hoàn toàn bộ dịch vụ chưa sử dụng; không áp dụng membership", { reason: refundNote }, ["reason"]) },
-  "/service-refunds/{id}/review": { post: refundOperation("payment.refund.review", "Quản lý duyệt/từ chối; duyệt thu hồi quyền sử dụng trong cùng transaction", { approved: { type: "boolean" }, note: refundNote }, ["approved", "note"]) },
-  "/service-refunds/{id}/execute": { post: refundOperation("payment.refund.execute", "Ghi nhận đã trả tiền thực tế và mã đối soát; không tự chuyển tiền", { transferReference: refundNote }, ["transferReference"]) },
-  "/payments/{id}/reconcile": { post: refundOperation("payment.reconcile", "Thử cấp lại dịch vụ đã thu nhưng lỗi; vẫn kiểm tra điều kiện dịch vụ", { note: refundNote }, ["note"]) },
-});
-const courseOperation = (permission, summary, schema, status = 200, body) => ({
-  tags: ["Courses"], summary, security: [{ sessionCookie: [] }, { sessionBearer: [] }],
-  description: `Yêu cầu quyền ${permission}. Khóa có quyền đăng ký riêng, không yêu cầu membership. Giá được lưu tại lúc đăng ký; đăng ký chờ thanh toán giữ chỗ.`,
-  ...(body && { requestBody: { required: true, content: { "application/json": { schema: body } } } }),
-  responses: { [status]: { description: "Thành công", content: { "application/json": { schema: { type: "object", properties: { success: { type: "boolean" }, data: schema } } } } }, 403: { description: "Không đủ quyền" }, 409: { description: "Đã đăng ký, hết chỗ hoặc giao dịch đang xử lý" }, 422: { description: "Khóa hoặc đăng ký không đủ điều kiện" } },
-});
-Object.assign(openApiSpec.paths, {
-  "/facility-settings": { get: facilityAuth("facility.manage", facilityResponse({ type: "object", properties: { facilities: { type: "array", items: facilityRecord }, rooms: { type: "array", items: { type: "object", properties: { id: uuid, name: { type: "string" } } } } } }), "Cấu hình giá và liên kết phòng vật lý; dành cho người quản lý sân.") },
-  "/facilities/{id}/configuration": { patch: { ...facilityAuth("facility.manage", facilityResponse({ type: "object", properties: { id: uuid, hourlyRateVnd: { type: "string" }, roomId: { type: ["string", "null"], format: "uuid" } } }), "Đơn giá theo giờ; phòng liên kết phải không tạo xung đột lịch. Đơn cũ giữ nguyên giá chốt."), parameters: [{ name: "id", in: "path", required: true, schema: uuid }], requestBody: jsonBody({ type: "object", required: ["hourlyRateVnd"], properties: { hourlyRateVnd: { type: "string", pattern: "^[0-9]{1,12}$" }, roomId: { type: ["string", "null"], format: "uuid" } } }) } },
-  "/facility-reservations/{id}/payment": { post: { ...facilityAuth("facility.booking.request", facilityResponse({ type: "object" }), "Người tạo đơn lập thanh toán theo giá server đã chốt; không cần membership. Tiếp tục giao dịch đang xử lý nếu đã có."), parameters: [{ name: "id", in: "path", required: true, schema: uuid }], requestBody: jsonBody({ type: "object", required: ["method"], properties: { method: { enum: ["bank_transfer", "online"] } } }) } },
-  "/facility-reservations/{id}/complete": { post: { ...facilityAuth("facility.booking.approve", facilityResponse({ type: "object", properties: { id: uuid, completedAt: { type: "string", format: "date-time" } } }), "Chốt sử dụng sau khung giờ; đơn mới phải trả tiền hoặc miễn phí; đơn lịch sử giữ điều kiện cũ."), parameters: [{ name: "id", in: "path", required: true, schema: uuid }], requestBody: jsonBody({ type: "object", required: ["note"], properties: { note: { type: "string", minLength: 3, maxLength: 500 } } }) } },
-  "/courses": {
-    get: courseOperation("course.read", "Danh mục khóa và lịch nhiều buổi", { type: "array", items: courseSchema }),
-    post: courseOperation("course.manage", "Tạo khóa nháp", courseSchema, 201, { type: "object", required: ["name", "priceVnd", "capacity"], properties: { name: { type: "string", minLength: 2, maxLength: 120 }, description: { type: "string", maxLength: 1000 }, priceVnd: { type: "string", pattern: "^\\d+$" }, capacity: { type: "integer", minimum: 1, maximum: 500 }, paymentHoldMinutes: { type: "integer", minimum: 5, maximum: 1440, default: 60 } } }),
-  },
-  "/courses/{id}/sessions": { post: courseOperation("course.manage", "Thêm buổi vào khóa nháp", { type: "object" }, 201, { type: "object", required: ["coachUserId", "roomId", "startsAt", "endsAt"], properties: { name: { type: "string" }, coachUserId: uuid, roomId: uuid, startsAt: { type: "string", format: "date-time" }, endsAt: { type: "string", format: "date-time" } } }) },
-  "/courses/{id}/publish": { post: courseOperation("course.manage", "Công bố khóa và toàn bộ buổi trong một transaction", courseSchema) },
-  "/courses/{id}/complete": { post: courseOperation("course.manage", "Chốt khóa sau khi mọi buổi đã kết thúc/xử lý hủy và không còn đăng ký chờ thanh toán", courseSchema) },
-  "/courses/{id}/enroll": { post: courseOperation("course.enroll", "Đăng ký trọn khóa cho chính mình", { type: "object" }, 201) },
-  "/course-enrollments/me": { get: courseOperation("course.enroll", "Đăng ký khóa của tôi", { type: "array", items: { type: "object" } }) },
-  "/course-enrollments": { get: courseOperation("course.enrollment.read", "Đăng ký khóa để vận hành", { type: "array", items: { type: "object" } }) },
-  "/course-enrollments/{id}/cancel": { post: courseOperation("course.enroll", "Hủy đăng ký chưa có giao dịch đang xử lý hoặc đã thanh toán", { type: "object" }) },
-  "/course-enrollments/{id}/payment": { post: courseOperation("course.enroll", "Tạo thanh toán từ giá khóa đã chốt; kích hoạt và đặt toàn bộ buổi khi đã thu", { type: "object" }, 201, { type: "object", required: ["method"], properties: { method: { type: "string", enum: ["bank_transfer", "online"] } } }) },
-});
-
-
-const ptResult = { type: "object" };
-const ptOp = (permission, summary, schema = ptResult, body, status = 200) => ({ ...courseOperation(permission, summary, schema, status, body), tags: ["Personal training"], description: `Quyền ${permission}. Gói PT độc lập membership; giá/số buổi/hạn dùng lưu snapshot. Khách chỉ thao tác gói của mình; coach chỉ ghi kết quả trong scope được phân công. Đặt lịch giữ buổi; hủy hợp lệ trả lại buổi; hoàn thành/vắng mặt sử dụng buổi.` });
-Object.assign(openApiSpec.paths, {
-  "/pt-packages/{id}/availability": { patch: ptOp("pt.manage", "Mở/dừng bán gói PT; quyền lợi đã mua giữ nguyên", ptResult, { type: "object", required: ["isActive"], properties: { isActive: { type: "boolean" } } }) },
-  "/pt-purchases/{id}/cancel": { post: ptOp("pt.purchase", "Hủy đăng ký PT chưa có giao dịch đang xử lý/đã thanh toán") },
- "/pt-packages": { get: ptOp("pt.read", "Danh mục gói PT", { type: "array", items: ptResult }), post: ptOp("pt.manage", "Tạo gói PT", ptResult, { type: "object", required: ["name","priceVnd","sessionCount","durationDays","sessionMinutes","cancellationHours"], properties: { name: { type: "string", minLength: 2, maxLength: 120 }, description: { type: "string", maxLength: 1000 }, priceVnd: { type: "string", pattern: "^\\d+$" }, sessionCount: { type: "integer", minimum: 1, maximum: 500 }, durationDays: { type: "integer", minimum: 1, maximum: 730 }, sessionMinutes: { type: "integer", minimum: 15, maximum: 240 }, cancellationHours: { type: "integer", minimum: 0, maximum: 168 } } }, 201) },
- "/pt-purchases": { get: ptOp("pt.read", "Gói PT và số buổi trong phạm vi tài khoản", { type: "array", items: ptResult }) },
- "/pt-resources": { get: ptOp("pt.read", "Phòng và coach thuộc trung tâm") },
- "/pt-packages/{id}/buy": { post: ptOp("pt.purchase", "Mua gói PT cho chính mình", ptResult, undefined, 201) },
- "/pt-purchases/{id}/payment": { post: ptOp("pt.purchase", "Lập hoặc mở lại thanh toán giá PT đã chốt", ptResult, { type: "object", required: ["method"], properties: { method: { type: "string", enum: ["bank_transfer", "online"] } } }, 201) },
- "/pt-purchases/{id}/coach": { patch: ptOp("pt.manage", "Trung tâm phân công coach; không đổi khi còn lịch chưa xử lý", ptResult, { type: "object", required: ["coachUserId"], properties: { coachUserId: uuid } }) },
- "/pt-purchases/{id}/appointments": { post: ptOp("pt.purchase", "Đặt một buổi PT, chặn trùng coach/phòng và hết số buổi", ptResult, { type: "object", required: ["roomId", "startsAt"], properties: { roomId: uuid, startsAt: { type: "string", format: "date-time" } } }, 201) },
- "/pt-appointments/{id}/cancel": { post: ptOp("pt.purchase", "Hủy buổi PT trong hạn gói; giải phóng lịch và số buổi", ptResult, { type: "object", required: ["reason"], properties: { reason: { type: "string", minLength: 3, maxLength: 500 } } }) },
- "/pt-appointments/{id}/staff-cancel": { post: ptOp("pt.manage", "Trung tâm hủy lịch PT có lý do, trả lại số buổi và thông báo khách", ptResult, { type: "object", required: ["reason"], properties: { reason: { type: "string", minLength: 3, maxLength: 500 } } }) },
- "/pt-appointments/{id}/complete": { post: ptOp("pt.complete", "Coach ghi hoàn thành hoặc vắng mặt một lần; điểm danh và audit cùng transaction", ptResult, { type: "object", required: ["status", "reason"], properties: { status: { type: "string", enum: ["completed", "absent"] }, reason: { type: "string", minLength: 3, maxLength: 500 } } }) },
-});
+applyServiceContract(openApiSpec, { uuid, jsonBody, facilityAuth, facilityResponse, facilityRecord, facilityReservation, facilityReservationRecord });
 
 for (const [path, operations] of Object.entries(openApiSpec.paths)) {
   const names = [...path.matchAll(/\{([^}]+)\}/g)].map((match) => match[1]);

@@ -1,7 +1,9 @@
 import { readFileSync } from "node:fs";
 import { basename } from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import request from "supertest";
+import { createApp } from "../src/app.js";
+import { describe, expect, it, vi } from "vitest";
 import { openApiSpec } from "../src/openapi/spec.js";
 import { routeSourceFiles } from "./helpers/route-source-files.js";
 import { pageCreateSchema, pageDraftSchema, menuDraftSchema } from "../src/modules/site/domain/site-content.js";
@@ -23,6 +25,27 @@ function backendOperations() {
 }
 
 describe("OpenAPI contract", () => {
+  it("resolves every local schema reference in the complete contract", () => {
+    const visit = (node) => {
+      if (!node || typeof node !== "object") return;
+      if (node.$ref?.startsWith("#/components/schemas/")) expect(openApiSpec.components.schemas[node.$ref.split("/").at(-1)]).toBeDefined();
+      for (const value of Object.values(node)) visit(value);
+    };
+    visit(openApiSpec);
+  });
+
+  it.each([
+    ["/courses", "courseService", "course.manage"],
+    ["/pt-packages", "ptService", "pt.manage"],
+    ["/payments", "paymentService", "payment.record"],
+  ])("accepts the documented request example through the actual %s route", async (path, serviceName, permission) => {
+    const service = { create: vi.fn().mockResolvedValue({ id: "11111111-1111-4111-8111-111111111111" }) };
+    const authService = { getAuthentication: vi.fn().mockResolvedValue({ user: { id: "admin-1", role: "admin" }, permissions: [permission] }) };
+    const example = openApiSpec.paths[path].post.requestBody.content["application/json"].example;
+    await request(createApp({ authService, [serviceName]: service })).post(`/api/v1${path}`).set("Authorization", "Bearer contract-token").send(example).expect(201);
+    expect(service.create).toHaveBeenCalledWith(expect.objectContaining(example), expect.anything());
+  });
+
   it("provides CMS examples accepted by the actual request validators", () => {
     for (const [path, method, schema] of [
       ["/admin/site/pages", "post", pageCreateSchema],
