@@ -25,6 +25,18 @@ const secure = (authService, permission) => [authenticate(authService), (req, re
 
 export function createFacilityRouter(service, authService) {
   const router = Router();
+  router.get("/facility-settings", ...secure(authService, "facility.manage"), async (req, res, next) => {
+    try { sendSuccess(res, { data: await service.settings() }); } catch (error) { next(error); }
+  });
+  router.patch("/facilities/:id/configuration", ...secure(authService, "facility.manage"), validateRequest(z.object({ params: z.object({ id }), body: z.object({ hourlyRateVnd: z.string().regex(/^\d{1,12}$/), roomId: id.nullable().optional() }).strict() })), async (req, res, next) => {
+    try { sendSuccess(res, { data: await service.configure(req.validated.params.id, req.validated.body, req.auth.user.id) }); } catch (error) { next(error); }
+  });
+  router.post("/facility-reservations/:id/payment", ...secure(authService, "facility.booking.request"), validateRequest(z.object({ params: z.object({ id }), body: z.object({ method: z.enum(["bank_transfer", "online"]) }).strict() })), async (req, res, next) => {
+    try { sendSuccess(res, { data: await service.payment(req.validated.params.id, req.validated.body, req.auth.user) }); } catch (error) { next(error); }
+  });
+  router.post("/facility-reservations/:id/complete", ...secure(authService, "facility.booking.approve"), validateRequest(z.object({ params: z.object({ id }), body: z.object({ note: z.string().trim().min(3).max(500) }).strict() })), async (req, res, next) => {
+    try { sendSuccess(res, { data: await service.complete(req.validated.params.id, req.validated.body.note, req.auth.user.id) }); } catch (error) { next(error); }
+  });
   router.get("/public/facility-calendar", validateRequest(z.object({ query: z.object({ from: date, to: date, typeId: id.optional() }).refine((value) => {
     const days = (Date.parse(value.to) - Date.parse(value.from)) / 86400000;
     return days >= 0 && days <= 30;

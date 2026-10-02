@@ -1,3 +1,4 @@
+import { ServiceReconciliation } from "./ServiceReconciliation.jsx";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "../../../shared/ui/Button.jsx";
@@ -23,7 +24,7 @@ const eventTypeLabels = {
   payment_rejected: "Từ chối thanh toán",
 };
 
-export function MemberPaymentsPage() {
+export function MemberPaymentsPage({ session }) {
   const paymentsQuery = useQuery({ queryKey: ["member", "payments"], queryFn: paymentApi.mine, refetchInterval: 30_000 });
   const [receiptId, setReceiptId] = useState(null);
   const receiptQuery = useQuery({ queryKey: ["member", "payments", receiptId], queryFn: () => paymentApi.ownReceipt(receiptId), enabled: Boolean(receiptId) });
@@ -40,6 +41,8 @@ export function MemberPaymentsPage() {
       </header>
       {(paymentsQuery.isError || receiptQuery.isError) && <p className="auth-alert" role="alert">{paymentsQuery.isError ? errorMessageFor(paymentsQuery.error, "Không thể tải phiếu thu.") : errorMessageFor(receiptQuery.error, "Không thể tải chi tiết phiếu thu.")}</p>}
       <section className="members-list">
+        {payments.some((item) => item.fulfillment_error) && <p role="status">Có thanh toán đã thu tiền nhưng cần trung tâm đối soát quyền sử dụng. Vui lòng liên hệ hỗ trợ; bạn chưa được cấp quyền tự động cho giao dịch này.</p>}
+        {receipt?.status === "pending" && receipt.checkoutUrl && <a href={receipt.checkoutUrl} target="_blank" rel="noreferrer">Tiếp tục thanh toán PayOS</a>}
         <div className="list-heading">
           <h2>Lịch sử phiếu thu</h2>
           <Button onClick={paymentsQuery.refetch} size="sm" variant="ghost">
@@ -72,7 +75,7 @@ export function MemberPaymentsPage() {
                         <code>{payment.transaction_code}</code>
                       </td>
                       <td>
-                        <strong>{payment.membership?.packageName ?? "Gói tập / Dịch vụ"}</strong>
+                        <strong>{payment.service?.name ?? payment.membership?.packageName ?? "Gói tập / Dịch vụ"}</strong>
                       </td>
                       <td>{Number(payment.amountVnd).toLocaleString("vi-VN")} ₫</td>
                       <td>{methodLabels[payment.method] ?? payment.method}</td>
@@ -113,7 +116,7 @@ export function MemberPaymentsPage() {
           <div style={{ display: "grid", gap: "16px", padding: "8px 0" }}>
             <div style={{ padding: "14px", background: "var(--color-surface-muted)", borderRadius: "var(--radius-control)" }}>
               <p style={{ margin: "0 0 8px" }}>
-                <strong>Dịch vụ:</strong> {receipt.membership?.packageName ?? "Gói tập / Dịch vụ"}
+                <strong>Dịch vụ:</strong> {receipt.service?.name ?? receipt.membership?.packageName ?? "Gói tập / Dịch vụ"}
               </p>
               <p style={{ margin: "0 0 8px" }}>
                 <strong>Số tiền:</strong> {Number(receipt.amountVnd).toLocaleString("vi-VN")} ₫ ·{" "}
@@ -163,6 +166,7 @@ export function MemberPaymentsPage() {
           </div>
         )}
       </Dialog>
+      <ServiceReconciliation session={session} payments={payments} />
     </main>
   );
 }

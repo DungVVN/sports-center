@@ -1,6 +1,7 @@
 import { prisma } from "../../../database.js";
 const entityLabels = Object.freeze({
-  attendance: "Lượt điểm danh", auth_attempt: "Lần đăng nhập", auth_session: "Phiên đăng nhập", booking: "Đặt chỗ", class_session: "Lớp học", member: "Hội viên", membership: "Gói tập của hội viên", membership_package: "Gói tập", payment: "Phiếu thu", staff: "Nhân sự", training_plan: "Giáo án", training_template: "Mẫu giáo án", user: "Tài khoản",
+  facility_type: "Loại sân", facility: "Sân/phòng", facility_day: "Ngày mở sân", facility_reservation: "Đơn đặt sân", class_change_request: "Yêu cầu thay đổi lớp", course: "Khóa học", course_enrollment: "Đăng ký khóa", pt_purchase: "Gói PT đã mua", pt_package: "Gói PT", support_ticket: "Yêu cầu hỗ trợ", site_page: "Trang nội dung", site_menu: "Menu website",
+  attendance: "Lượt điểm danh", auth_attempt: "Lần đăng nhập", auth_session: "Phiên đăng nhập", booking: "Đặt chỗ", class_session: "Lớp học", member: "Hội viên", membership: "Gói tập của hội viên", membership_package: "Gói tập", payment: "Phiếu thu", staff: "Nhân sự", training_session: "Buổi tập", training_result: "Kết quả tập luyện", training_plan: "Giáo án", training_template: "Mẫu giáo án", user: "Tài khoản",
 });
 
 function idsFor(logs, entityType) { return logs.filter((item) => item.entity_type === entityType && item.entity_id).map((item) => item.entity_id); }
@@ -41,7 +42,7 @@ export const auditRepository = {
     const items = logs.map((item) => ({
       ...item,
       actor: item.actor_user_id ? { id: item.actor_user_id, name: actorNames.get(item.actor_user_id) ?? "Không xác định" } : { id: null, name: "Hệ thống" },
-      entity: details.get(`${item.entity_type}:${item.entity_id}`) ?? { label: entityLabels[item.entity_type] ?? "Đối tượng hệ thống", value: item.entity_type === "auth_session" ? "Phiên làm việc" : null },
+      entity: details.get(`${item.entity_type}:${item.entity_id}`) ?? { label: entityLabels[item.entity_type] ?? item.entity_type?.replaceAll("_", " ") ?? "Sự kiện hệ thống", value: item.entity_id ?? (item.entity_type === "auth_session" ? "Phiên làm việc" : null) },
     }));
 
     return {

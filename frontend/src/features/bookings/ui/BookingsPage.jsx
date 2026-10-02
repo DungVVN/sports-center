@@ -13,15 +13,18 @@ import { sortTable } from "../../../shared/lib/table.js";
 import { hasSessionPermission } from "../../auth/index.js";
 import { useBookingsWorkspace } from "../api/useBookingsWorkspace.js";
 import { TableSkeleton } from "../../../shared/ui/TableSkeleton.jsx";
+import { UpcomingSchedule } from "./UpcomingSchedule.jsx";
 
 const emptyForm = { memberId: "", classId: "" };
 const labels = {
   confirmed: "Đã xác nhận",
   waitlisted: "Danh sách chờ",
   cancelled: "Đã hủy",
+  attended: "Đã tham gia",
+  absent: "Vắng mặt",
 };
 
-export function BookingsPage({ session }) {
+export function BookingsPage({ onNavigate, session }) {
   const [listMemberId, setListMemberId] = useState(undefined);
   const [form, setForm] = useState(emptyForm);
   const [cancellation, setCancellation] = useState({
@@ -138,8 +141,9 @@ export function BookingsPage({ session }) {
     <main className="members-page">
       <header>
         <p>Đặt chỗ</p>
-        <h1>{role === "coach" ? "Lịch đặt lớp phụ trách" : "Quản lý đặt lớp"}</h1>
+        <h1>{isMember ? "Lịch tập của tôi" : role === "coach" ? "Lịch đặt lớp phụ trách" : "Quản lý đặt lớp"}</h1>
       </header>
+      {isMember && !workspace.loading && <UpcomingSchedule bookings={items} onNavigate={onNavigate} session={session} />}
       {workspace.error && (
         <p className="auth-alert" role="alert">
           {workspace.error}
@@ -350,11 +354,11 @@ export function BookingsPage({ session }) {
                               item.status,
                             ) ? (
                               <Button
-                                onClick={() => openCancellation(item)}
+                                onClick={() => item.class_session?.pt_purchase_id ? onNavigate?.("pt") : openCancellation(item)}
                                 size="sm"
                                 variant="ghost"
                               >
-                                Hủy
+                                {item.class_session?.pt_purchase_id ? "Quản lý lịch PT" : "Hủy"}
                               </Button>
                             ) : "—"}
                           </td>}

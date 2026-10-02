@@ -337,6 +337,8 @@ model rooms {
 }
 
 model class_sessions {
+  pt_purchase_id String? @db.Uuid
+  course_id        String? @db.Uuid
   id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   code          String       @unique
   name          String
@@ -432,6 +434,8 @@ model facility_types {
 }
 
 model facilities {
+  hourly_rate_vnd BigInt?
+  room_id String? @unique @db.Uuid
   id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   type_id      String   @db.Uuid
   name         String
@@ -453,6 +457,13 @@ model facility_days {
 }
 
 model facility_reservations {
+  hourly_rate_vnd_snapshot BigInt?
+  total_vnd_snapshot BigInt?
+  payment_state String @default("legacy")
+  activation_payment_id String? @db.Uuid
+  completed_at DateTime? @db.Timestamptz(6)
+  completed_by String? @db.Uuid
+  completion_note String?
   id                     String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   day_id                 String                      @db.Uuid
   requester_user_id       String                      @db.Uuid
@@ -480,6 +491,9 @@ model facility_reservations {
 }
 
 model payments {
+  facility_reservation_id String? @db.Uuid
+  pt_purchase_id String? @db.Uuid
+  course_enrollment_id String? @db.Uuid
   id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   transaction_code String         @unique
   member_id        String         @db.Uuid
@@ -488,6 +502,8 @@ model payments {
   method           payment_method
   provider         payment_provider?
   legacy_provider  String? @db.Text
+  fulfillment_error String?
+  provider_checkout_url String?
   provider_order_code BigInt? @unique
   status           payment_status @default(pending)
   recorded_by      String         @db.Uuid
@@ -783,4 +799,94 @@ model site_media_assets {
   deleted_at    DateTime? @db.Timestamptz(6)
 
   @@index([deleted_at, created_at])
+}
+
+model courses {
+  payment_hold_minutes Int @default(60)
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code        String   @unique
+  name        String
+  description String?
+  price_vnd   BigInt
+  capacity    Int
+  status      String   @default("draft")
+  created_by  String   @db.Uuid
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime @updatedAt @db.Timestamptz(6)
+}
+
+model course_enrollments {
+  payment_expires_at DateTime? @db.Timestamptz(6)
+  cancellation_reason String?
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  course_id             String    @db.Uuid
+  member_id             String    @db.Uuid
+  price_vnd_snapshot    BigInt
+  status                String    @default("pending_payment")
+  enrolled_at           DateTime  @default(now()) @db.Timestamptz(6)
+  activated_at          DateTime? @db.Timestamptz(6)
+  activation_payment_id String?   @db.Uuid
+  cancelled_at          DateTime? @db.Timestamptz(6)
+  @@index([member_id, enrolled_at])
+}
+
+model pt_packages {
+ id                 String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+ name               String
+ description        String?
+ price_vnd          BigInt
+ session_count      Int
+ duration_days      Int
+ session_minutes    Int
+ cancellation_hours Int @default(5)
+ is_active          Boolean @default(true)
+ created_by         String @db.Uuid
+ created_at         DateTime @default(now()) @db.Timestamptz(6)
+}
+model pt_purchases {
+ id                          String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+ package_id                  String @db.Uuid
+ member_id                   String @db.Uuid
+ package_name_snapshot       String
+ price_vnd_snapshot          BigInt
+ session_count_snapshot      Int
+ duration_days_snapshot      Int
+ session_minutes_snapshot    Int
+ cancellation_hours_snapshot Int
+ coach_user_id               String? @db.Uuid
+ status                      String @default("pending_payment")
+ purchased_at                DateTime @default(now()) @db.Timestamptz(6)
+ activated_at                DateTime? @db.Timestamptz(6)
+ expires_at                  DateTime? @db.Timestamptz(6)
+ activation_payment_id       String? @db.Uuid
+ @@index([member_id,purchased_at])
+ @@index([coach_user_id])
+}
+model pt_appointments {
+ id               String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+ purchase_id      String @db.Uuid
+ class_session_id String @unique @db.Uuid
+ status           String @default("scheduled")
+ created_at       DateTime @default(now()) @db.Timestamptz(6)
+ completed_at     DateTime? @db.Timestamptz(6)
+ recorded_by      String? @db.Uuid
+ reason           String?
+ @@index([purchase_id,status])
+}
+model service_refunds {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  payment_id String @db.Uuid
+  member_id String @db.Uuid
+  amount_vnd BigInt
+  reason String
+  status String @default("pending")
+  requested_by String @db.Uuid
+  requested_at DateTime @default(now()) @db.Timestamptz(6)
+  reviewed_by String? @db.Uuid
+  reviewed_at DateTime? @db.Timestamptz(6)
+  review_note String?
+  executed_by String? @db.Uuid
+  executed_at DateTime? @db.Timestamptz(6)
+  transfer_reference String?
+  @@index([member_id, requested_at])
 }

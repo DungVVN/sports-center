@@ -10,6 +10,21 @@ import { errorMessageFor } from "../../../shared/api/error-message.js";
 import "./audit-logs.css";
 
 const actionLabels = Object.freeze({
+  "facility.type.created": "Thêm loại sân",
+  "facility.created": "Thêm sân/phòng",
+  "facility.day.created": "Mở ngày đặt sân",
+  "facility.reservation.requested": "Yêu cầu đặt sân",
+  "facility.reservation.approved": "Duyệt đặt sân",
+  "facility.reservation.rejected": "Từ chối đặt sân",
+  "facility.reservation.cancelled": "Hủy đơn đặt sân",
+  "facility.reservation.cancellation_requested": "Đề nghị hủy đơn đặt sân",
+  "facility.reservation.cancellation_confirmed": "Xác nhận hủy đơn đặt sân",
+  "site.page.draft_started": "Tạo bản nháp trang",
+  "site.page.draft_saved": "Lưu bản nháp trang",
+  "site.page.published": "Xuất bản trang",
+  "site.page.restored": "Khôi phục trang",
+  "site.menu.draft_saved": "Lưu bản nháp menu",
+  "site.menu.published": "Xuất bản menu",
   "attendance.checked_in": "Điểm danh vào lớp",
   "attendance.checked_out": "Điểm danh rời lớp",
   "attendance.corrected": "Điều chỉnh điểm danh",
@@ -111,7 +126,7 @@ export function AuditLogsPage() {
                       >
                         {actionLabels[item.action] ?? item.summary}
                       </div>
-                      <small>{item.summary}</small>
+                      {actionLabels[item.action] && actionLabels[item.action] !== item.summary && <small>{item.summary}</small>}
                     </td>
                     <td>
                       <div className="audit-log-table__entity">
@@ -121,6 +136,7 @@ export function AuditLogsPage() {
                         {item.entity?.value && (
                           <strong>{item.entity.value}</strong>
                         )}
+                        {item.entity_id && item.entity?.value !== item.entity_id && <code>{item.entity_id}</code>}
                       </div>
                     </td>
                     <td>{item.reason ?? "—"}</td>

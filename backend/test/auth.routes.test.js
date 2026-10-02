@@ -22,6 +22,11 @@ function makeService() {
 }
 
 describe("Auth routes", () => {
+  it.each(["http://example.com/avatar.jpg", "https://user:password@example.com/avatar.jpg"])("rejects unsafe avatar URL %s before saving a profile", async (avatarUrl) => {
+    const service = makeService();
+    await request(createApp({ authService: service })).patch("/api/v1/auth/profile").set("Authorization", "Bearer session-token").send({ fullName: "Lễ tân Hương", phone: "0901000011", dateOfBirth: null, avatarUrl }).expect(422);
+    expect(service.updateOwnProfile).not.toHaveBeenCalled();
+  });
   it("validates public registration before invoking the service", async () => {
     const service = makeService();
     const response = await request(createApp({ authService: service })).post("/api/v1/auth/register").send({ email: "not-email" }).expect(422);

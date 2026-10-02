@@ -4,7 +4,7 @@ const fieldLabels = {
   amountVnd: "Số tiền", code: "Mã gói", durationDays: "Số ngày", endsOn: "Ngày kết thúc",
   memberId: "Hội viên", membershipId: "Gói chờ thanh toán", name: "Tên gói",
   packageId: "Gói tập", priceVnd: "Giá gói", reason: "Lý do", startsOn: "Ngày bắt đầu",
-  tierRank: "Thứ hạng quyền",
+  tierRank: "Thứ hạng quyền", phone: "Số điện thoại",
 };
 
 function issueMessage(issue) {

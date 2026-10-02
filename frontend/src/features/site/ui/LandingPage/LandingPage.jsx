@@ -4,6 +4,7 @@ import { PublicFooter } from "../PublicFooter/PublicFooter.jsx";
 import { corePages } from "../../model/core-pages.js";
 import { PublicMenuLinks } from "../PublicNavigation/PublicMenuLinks.jsx";
 import "./LandingPage.css";
+import { PublicServiceCatalog } from "../../../services/index.js";
 
 export function LandingPage({ onLoginClick, onRegisterClick }) {
    const [scrolled, setScrolled] = useState(false);
@@ -109,6 +110,7 @@ export function LandingPage({ onLoginClick, onRegisterClick }) {
                {corePages.map((page) => <a className="public-page-directory__link" href={page.path} key={page.path}><h3>{page.label}</h3><p>{page.description}</p><span>Xem chi tiết →</span></a>)}
             </div>
          </section>
+         <PublicServiceCatalog onLoginClick={onLoginClick} />
          {/* CTA Banner */}
          <section className="section-cta-banner">
             <div className="cta-banner-container">

@@ -34,6 +34,12 @@ async function eligibleMembership(database, memberId, accessAt) {
   return memberships.find((membership) => !frozenIds.has(membership.id)) ?? null;
 }
 
+async function hasBookingAccess(database, memberId, session) {
+  if (session.course_id) return Boolean(await database.course_enrollments.findFirst({ where: { course_id: session.course_id, member_id: memberId, status: "active" } }));
+  const membership = await eligibleMembership(database, memberId, session.starts_at);
+  return Boolean(membership && await bookingEntitlement(database, membership.package_id));
+}
+
 async function lockClass(database, classId) {
   await database.$queryRaw`SELECT id FROM class_sessions WHERE id = ${classId}::uuid FOR UPDATE`;
   return database.class_sessions.findUnique({ where: { id: classId } });
@@ -45,11 +51,10 @@ async function promoteEligibleWaiter(database, classId, session) {
   if (occupied >= session.capacity) return null;
   const waitlisted = await database.bookings.findMany({ where: { class_session_id: classId, status: "waitlisted" }, orderBy: [{ booked_at: "asc" }, { id: "asc" }] });
   for (const candidate of waitlisted) {
-    const membership = await eligibleMembership(database, candidate.member_id, session.starts_at);
-    if (!membership || !await bookingEntitlement(database, membership.package_id)) continue;
+    if (!await hasBookingAccess(database, candidate.member_id, session)) continue;
     const booking = await database.bookings.update({ where: { id: candidate.id }, data: { status: "confirmed" } });
     const member = await database.members.findUnique({ where: { id: candidate.member_id }, select: { user_id: true } });
-    if (member?.user_id) await database.notifications.create({ data: { recipient_user_id: member.user_id, category: "member", title: "Đã có chỗ trong lớp", body: "Bạn đã được xác nhận từ danh sách chờ vì có chỗ trống.", link_path: `/bookings/${booking.id}` } });
+    if (member?.user_id) await database.notifications.create({ data: { recipient_user_id: member.user_id, category: "member", title: "Đã có chỗ trong lớp", body: "Bạn đã được xác nhận từ danh sách chờ vì có chỗ trống.", link_path: "/bookings" } });
     return booking;
   }
   return null;
@@ -66,7 +71,7 @@ export const bookingRepository = {
     });
     const sessions = await prisma.class_sessions.findMany({
       where: { id: { in: bookings.map((booking) => booking.class_session_id) } },
-      select: { id: true, name: true, coach_user_id: true, starts_at: true, ends_at: true },
+      select: { id: true, name: true, coach_user_id: true, starts_at: true, ends_at: true, pt_purchase_id: true, course_id: true },
     });
     const coaches = await prisma.users.findMany({
       where: { id: { in: sessions.map((session) => session.coach_user_id) } },
@@ -104,17 +109,20 @@ export const bookingRepository = {
   member: (id) => prisma.members.findUnique({ where: { id } }),
   memberByUser: (userId) => prisma.members.findUnique({ where: { user_id: userId } }),
   activeMembership: (memberId, accessAt) => eligibleMembership(prisma, memberId, accessAt),
+  courseAccess: (memberId, courseId) => prisma.course_enrollments.findFirst({ where: { member_id: memberId, course_id: courseId, status: "active" } }),
   entitlement: (packageId) => bookingEntitlement(prisma, packageId),
   createWithCapacity: ({ bookingCode, memberId, classId, bookedBy }) => serializable(async (tx) => {
+    const session = await lockClass(tx, classId);
+    if (!session || session.status !== "published" || session.starts_at <= new Date()) return { unavailable: true };
     const existing = await tx.bookings.findFirst({ where: { member_id: memberId, class_session_id: classId, status: { in: ["confirmed", "waitlisted"] } } });
     if (existing) return { duplicate: true, booking: existing };
-    const session = await lockClass(tx, classId);
+    if (!await hasBookingAccess(tx, memberId, session)) return { ineligible: true };
     const confirmed = await tx.bookings.count({ where: { class_session_id: classId, status: { in: ["confirmed", "attended"] } } });
     const status = confirmed >= session.capacity ? "waitlisted" : "confirmed";
     const booking = await tx.bookings.create({ data: { booking_code: bookingCode, member_id: memberId, class_session_id: classId, status, booked_by: bookedBy } });
     if (status === "waitlisted") {
       const member = await tx.members.findUnique({ where: { id: memberId }, select: { user_id: true } });
-      if (member?.user_id) await tx.notifications.create({ data: { recipient_user_id: member.user_id, category: "member", title: "Bạn đang trong danh sách chờ", body: "Lớp hiện đã đủ chỗ. Hệ thống sẽ tự động xác nhận khi có chỗ trống và bạn còn đủ điều kiện tham gia.", link_path: `/bookings/${booking.id}` } });
+      if (member?.user_id) await tx.notifications.create({ data: { recipient_user_id: member.user_id, category: "member", title: "Bạn đang trong danh sách chờ", body: "Lớp hiện đã đủ chỗ. Hệ thống sẽ tự động xác nhận khi có chỗ trống và bạn còn đủ điều kiện tham gia.", link_path: "/bookings" } });
     }
     return { duplicate: false, booking };
   }),

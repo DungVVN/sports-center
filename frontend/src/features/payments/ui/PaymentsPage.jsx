@@ -1,3 +1,4 @@
+import { ServiceReconciliation } from "./ServiceReconciliation.jsx";
 import { useMemo, useState } from "react";
 import { Button } from "../../../shared/ui/Button.jsx";
 import { DataTableToolbar, FilterMenu, SortableHeader } from "../../../shared/ui/DataTable.jsx";
@@ -307,13 +308,14 @@ export function PaymentsPage({ session }) {
                       </td>
                       <td>{item.member?.phone ?? "—"}</td>
                       <td>
+                        {item.fulfillment_error && <p role="status">Đã thu tiền · Cần đối soát quyền dịch vụ</p>}
                         {item.membership ? (
                           <>
                             <strong>{item.membership.packageName}</strong>
                             <small>{paymentStatus[item.membership.status] ?? item.membership.status}</small>
                           </>
                         ) : (
-                          "Không gắn gói tập"
+                          item.service?.name ?? "Không gắn gói tập"
                         )}
                       </td>
                       <td>
@@ -357,6 +359,7 @@ export function PaymentsPage({ session }) {
           )}
         </section>
       </div>
+      <ServiceReconciliation session={session} payments={items} />
     </main>
   );
 }

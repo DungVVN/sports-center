@@ -13,7 +13,7 @@ export function validateRegistration(input) {
   if (!fullName) errors.fullName = "Vui lòng nhập họ và tên.";
   else if (fullName.length < 2 || fullName.length > 120) errors.fullName = "Họ và tên phải từ 2 đến 120 ký tự.";
   if (!input.phone.trim()) errors.phone = "Vui lòng nhập số điện thoại.";
-  else if (!/^(?:\+84|0)\d{9,10}$/.test(input.phone.trim())) errors.phone = "Số điện thoại Việt Nam chưa hợp lệ.";
+  else if (!/^(?:\+84|0)\d{9,10}$/.test(input.phone.trim())) errors.phone = "Nhập số bắt đầu bằng 0 hoặc +84, theo sau là 9–10 chữ số (ví dụ 0901234567).";
   if (input.password && (input.password.length < 8 || input.password.length > 72)) errors.password = "Mật khẩu phải từ 8 đến 72 ký tự.";
   else if (input.password && !/[a-z]/.test(input.password)) errors.password = "Mật khẩu cần có chữ thường.";
   else if (input.password && !/[A-Z]/.test(input.password)) errors.password = "Mật khẩu cần có chữ hoa.";

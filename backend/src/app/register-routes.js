@@ -17,8 +17,12 @@ import { createAssignmentRouter } from "../modules/assignments/index.js";
 import { createRolePermissionRouter } from "../modules/role-permissions/index.js";
 import { createSiteRouter } from "../modules/site/index.js";
 
+import { createCourseRouter } from "../modules/courses/index.js";
+
+import { createPtRouter } from "../modules/pt/index.js";
+
 export function registerRoutes(app, apiBasePath, {
-  authService, staffService, memberService, membershipService, classService, bookingService,
+  ptService, courseService, authService, staffService, memberService, membershipService, classService, bookingService,
   facilityService, attendanceService, paymentService, supportService, notificationPreferenceService,
   aiAssistService, trainingService, insightService, auditLogService, assignmentService, rolePermissionService, siteService, cloudinaryMediaService,
 }) {
@@ -26,6 +30,8 @@ export function registerRoutes(app, apiBasePath, {
   app.use(`${apiBasePath}/staff`, createStaffRouter(staffService, authService));
   app.use(`${apiBasePath}/members`, createMemberRouter(memberService, authService));
   app.use(apiBasePath, createMembershipRouter(membershipService, authService));
+  app.use(apiBasePath, createPtRouter(ptService, authService));
+  app.use(apiBasePath, createCourseRouter(courseService, authService));
   app.use(apiBasePath, createClassRouter(classService, authService));
   app.use(apiBasePath, createBookingRouter(bookingService, authService));
   app.use(apiBasePath, createFacilityRouter(facilityService, authService));

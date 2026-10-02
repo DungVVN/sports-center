@@ -10,7 +10,9 @@ export function createDatabaseClient(configuredConnectionString, { max = 10 } = 
   const connectionString = normalizeDatabaseConnectionString(configuredConnectionString);
   const schemaMatch = connectionString.match(/[?&]schema=([^&]+)/);
   const schema = schemaMatch ? decodeURIComponent(schemaMatch[1]) : undefined;
-  const options = schema ? `-c search_path="${schema}",public` : undefined;
+  // Prisma's PG adapter serializes timestamps in UTC. Pin each connection so
+  // a restored database's session timezone cannot shift stored service hours.
+  const options = `-c timezone=UTC${schema ? ` -c search_path="${schema}",public` : ""}`;
   const pool = new DatabasePool({
     connectionString, options, max,
     connectionTimeoutMillis: 10_000,

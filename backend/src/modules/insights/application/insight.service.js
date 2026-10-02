@@ -1,5 +1,6 @@
 import { AppError } from "../../../shared/errors/app-error.js";
 import { reportingDay as isoDay, reportingRange as range } from "../domain/reporting-day.js";
+import { serviceRevenue } from "../domain/service-revenue.js";
 
 function previousRange(from, to) { const duration = to.getTime() - from.getTime() + 1; const previousTo = new Date(from.getTime() - 1); return { from: new Date(previousTo.getTime() - duration + 1), to: previousTo }; }
 function change(current, previous) { return previous === 0 ? null : Math.round(((current - previous) / previous) * 1000) / 10; }
@@ -49,14 +50,14 @@ function attendanceTrend(rows, from, to) {
 }
 
 async function managerDashboard(repository, current, previous) {
-  const [metrics, previousMetrics, payments, pendingPayments, expiringMemberships] = await Promise.all([repository.managerMetrics(current.from, current.to), repository.managerMetrics(previous.from, previous.to), repository.revenuePayments(current.from, current.to), repository.pendingPayments(), repository.expiring(new Date(), new Date(Date.now() + 7 * 86400000))]);
+  const [metrics, previousMetrics, payments, pendingPayments, expiringMemberships, refunds] = await Promise.all([repository.managerMetrics(current.from, current.to), repository.managerMetrics(previous.from, previous.to), repository.revenuePayments(current.from, current.to), repository.pendingPayments(), repository.expiring(new Date(), new Date(Date.now() + 7 * 86400000)), repository.revenueRefunds(current.from, current.to)]);
   const currentAttendanceRate = attendanceRate(metrics);
   const previousAttendanceRate = attendanceRate(previousMetrics);
   return {
     period: current.period, from: current.from, to: current.to,
     metrics: { ...metrics, occupancyRate: metrics.capacity ? Math.round((metrics.bookings / metrics.capacity) * 1000) / 10 : null, attendanceRate: currentAttendanceRate },
     comparison: { revenueChange: change(Number(metrics.revenueVnd), Number(previousMetrics.revenueVnd)), newMembersChange: change(metrics.newMembers, previousMetrics.newMembers), bookingsChange: change(metrics.bookings, previousMetrics.bookings), attendanceChange: currentAttendanceRate === null || previousAttendanceRate === null ? null : change(currentAttendanceRate, previousAttendanceRate) },
-    alerts: { pendingPayments, expiringMemberships: expiringMemberships.length }, revenueTrend: revenueTrend(payments, current.from, current.to),
+    alerts: { pendingPayments, expiringMemberships: expiringMemberships.length }, revenueTrend: revenueTrend([...payments, ...refunds.map((refund) => ({ paid_at: refund.executed_at, amount_vnd: -refund.amount_vnd }))], current.from, current.to),
   };
 }
 
@@ -65,15 +66,18 @@ export function createInsightService({ repository }) {
     notifications: (userId) => repository.notifications(userId), markRead: (id, userId) => repository.markRead(id, userId),
     async revenue(query) {
       const { from, to, period } = range(query);
-      const [rows, paymentStatuses, paidPayments] = await Promise.all([repository.revenue(from, to), repository.paymentStatuses(from, to), repository.revenuePayments(from, to)]);
-      const paid = rows.find((row) => row.status === "paid");
+      const [rows, paymentStatuses, paidPayments, refunds] = await Promise.all([repository.revenue(from, to), repository.paymentStatuses(from, to), repository.revenuePayments(from, to), repository.revenueRefunds(from, to)]);
+      const receipts = rows.filter((row) => ["paid", "refunded"].includes(row.status));
+      const gross = receipts.reduce((sum, row) => sum + (row._sum.amount_vnd ?? 0n), 0n);
+      const refunded = refunds.reduce((sum, row) => sum + row.amount_vnd, 0n);
       return {
         period, from, to,
-        paid: paid?._sum.amount_vnd?.toString() ?? "0",
-        payments: paid?._count.id ?? 0,
+        paid: (gross - refunded).toString(), gross: gross.toString(), refunded: refunded.toString(),
+        payments: receipts.reduce((sum, row) => sum + row._count.id, 0),
         createdSummary: statusTotals(paymentStatuses),
         paymentStatuses: paymentStatuses.map((row) => ({ status: row.status, count: row._count.id, amount: row._sum.amount_vnd?.toString() ?? "0" })),
-        trend: revenueTrend(paidPayments, from, to),
+        trend: revenueTrend([...paidPayments, ...refunds.map((refund) => ({ paid_at: refund.executed_at, amount_vnd: -refund.amount_vnd }))], from, to),
+        byService: serviceRevenue(paidPayments, refunds),
       };
     },
     async attendance(query) {
@@ -88,8 +92,9 @@ export function createInsightService({ repository }) {
           filename: `bao-cao-doanh-thu-${isoDay(report.from)}-${isoDay(report.to)}.csv`,
           content: asCsv([
             ["Báo cáo doanh thu"], ["Kỳ", report.period], ["Từ", isoDay(report.from)], ["Đến", isoDay(report.to)],
-            [], ["Chỉ số", "Giá trị"], ["Thực thu", report.paid], ["Số phiếu đã thanh toán", report.payments], ["Chờ xác nhận", report.createdSummary.pending], ["Số phiếu chờ xác nhận", report.createdSummary.pendingPayments], ["Giá trị giao dịch", report.createdSummary.transactionValue], ["Tỷ lệ hoàn tất (%)", report.createdSummary.completionRate ?? ""],
+            [], ["Chỉ số", "Giá trị"], ["Tổng đã thu", report.gross], ["Đã hoàn trong kỳ", report.refunded], ["Thực thu", report.paid], ["Số phiếu đã thanh toán", report.payments], ["Chờ xác nhận", report.createdSummary.pending], ["Số phiếu chờ xác nhận", report.createdSummary.pendingPayments], ["Giá trị giao dịch", report.createdSummary.transactionValue], ["Tỷ lệ hoàn tất (%)", report.createdSummary.completionRate ?? ""],
             [], ["Trạng thái", "Số giao dịch", "Tổng giá trị"], ...report.paymentStatuses.map((item) => [item.status, item.count, item.amount]),
+            [], ["Dịch vụ", "Số giao dịch", "Thực thu", "Cần đối soát cấp quyền"], ...report.byService.map((item) => [item.name, item.payments, item.amountVnd, item.requiresReview]),
           ]),
         };
       }

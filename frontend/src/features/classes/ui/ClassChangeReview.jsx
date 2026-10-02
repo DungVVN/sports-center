@@ -68,7 +68,8 @@ export function ClassChangeReview({
             </article>
           ))
         )
-      ) : (
+      ) : null}
+      {(!canReview || canManage) && (
         <ClassListContent
           canManage={canManage}
           classCoachFilters={classCoachFilters}

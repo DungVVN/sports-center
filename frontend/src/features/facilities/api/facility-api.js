@@ -1,6 +1,10 @@
 import { apiClient } from "../../../shared/api/client.js";
 
 export const facilityApi = Object.freeze({
+  settings: () => apiClient.get("/facility-settings"),
+  configure: (id, input) => apiClient.patch(`/facilities/${id}/configuration`, input),
+  payment: (id, input) => apiClient.post(`/facility-reservations/${id}/payment`, input),
+  complete: (id, input) => apiClient.post(`/facility-reservations/${id}/complete`, input),
   calendar: ({ from, to, typeId }) => apiClient.get(`/public/facility-calendar?${new URLSearchParams({ from, to, ...(typeId && { typeId }) })}`),
   createType: (input) => apiClient.post("/facility-types", input),
   createFacility: (input) => apiClient.post("/facilities", input),

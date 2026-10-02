@@ -14,6 +14,12 @@ describe("errorMessageFor", () => {
     expect(errorMessageFor(error, "Không thể lập phiếu thu.")).toBe("Số tiền: Cần nhập số hợp lệ.");
   });
 
+  it("shows a readable phone label and keeps the actionable validation message", () => {
+    const message = "Nhập số điện thoại từ 9 đến 20 ký tự, ví dụ 0901234567.";
+    const error = new ApiError({ status: 422, code: "VALIDATION_ERROR", details: [{ path: "body.phone", message }] });
+    expect(errorMessageFor(error)).toBe(`Số điện thoại: ${message}`);
+  });
+
   it("explains missing permission in the context of the action without showing HTTP codes", () => {
     const error = new ApiError({ status: 403, code: "FORBIDDEN", message: "Bạn không có quyền thực hiện thao tác này." });
     expect(errorMessageFor(error, "Không thể lập phiếu thu.")).toContain("Không thể lập phiếu thu: tài khoản chưa được cấp quyền");

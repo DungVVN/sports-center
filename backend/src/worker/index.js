@@ -5,6 +5,7 @@ import { env } from "../config/env.js";
 import { createDatabaseClient } from "../database.js";
 import { withRuntime } from "../shared/runtime/request-context.js";
 import { runMembershipLifecycleJob } from "../jobs/membership-lifecycle.job.js";
+import { runServiceLifecycleJob } from "../jobs/service-lifecycle.job.js";
 import { runNotificationEmailDeliveryJob } from "../jobs/notification-email-delivery.job.js";
 import { createDistributedLoginLimiter } from "./login-limiter.js";
 export { LoginAttempts } from "./login-attempts.js";
@@ -35,6 +36,7 @@ export class ApiRuntime extends DurableObject {
     try {
       await withRuntime(jobRuntime, async () => {
         await runMembershipLifecycleJob();
+        await runServiceLifecycleJob();
         await runNotificationEmailDeliveryJob();
       });
     } finally { await jobRuntime.database.$disconnect(); }

@@ -1,0 +1,7 @@
+.courses-page { display: grid; gap: 1rem; }
+.course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: 1rem; }
+.course-card, .course-form { border: 1px solid var(--border, #dbe1e8); border-radius: 0.75rem; padding: 1rem; background: var(--surface, #fff); overflow-wrap: anywhere; }
+.course-card .button { margin: 0.25rem; }
+.course-form { display: grid; gap: 0.75rem; max-width: 42rem; }
+.course-form label { display: grid; gap: 0.25rem; }
+.course-form input, .course-form select, .course-form textarea { width: 100%; min-width: 0; box-sizing: border-box; padding: 0.65rem; border: 1px solid var(--border, #dbe1e8); border-radius: 0.4rem; font: inherit; }

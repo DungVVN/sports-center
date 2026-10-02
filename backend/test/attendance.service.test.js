@@ -10,6 +10,15 @@ const activeSession = () => ({
 });
 
 describe("attendance time rules", () => {
+  it("keeps PT attendance and session balance in the PT completion workflow", async () => {
+    const repository = {
+      classSession: vi.fn().mockResolvedValue({ ...activeSession(), pt_purchase_id: "purchase-1" }),
+      submit: vi.fn(),
+    };
+    const service = createAttendanceService({ repository, auditService: { record: vi.fn() } });
+    await expect(service.submit("pt-session", [], coach)).rejects.toMatchObject({ code: "PT_ATTENDANCE_WORKFLOW_REQUIRED" });
+    expect(repository.submit).not.toHaveBeenCalled();
+  });
   it("allows check-in only while the assigned class is in progress", async () => {
     const repository = {
       booking: vi

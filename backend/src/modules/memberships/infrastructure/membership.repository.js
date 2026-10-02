@@ -22,6 +22,6 @@ export const membershipRepository = {
     const membership = await prisma.member_memberships.findUnique({ where: { id: membershipId }, select: { member_id: true } });
     if (!membership) return;
     const member = await prisma.members.findUnique({ where: { id: membership.member_id }, select: { user_id: true } });
-    if (member?.user_id) await prisma.notifications.create({ data: { recipient_user_id: member.user_id, category: "member", title, body, link_path: `/memberships/${membershipId}` } });
+    if (member?.user_id) await prisma.notifications.create({ data: { recipient_user_id: member.user_id, category: "member", title, body, link_path: "/my/memberships" } });
   },
 };

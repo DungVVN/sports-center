@@ -32,6 +32,10 @@ import { createFacilityService } from "../modules/facilities/index.js";
 import { auditService } from "../shared/audit/audit.service.js";
 import { siteRepository, createCloudinaryMediaService, createSiteService } from "../modules/site/index.js";
 
+import { courseRepository, createCourseService } from "../modules/courses/index.js";
+
+import { ptRepository, createPtService } from "../modules/pt/index.js";
+
 export function createServices({
   authService = createAuthService({ repository: authRepository, verificationDelivery: verificationDeliveryService, auditService }),
   staffService = createStaffService({ repository: staffRepository, auditService, credentialsDelivery: staffCredentialsDeliveryService }),
@@ -39,9 +43,11 @@ export function createServices({
   membershipService = createMembershipService({ repository: membershipRepository, auditService }),
   classService = createClassService({ repository: classRepository, auditService }),
   bookingService = createBookingService({ repository: bookingRepository, auditService }),
-  facilityService = createFacilityService({ repository: facilityRepository, auditService }),
   attendanceService = createAttendanceService({ repository: attendanceRepository, auditService }),
   paymentService = createPaymentService({ repository: paymentRepository, auditService, payosGateway: { createPaymentLink: createPayosPaymentLink, verifyWebhook: verifyPayosWebhook } }),
+  facilityService = createFacilityService({ repository: facilityRepository, auditService, paymentService }),
+  ptService = createPtService({ repository: ptRepository, paymentService, auditService }),
+  courseService = createCourseService({ repository: courseRepository, classService, paymentService, auditService }),
   supportService = createSupportService({ repository: supportRepository, auditService, memberDirectory: memberRepository, notificationPublisher }),
   notificationPreferenceService = createNotificationPreferenceService({ repository: notificationPreferenceRepository }),
   aiAssistService = createAiAssistService({ repository: aiAssistRepository, auditService }),
@@ -53,5 +59,5 @@ export function createServices({
   siteService = createSiteService({ repository: siteRepository }),
   cloudinaryMediaService = createCloudinaryMediaService({ repository: siteRepository }),
 } = {}) {
-  return { authService, staffService, memberService, membershipService, classService, bookingService, facilityService, attendanceService, paymentService, supportService, notificationPreferenceService, aiAssistService, trainingService, insightService, assignmentService, auditLogService, rolePermissionService, siteService, cloudinaryMediaService };
+  return { ptService, courseService, authService, staffService, memberService, membershipService, classService, bookingService, facilityService, attendanceService, paymentService, supportService, notificationPreferenceService, aiAssistService, trainingService, insightService, assignmentService, auditLogService, rolePermissionService, siteService, cloudinaryMediaService };
 }

@@ -5,7 +5,7 @@ export const attendanceRepository = {
   classSession: (id) =>
     prisma.class_sessions.findUnique({
       where: { id },
-      select: { coach_user_id: true, starts_at: true, ends_at: true },
+      select: { coach_user_id: true, starts_at: true, ends_at: true, pt_purchase_id: true },
     }),
   records: async (classId) => {
     const records = await prisma.attendance_records.findMany({
@@ -90,7 +90,7 @@ export const attendanceRepository = {
       const notifications = members.filter((member) => member.user_id).map((member) => {
         const status = entryByBooking.get(bookings.find((booking) => booking.member_id === member.id).id).status;
         const label = { present: "có mặt", absent: "vắng", late: "đi trễ" }[status] ?? "đã được ghi nhận";
-        return { recipient_user_id: member.user_id, category: "member", title: "Kết quả điểm danh đã được chốt", body: `Buổi ${session.name}: bạn ${label}.`, link_path: `/members/me/attendance` };
+        return { recipient_user_id: member.user_id, category: "member", title: "Kết quả điểm danh đã được chốt", body: `Buổi ${session.name}: bạn ${label}.`, link_path: "/my/attendance" };
       });
       if (notifications.length) await tx.notifications.createMany({ data: notifications });
       return { ...submission, notificationCount: notifications.length };

@@ -36,7 +36,7 @@ export function TrainingPlanList({
         </Button>
       </div>
       <div className="table-scroll">
-        <table>
+        <table className="training-plan-table">
           <thead>
             <tr>
               <th>Mã giáo án</th>

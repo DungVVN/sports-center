@@ -33,6 +33,8 @@ const navigationItems = [
     { id: "memberMemberships", label: "Gán gói hội viên" },
   ] },
   { id: "operations", label: "Lịch & hoạt động", children: [
+    { id: "pt", label: "Huấn luyện cá nhân" },
+    { id: "courses", label: "Khóa có hướng dẫn" },
     { id: "classes", label: "Lớp học" },
     { id: "bookings", label: "Đặt chỗ" },
     { id: "facility-calendar", label: "Lịch sân" },
@@ -51,12 +53,15 @@ const navigationItems = [
   { id: "support", label: "Hỗ trợ" },
 ];
 const memberSelfItems = [
+  { id: "my-services", label: "Dịch vụ của tôi", permissions: ["membership.self.read", "course.enroll", "pt.read", "facility.booking.self.read"] },
   { id: "my-memberships", label: "Gói tập của tôi", permission: "membership.self.read" },
   { id: "my-attendance", label: "Điểm danh của tôi", permission: "attendance.self.read" },
   { id: "my-training", label: "Giáo án của tôi", permission: "training.self.read" },
   { id: "my-payments", label: "Thanh toán của tôi", permission: "payment.self.read" },
 ];
 const accessByView = {
+  pt: ["pt.read"],
+  courses: ["course.read"],
   members: ["member.read", "member.write"], registrations: ["registration.approve"],
   packageCreate: ["membership.package.manage"], packageCatalog: ["membership.package.read", "membership.package.manage"], memberMemberships: ["membership.assign"],
   classes: ["class.read", "class.manage", "class.change.review", "class.change.request"], bookings: ["booking.read", "booking.write"],
@@ -82,7 +87,7 @@ export function DashboardPlaceholder({ initialView = "dashboard", session, onLog
       }
       return allowed(item.id) ? [item] : [];
     });
-    if (session.user.role === "member") items.push(...memberSelfItems.filter((item) => granted.has(item.permission)));
+    if (session.user.role === "member") items.push(...memberSelfItems.filter((item) => item.permissions ? item.permissions.some((code) => granted.has(code)) : granted.has(item.permission)));
     return items;
   }, [granted, session.user.role]);
   const allowedViews = useMemo(() => new Set(navigation.flatMap((item) => [item.id, ...(item.children ?? []).map((child) => child.id)])), [navigation]);

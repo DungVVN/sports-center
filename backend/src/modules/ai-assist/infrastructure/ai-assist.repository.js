@@ -14,7 +14,7 @@ export const aiAssistRepository = {
     return classes.map((item) => ({ ...item, booking_count: countByClassId.get(item.id) ?? 0 }));
   },
   async attendancePending(coachId) {
-    const classes = await prisma.class_sessions.findMany({ where: { coach_user_id: coachId, ends_at: { gte: new Date(Date.now() - 7 * 86400000), lt: now() } }, select: { id: true, name: true, ends_at: true } });
+    const classes = await prisma.class_sessions.findMany({ where: { coach_user_id: coachId, pt_purchase_id: null, ends_at: { gte: new Date(Date.now() - 7 * 86400000), lt: now() } }, select: { id: true, name: true, ends_at: true } });
     const submitted = classes.length ? await prisma.attendance_submissions.findMany({ where: { class_session_id: { in: classes.map((item) => item.id) } }, select: { class_session_id: true } }) : [];
     const submittedIds = new Set(submitted.map((item) => item.class_session_id));
     return classes.filter((item) => !submittedIds.has(item.id));
@@ -35,14 +35,15 @@ export const aiAssistRepository = {
     if (!member?.user_id) return null;
     const assigned = await prisma.member_coach_assignments.findFirst({ where: { member_id: memberId, ...activeAssignmentWhere(coachId) }, select: { id: true } });
     if (assigned) return member;
-    const classes = await prisma.class_sessions.findMany({ where: { coach_user_id: coachId }, select: { id: true } });
+    if (await prisma.pt_purchases.findFirst({ where: { member_id: memberId, coach_user_id: coachId, status: "active", expires_at: { gte: now() } }, select: { id: true } })) return member;
+    const classes = await prisma.class_sessions.findMany({ where: { coach_user_id: coachId, pt_purchase_id: null }, select: { id: true } });
     if (!classes.length) return null;
     const booking = await prisma.bookings.findFirst({ where: { member_id: memberId, class_session_id: { in: classes.map((item) => item.id) }, status: { in: ["confirmed", "waitlisted", "attended", "absent"] } }, select: { id: true } });
     return booking ? member : null;
   },
   createDelivery: (data) => prisma.$transaction(async (tx) => {
     const delivery = await tx.ai_suggestion_deliveries.create({ data: { coach_user_id: data.coachUserId, member_id: data.memberId, subject: data.subject, body: data.body } });
-    await tx.notifications.create({ data: { recipient_user_id: data.memberUserId, category: "member", title: data.subject, body: data.body, link_path: "/training" } });
+    await tx.notifications.create({ data: { recipient_user_id: data.memberUserId, category: "member", title: data.subject, body: data.body, link_path: "/my/training" } });
     return delivery;
   }),
 };

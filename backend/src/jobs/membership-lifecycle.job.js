@@ -29,7 +29,7 @@ async function sendRenewalReminder(database, membership, reminderType, reminderO
           category: "member",
           title,
           body,
-          link_path: `/memberships/${membership.id}`,
+          link_path: "/my/memberships",
         },
       });
     };
@@ -67,13 +67,13 @@ export async function runMembershipLifecycleJob(now = new Date(), database = pri
   const inGrace = await database.member_memberships.findMany({ where: { status: "expiring_soon", grace_expires_at: { gt: now } } });
   for (const membership of inGrace) if (await sendRenewalReminder(database, membership, "grace", today, "Nhắc gia hạn gói tập", "Gói tập của bạn đang trong thời gian gia hạn 72 giờ. Hãy gia hạn ngay hôm nay.")) renewalReminders += 1;
   const pastGrace = await database.member_memberships.findMany({ where: { status: "expiring_soon", grace_expires_at: { lte: now } } });
-  for (const membership of pastGrace) { await database.member_memberships.update({ where: { id: membership.id }, data: { status: "expired" } }); await notifyMember(database, membership.member_id, "Gói tập đã hết hạn chính thức", "Thời gian gia hạn 72 giờ đã kết thúc. Vui lòng mua hoặc gia hạn gói tập để tiếp tục sử dụng.", `/memberships/${membership.id}`); }
+  for (const membership of pastGrace) { await database.member_memberships.update({ where: { id: membership.id }, data: { status: "expired" } }); await notifyMember(database, membership.member_id, "Gói tập đã hết hạn chính thức", "Thời gian gia hạn 72 giờ đã kết thúc. Vui lòng mua hoặc gia hạn gói tập để tiếp tục sử dụng.", "/my/memberships"); }
   const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
   const upcoming = await database.class_sessions.findMany({ where: { status: "published", starts_at: { gte: now, lte: tomorrow } } });
-  for (const session of upcoming) { const bookings = await database.bookings.findMany({ where: { class_session_id: session.id, status: "confirmed" }, select: { member_id: true } }); for (const booking of bookings) await notifyMember(database, booking.member_id, "Nhắc lịch học", `Bạn có lớp ${session.name} lúc ${session.starts_at.toLocaleString("vi-VN")}.`, `/classes/${session.id}`); }
+  for (const session of upcoming) { const bookings = await database.bookings.findMany({ where: { class_session_id: session.id, status: "confirmed" }, select: { member_id: true } }); for (const booking of bookings) await notifyMember(database, booking.member_id, "Nhắc lịch học", `Bạn có lớp ${session.name} lúc ${session.starts_at.toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })}.`, "/bookings"); }
   const absent = await database.attendance_records.findMany({ where: { status: "absent", recorded_at: { gte: today } }, select: { member_id: true, class_session_id: true } });
-  for (const record of absent) await notifyMember(database, record.member_id, "Bạn đã vắng buổi học", "Hãy kiểm tra lịch tập và liên hệ Coach nếu cần hỗ trợ.", `/classes/${record.class_session_id}`);
+  for (const record of absent) await notifyMember(database, record.member_id, "Bạn đã vắng buổi học", "Hãy kiểm tra lịch tập và liên hệ Coach nếu cần hỗ trợ.", "/my/attendance");
   const stalePlans = await database.training_plans.findMany({ where: { updated_at: { lt: new Date(now.getTime() - 14 * 86400000) }, status: "active" }, select: { id: true, coach_user_id: true } });
-  for (const plan of stalePlans) { const duplicate = await database.notifications.findFirst({ where: { recipient_user_id: plan.coach_user_id, title: "Cần cập nhật giáo án", created_at: { gte: new Date(now.getTime() - 20 * 60 * 60 * 1000) } } }); if (!duplicate) await database.notifications.create({ data: { recipient_user_id: plan.coach_user_id, category: "operations", title: "Cần cập nhật giáo án", body: "Một giáo án đang hoạt động chưa được cập nhật trong 14 ngày.", link_path: `/training-plans/${plan.id}` } }); }
+  for (const plan of stalePlans) { const duplicate = await database.notifications.findFirst({ where: { recipient_user_id: plan.coach_user_id, title: "Cần cập nhật giáo án", created_at: { gte: new Date(now.getTime() - 20 * 60 * 60 * 1000) } } }); if (!duplicate) await database.notifications.create({ data: { recipient_user_id: plan.coach_user_id, category: "operations", title: "Cần cập nhật giáo án", body: "Một giáo án đang hoạt động chưa được cập nhật trong 14 ngày.", link_path: "/training" } }); }
   return { expiring: expiring.length, graceStarted: expiredToday.length, expired: pastGrace.length, renewalReminders, freezeStarted: freezes.started, freezeEnded: freezes.ended, upcomingClasses: upcoming.length, absences: absent.length, stalePlans: stalePlans.length };
 }

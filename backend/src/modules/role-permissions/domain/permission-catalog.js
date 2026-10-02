@@ -1,5 +1,8 @@
 // Only permissions enforced by a mounted API appear as configurable functions.
 export const assignablePermissionCodes = Object.freeze([
+  "payment.refund.read", "payment.refund.request", "payment.refund.review", "payment.refund.execute", "payment.reconcile",
+  "pt.read", "pt.manage", "pt.purchase", "pt.complete",
+  "course.read", "course.manage", "course.enroll", "course.enrollment.read",
   "ai.assist.deliver", "ai.assist.read", "attendance.read", "attendance.self.read", "attendance.write",
   "audit.read", "booking.read", "booking.write", "class.change.request", "class.change.review",
   "class.manage", "class.read", "member.read", "member.write", "member.credentials.reset", "membership.assign",
@@ -12,6 +15,16 @@ export const assignablePermissionCodes = Object.freeze([
 ]);
 
 export const permissionDependencies = Object.freeze({
+  "payment.refund.request": ["payment.refund.read", "payment.self.read"],
+  "payment.refund.review": ["payment.refund.read", "payment.read"],
+  "payment.refund.execute": ["payment.refund.read", "payment.read"],
+  "payment.reconcile": ["payment.read"],
+  "pt.manage": ["pt.read"],
+  "pt.purchase": ["pt.read"],
+  "pt.complete": ["pt.read"],
+  "course.manage": ["course.read", "class.read"],
+  "course.enroll": ["course.read"],
+  "course.enrollment.read": ["course.read"],
   "member.write": ["member.read"],
   "member.credentials.reset": ["member.read"],
   "class.manage": ["class.read"],
@@ -36,6 +49,17 @@ export const permissionDependencies = Object.freeze({
 
 // Limit permissions to roles supported by their API workflows.
 export const permissionRoleScopes = Object.freeze({
+  "payment.refund.read": ["member", "manager", "receptionist"],
+  "payment.refund.request": ["member"],
+  "payment.refund.review": ["manager"],
+  "payment.refund.execute": ["receptionist"],
+  "payment.reconcile": ["manager"],
+  "pt.manage": ["receptionist"],
+  "pt.purchase": ["member"],
+  "pt.complete": ["coach"],
+  "course.enroll": ["member"],
+  "course.enrollment.read": ["manager", "receptionist"],
+  "course.manage": ["receptionist"],
   "facility.booking.read": ["manager", "receptionist", "coach"],
   "facility.booking.approve": ["manager", "receptionist", "coach"],
   "member.credentials.reset": ["manager", "receptionist", "coach"],

@@ -9,7 +9,7 @@ const id = z.string().uuid();
 const registrationSchema = z.object({ body: z.object({
   fullName: z.string().trim().min(2).max(120),
   email: z.string().trim().email().max(255),
-  phone: z.string().trim().regex(/^(?:\+84|0)\d{9,10}$/, "Số điện thoại Việt Nam chưa hợp lệ."),
+  phone: z.string().trim().regex(/^(?:\+84|0)\d{9,10}$/, "Nhập số điện thoại bắt đầu bằng 0 hoặc +84, theo sau là 9–10 chữ số (ví dụ 0901234567); không dùng khoảng trắng hoặc dấu gạch."),
   password: z.string().min(8).max(72).regex(/[a-z]/, "Mật khẩu cần có chữ thường.").regex(/[A-Z]/, "Mật khẩu cần có chữ hoa.").regex(/\d/, "Mật khẩu cần có chữ số."),
   captchaToken: z.string().min(1).max(4096).optional(),
 }) });
@@ -23,11 +23,11 @@ const passwordSchema = z.object({ body: z.object({ currentPassword: z.string().m
 const userIdParams = z.object({ params: z.object({ userId: id }) });
 const ownProfileSchema = z.object({ body: z.object({
   fullName: z.string().trim().min(2).max(120),
-  phone: z.string().trim().regex(/^(?:\+84|0)\d{9,10}$/, "Số điện thoại Việt Nam chưa hợp lệ."),
+  phone: z.string().trim().regex(/^(?:\+84|0)\d{9,10}$/, "Nhập số điện thoại bắt đầu bằng 0 hoặc +84, theo sau là 9–10 chữ số (ví dụ 0901234567); không dùng khoảng trắng hoặc dấu gạch."),
   dateOfBirth: z.string().date().nullable(),
-  avatarUrl: z.string().url("Đường dẫn ảnh đại diện không hợp lệ.").max(2048).nullable().optional(),
+  avatarUrl: z.string().url("Đường dẫn ảnh đại diện không hợp lệ.").max(2048).refine((value) => { const url = new URL(value); return url.protocol === "https:" && !url.username && !url.password; }, "Ảnh đại diện phải dùng đường dẫn HTTPS và không chứa thông tin đăng nhập.").nullable().optional(),
   gender: z.string().trim().max(30).nullable().optional(),
-  contacts: z.array(z.object({ fullName: z.string().trim().min(2).max(120), relationship: z.string().trim().min(2).max(60), phone: z.string().trim().regex(/^(?:\+84|0)\d{9,10}$/, "Số điện thoại Việt Nam chưa hợp lệ."), isPrimary: z.boolean() })).max(3).optional(),
+  contacts: z.array(z.object({ fullName: z.string().trim().min(2).max(120), relationship: z.string().trim().min(2).max(60), phone: z.string().trim().regex(/^(?:\+84|0)\d{9,10}$/, "Nhập số điện thoại bắt đầu bằng 0 hoặc +84, theo sau là 9–10 chữ số (ví dụ 0901234567); không dùng khoảng trắng hoặc dấu gạch."), isPrimary: z.boolean() })).max(3).optional(),
 }).refine((input) => !input.contacts || input.contacts.filter((contact) => contact.isPrimary).length <= 1, { message: "Chỉ được chọn một liên hệ khẩn cấp chính.", path: ["contacts"] }) });
 
 function sessionCookie(response, token, surface = "main") {

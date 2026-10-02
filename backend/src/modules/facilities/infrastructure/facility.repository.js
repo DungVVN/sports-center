@@ -1,6 +1,10 @@
 import { prisma } from "../../../database.js";
+import { facilityFinanceRepository } from "./facility-finance.repository.js";
+import { rentalTotal } from "../domain/rental-policy.js";
+import { AppError } from "../../../shared/errors/app-error.js";
 
 export const facilityRepository = {
+  ...facilityFinanceRepository,
   types: () => prisma.facility_types.findMany({ where: { is_active: true }, orderBy: { name: "asc" } }),
   facilities: () => prisma.facilities.findMany({ where: { is_active: true }, orderBy: { name: "asc" } }),
   days: (from, to) => prisma.facility_days.findMany({ where: { open_on: { gte: from, lte: to } }, orderBy: [{ open_on: "asc" }, { facility_id: "asc" }] }),
@@ -47,13 +51,23 @@ export const facilityRepository = {
   },
   async review({ id, approved, startMinute, endMinute, reason, actorUserId }) {
     return prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM facility_reservations WHERE id=${id}::uuid FOR UPDATE`;
       const item = await tx.facility_reservations.findUnique({ where: { id } });
       if (!item) return { kind: "missing" };
       if (item.status !== "pending") return { kind: "invalid" };
-      const changed = await tx.facility_reservations.updateMany({ where: { id, status: "pending" }, data: { status: approved ? "approved" : "rejected", assigned_start_minute: approved ? startMinute : null, assigned_end_minute: approved ? endMinute : null, decision_reason: reason ?? null, reviewed_by: actorUserId, reviewed_at: new Date() } });
+      let quote = {};
+      if (approved) {
+        const day = await tx.facility_days.findUnique({ where: { id: item.day_id } });
+        const facility = await tx.facilities.findUnique({ where: { id: day.facility_id } });
+        if (facility.hourly_rate_vnd === null) throw new AppError({ statusCode: 422, code: "FACILITY_RATE_REQUIRED", message: "Cần cấu hình đơn giá theo giờ trước khi duyệt đơn mới." });
+        const total = rentalTotal(facility.hourly_rate_vnd, startMinute, endMinute);
+        quote = { hourly_rate_vnd_snapshot: facility.hourly_rate_vnd, total_vnd_snapshot: total, payment_state: total === 0n ? "free" : "unpaid" };
+      }
+      const changed = await tx.facility_reservations.updateMany({ where: { id, status: "pending" }, data: { ...quote, status: approved ? "approved" : "rejected", assigned_start_minute: approved ? startMinute : null, assigned_end_minute: approved ? endMinute : null, decision_reason: reason ?? null, reviewed_by: actorUserId, reviewed_at: new Date() } });
       if (changed.count !== 1) return { kind: "invalid" };
       const updated = await tx.facility_reservations.findUnique({ where: { id } });
       await tx.audit_logs.create({ data: { actor_user_id: actorUserId, action: approved ? "facility.reservation.approved" : "facility.reservation.rejected", entity_type: "facility_reservation", entity_id: id, summary: approved ? "Đã duyệt đơn đặt sân." : "Đã từ chối đơn đặt sân.", reason: reason ?? null } });
+      await tx.notifications.create({ data: { recipient_user_id: item.requester_user_id, category: "operations", title: approved ? "Đơn đặt sân đã được duyệt" : "Đơn đặt sân bị từ chối", body: approved ? "Xem khung giờ và giá đã chốt để thanh toán đơn đặt sân." : reason ?? "Trung tâm đã từ chối yêu cầu.", link_path: "/facilities" } });
       return { kind: "updated", item: updated };
     });
   },
@@ -61,8 +75,8 @@ export const facilityRepository = {
     return prisma.$transaction(async (tx) => {
       const item = await tx.facility_reservations.findUnique({ where: { id } });
       if (!item) return { kind: "missing" };
-      if (!["pending", "approved"].includes(item.status)) return { kind: "invalid" };
-      const changed = await tx.facility_reservations.updateMany({ where: { id, status: { in: ["pending", "approved"] } }, data: { status: "cancelled", cancelled_by: actorUserId, cancelled_at: new Date(), decision_reason: reason } });
+      if (item.completed_at || !["pending", "approved"].includes(item.status)) return { kind: "invalid" };
+      const changed = await tx.facility_reservations.updateMany({ where: { id, status: { in: ["pending", "approved"] }, completed_at: null }, data: { status: "cancelled", cancelled_by: actorUserId, cancelled_at: new Date(), decision_reason: reason } });
       if (changed.count !== 1) return { kind: "invalid" };
       const updated = await tx.facility_reservations.findUnique({ where: { id } });
       await tx.audit_logs.create({ data: { actor_user_id: actorUserId, action: "facility.reservation.cancelled", entity_type: "facility_reservation", entity_id: id, summary: "Đã hủy đơn đặt sân.", reason } });
@@ -71,16 +85,19 @@ export const facilityRepository = {
   },
   async requestCancellation({ id, reason, actorUserId }) {
     return prisma.$transaction(async (tx) => {
-      const changed = await tx.facility_reservations.updateMany({ where: { id, status: { in: ["pending", "approved"] }, cancellation_requested_at: null }, data: { cancellation_requested_by: actorUserId, cancellation_requested_at: new Date(), cancellation_reason: reason } });
+      const changed = await tx.facility_reservations.updateMany({ where: { id, status: { in: ["pending", "approved"] }, cancellation_requested_at: null, completed_at: null }, data: { cancellation_requested_by: actorUserId, cancellation_requested_at: new Date(), cancellation_reason: reason } });
       if (changed.count !== 1) return { kind: "invalid" };
+      await tx.audit_logs.create({ data: { actor_user_id: actorUserId, action: "facility.reservation.cancellation_requested", entity_type: "facility_reservation", entity_id: id, summary: "Đã gửi yêu cầu hủy đơn cho người tạo đơn xác nhận.", reason } });
       return { kind: "requested", item: await tx.facility_reservations.findUnique({ where: { id } }) };
     });
   },
   async confirmCancellation({ id, actorUserId }) {
     return prisma.$transaction(async (tx) => {
-      const changed = await tx.facility_reservations.updateMany({ where: { id, requester_user_id: actorUserId, status: { in: ["pending", "approved"] }, cancellation_requested_at: { not: null } }, data: { status: "cancelled", cancelled_by: actorUserId, cancelled_at: new Date() } });
+      const changed = await tx.facility_reservations.updateMany({ where: { id, requester_user_id: actorUserId, status: { in: ["pending", "approved"] }, cancellation_requested_at: { not: null }, completed_at: null }, data: { status: "cancelled", cancelled_by: actorUserId, cancelled_at: new Date() } });
       if (changed.count !== 1) return { kind: "invalid" };
-      return { kind: "updated", item: await tx.facility_reservations.findUnique({ where: { id } }) };
+      const item = await tx.facility_reservations.findUnique({ where: { id } });
+      await tx.audit_logs.create({ data: { actor_user_id: actorUserId, action: "facility.reservation.cancellation_confirmed", entity_type: "facility_reservation", entity_id: id, summary: "Người tạo đơn đã xác nhận hủy đơn đặt sân.", reason: item.cancellation_reason } });
+      return { kind: "updated", item };
     });
   },
 };

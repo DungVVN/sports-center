@@ -14,11 +14,18 @@ import { loadSupportPage, loadSupportStaffPage } from "../features/support/index
 import { loadSiteMenuPage, loadSitePagesPage } from "../features/site-admin/index.js";
 import { loadMemberTrainingPage, loadTrainingPage } from "../features/training/index.js";
 
+import { loadPtPage } from "../features/pt/index.js";
+import { loadCoursesPage } from "../features/courses/index.js";
+import { loadMyServicesPage } from "../features/services/index.js";
+
 const lazyPage = (load, exportName) => lazy(() => load().then((module) => ({ default: module[exportName] })));
 
 const AttendancePage = lazyPage(loadAttendancePage, "AttendancePage");
 const AuditLogsPage = lazyPage(loadAuditLogsPage, "AuditLogsPage");
 const BookingsPage = lazyPage(loadBookingsPage, "BookingsPage");
+const PtPage = lazyPage(loadPtPage, "PtPage");
+const CoursesPage = lazyPage(loadCoursesPage, "CoursesPage");
+const MyServicesPage = lazyPage(loadMyServicesPage, "MyServicesPage");
 const ClassesPage = lazyPage(loadClassesPage, "ClassesPage");
 const DashboardHome = lazyPage(loadDashboardHome, "DashboardHome");
 const FacilityCalendarPage = lazyPage(loadFacilityCalendarPage, "FacilityCalendarPage");
@@ -43,8 +50,11 @@ export function WorkspaceContent({ onNavigate, onProfileSaved, onSessionRevoked,
   const pages = {
     attendance: <AttendancePage session={session} />,
     audit: <AuditLogsPage />,
-    bookings: <BookingsPage session={session} />,
+    bookings: <BookingsPage onNavigate={onNavigate} session={session} />,
     "facility-calendar": <FacilityCalendarPage session={session} />,
+    pt: <PtPage session={session} onNavigate={onNavigate} />,
+    courses: <CoursesPage session={session} onNavigate={onNavigate} />,
+    "my-services": <MyServicesPage session={session} onNavigate={onNavigate} />,
     classes: <ClassesPage session={session} />,
     dashboard: <DashboardHome onNavigate={onNavigate} role={dashboardRole} />,
     packageCatalog: <MembershipsPage mode="catalog" session={session} />,
@@ -64,7 +74,7 @@ export function WorkspaceContent({ onNavigate, onProfileSaved, onSessionRevoked,
     support: dashboardRole === "member" ? <SupportPage session={session} /> : <SupportStaffPage session={session} />,
     training: <TrainingPage session={session} />,
     "my-attendance": <MemberAttendancePage />,
-    "my-payments": <MemberPaymentsPage />,
+    "my-payments": <MemberPaymentsPage session={session} />,
     "my-training": <MemberTrainingPage />,
   };
 

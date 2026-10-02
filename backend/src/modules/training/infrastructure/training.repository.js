@@ -4,13 +4,14 @@ const activeBookingStatuses = ["confirmed", "waitlisted", "attended", "absent"];
 const activeAssignmentWhere = (coachId) => ({ coach_user_id: coachId, effective_from: { lte: new Date() }, OR: [{ effective_to: null }, { effective_to: { gte: new Date() } }] });
 
 async function memberIdsInCoachScope(coachId) {
-  const [assignments, classes] = await Promise.all([
+  const [assignments, classes, ptMembers] = await Promise.all([
     prisma.member_coach_assignments.findMany({ where: activeAssignmentWhere(coachId), select: { member_id: true } }),
-    prisma.class_sessions.findMany({ where: { coach_user_id: coachId }, select: { id: true } }),
+    prisma.class_sessions.findMany({ where: { coach_user_id: coachId, pt_purchase_id: null }, select: { id: true } }),
+    prisma.pt_purchases.findMany({ where: { coach_user_id: coachId, status: "active", expires_at: { gte: new Date() } }, select: { member_id: true } }),
   ]);
   const classIds = classes.map((item) => item.id);
   const bookings = classIds.length ? await prisma.bookings.findMany({ where: { class_session_id: { in: classIds }, status: { in: activeBookingStatuses } }, select: { member_id: true } }) : [];
-  return [...new Set([...assignments, ...bookings].map((item) => item.member_id))];
+  return [...new Set([...assignments, ...bookings, ...ptMembers].map((item) => item.member_id))];
 }
 
 export const trainingRepository = {

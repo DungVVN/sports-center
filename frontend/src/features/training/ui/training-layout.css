@@ -207,3 +207,10 @@
   min-width: 10rem;
   width: auto;
 }
+
+.training-plan-table { min-width: 1100px; table-layout: auto; }
+.training-plan-table th:nth-child(1) { min-width: 200px; }
+.training-plan-table th:nth-child(2), .training-plan-table th:nth-child(3) { min-width: 180px; }
+.training-plan-table th:nth-child(4), .training-plan-table th:nth-child(5) { min-width: 160px; }
+.training-plan-table th:nth-child(6), .training-plan-table th:nth-child(7) { min-width: 120px; }
+.training-plan-table td { overflow-wrap: break-word; line-height: 1.5; }

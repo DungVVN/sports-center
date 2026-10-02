@@ -21,6 +21,8 @@ export function usePaymentsWorkspace({ isCashier, memberId }) {
       queryClient.invalidateQueries({ queryKey: ["member", "payments"] }),
       queryClient.invalidateQueries({ queryKey: ["members"] }),
       queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] }),
+      queryClient.invalidateQueries({ queryKey: ["course-enrollments"] }),
+      queryClient.invalidateQueries({ queryKey: ["bookings"] }),
     ]);
   }, [queryClient]);
   const createPayment = useSubmitMutation({ feedback, mutationFn: (input) => paymentApi.create(input), onSuccess: invalidate, successMessage: (payment, input) => payment.checkoutUrl ? "Đã tạo liên kết PayOS. Mở liên kết để khách thanh toán." : input.method === "bank_transfer" ? "Đã lập phiếu chuyển khoản chờ đối soát sao kê." : "Đã lập phiếu thu tiền mặt, chờ Lễ tân xác nhận đã thu.", errorMessage: "Không thể lập phiếu thu." });

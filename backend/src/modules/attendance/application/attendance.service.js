@@ -1,7 +1,7 @@
 import { AppError } from "../../../shared/errors/app-error.js";
 
 export function createAttendanceService({ repository, auditService }) {
-  async function ensureCoachScope(classId, actor) {
+  async function ensureCoachScope(classId, actor, { write = false } = {}) {
     const session = await repository.classSession(classId);
     if (
       actor.role === "coach" &&
@@ -12,6 +12,11 @@ export function createAttendanceService({ repository, auditService }) {
         code: "ATTENDANCE_SCOPE_DENIED",
         message: "Coach chỉ có thể thao tác điểm danh cho lớp mình phụ trách.",
       });
+    if (write && session?.pt_purchase_id) throw new AppError({
+      statusCode: 422,
+      code: "PT_ATTENDANCE_WORKFLOW_REQUIRED",
+      message: "Hãy ghi nhận kết quả tại lịch PT để cập nhật đồng thời điểm danh và số buổi.",
+    });
     return session;
   }
   function ensureSessionWindow(session, now = new Date()) {
@@ -38,7 +43,7 @@ export function createAttendanceService({ repository, auditService }) {
       return repository.recordsForMember(member.id);
     },
     async submit(classId, entries, actor) {
-      const session = await ensureCoachScope(classId, actor);
+      const session = await ensureCoachScope(classId, actor, { write: true });
       ensureSessionWindow(session);
       const result = await repository.submit(classId, entries, actor.id);
       if (result.pendingCount) throw new AppError({ statusCode: 422, code: "ATTENDANCE_NOT_COMPLETE", message: `Còn ${result.pendingCount} hội viên chưa được điểm danh.` });
@@ -53,7 +58,7 @@ export function createAttendanceService({ repository, auditService }) {
           code: "BOOKING_NOT_ELIGIBLE",
           message: "Booking không đủ điều kiện điểm danh.",
         });
-      const session = await ensureCoachScope(booking.class_session_id, actor);
+      const session = await ensureCoachScope(booking.class_session_id, actor, { write: true });
       ensureSessionWindow(session);
       const record = await repository.upsert({
         classSessionId: booking.class_session_id,
@@ -86,7 +91,7 @@ export function createAttendanceService({ repository, auditService }) {
           code: "ATTENDANCE_ALREADY_CHECKED_OUT",
           message: "Buổi học này đã check-out.",
         });
-      await ensureCoachScope(current.class_session_id, actor);
+      await ensureCoachScope(current.class_session_id, actor, { write: true });
       const record = await repository.checkOut(attendanceId, actor.id);
       await auditService.record({
         actorUserId: actor.id,
@@ -105,7 +110,7 @@ export function createAttendanceService({ repository, auditService }) {
           code: "ATTENDANCE_NOT_FOUND",
           message: "Không tìm thấy điểm danh.",
         });
-      const session = await ensureCoachScope(current.class_session_id, actor);
+      const session = await ensureCoachScope(current.class_session_id, actor, { write: true });
       const now = new Date();
       if (!session || now < session.starts_at)
         throw new AppError({

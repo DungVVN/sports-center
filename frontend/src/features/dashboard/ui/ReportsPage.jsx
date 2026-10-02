@@ -100,15 +100,21 @@ export function ReportsPage() {
                 <div className="report-heading">
                   <div>
                     <h2>Tổng quan thu tiền</h2>
-                    <p className="report-help">Thực thu tính theo thời điểm xác nhận thanh toán.</p>
+                    <p className="report-help">Thực thu = tiền nhận trong kỳ trừ tiền thực tế hoàn trong kỳ. Khoản thu gốc giữ nguyên ngày xác nhận.</p>
                   </div>
                 </div>
                 <div className="report-metrics">
                   <Metric label="Thực thu" value={money(report.paid)} note={`${number(report.payments)} giao dịch đã thanh toán`} tone="success" />
+                  <Metric label="Đã hoàn trong kỳ" value={money(report.refunded ?? "0")} note={`Tổng tiền nhận: ${money(report.gross ?? report.paid)}`} />
                   <Metric label="Chờ xác nhận" value={money(report.createdSummary.pending)} note={`${number(report.createdSummary.pendingPayments)} phiếu tạo trong kỳ`} tone="warning" />
                   <Metric label="Giá trị giao dịch" value={money(report.createdSummary.transactionValue)} note="Đã thu và đang chờ trong kỳ" />
                   <Metric label="Tỷ lệ hoàn tất" value={report.createdSummary.completionRate === null ? "—" : `${report.createdSummary.completionRate}%`} note="Trên số tiền cần thu trong kỳ" tone="info" />
                 </div>
+              </section>
+              <section className="report-section">
+                <h2>Thực thu theo dịch vụ</h2>
+                <p className="report-help">Khoản đã nhận nhưng chưa cấp được quyền sử dụng vẫn là tiền đã thu và được đánh dấu để đối soát.</p>
+                <table><thead><tr><th>Dịch vụ</th><th>Số giao dịch</th><th>Thực thu</th><th>Cần đối soát</th></tr></thead><tbody>{(report.byService ?? []).map((item) => <tr key={item.type}><th scope="row">{item.name}</th><td>{number(item.payments)}</td><td>{money(item.amountVnd)}</td><td>{number(item.requiresReview)}</td></tr>)}</tbody></table>
               </section>
               <section className="report-section">
                 <h2>Trạng thái phiếu thu</h2>

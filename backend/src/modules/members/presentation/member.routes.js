@@ -5,22 +5,23 @@ import { authenticate, requirePermission } from "../../../shared/auth/authentica
 import { sendSuccess } from "../../../shared/http/response.js";
 import { validateRequest } from "../../../shared/validation/validate-request.js";
 const id = z.string().uuid();
+const phone = z.string().min(9, "Nhập số điện thoại từ 9 đến 20 ký tự, ví dụ 0901234567.").max(20, "Số điện thoại tối đa 20 ký tự, ví dụ 0901234567.");
 const contact = z.object({
   fullName: z.string().trim().min(2).max(120),
   relationship: z.string().trim().min(2).max(60),
-  phone: z.string().min(9).max(20),
+  phone: phone,
   isPrimary: z.boolean().default(false),
 });
 const base = z.object({
   fullName: z.string().trim().min(2).max(120).optional(),
   email: z.string().email().optional().nullable(),
-  phone: z.string().min(9).max(20).optional(),
+  phone: phone.optional(),
   dateOfBirth: z.string().date().optional().nullable(),
   gender: z.string().max(30).optional().nullable(),
 });
 const createBody = base.extend({
   fullName: z.string().trim().min(2).max(120),
-  phone: z.string().min(9).max(20),
+  phone: phone,
   contacts: z.array(contact).max(3).default([]),
   createAccount: z.boolean().default(false),
 }).superRefine((input, context) => {

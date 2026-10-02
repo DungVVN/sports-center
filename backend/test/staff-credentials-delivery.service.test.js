@@ -6,7 +6,8 @@ const config = {
   resendApiKey: "re_test",
   resendFromEmail: "no-reply@example.com",
   resendFromName: "Kinetic Sports",
-  corsOrigins: ["https://www.kineticsports.io.vn"],
+  publicWebOrigin: "https://kineticsports.io.vn",
+  corsOrigins: ["http://localhost:5173", "https://admin.kineticsports.io.vn"],
 };
 
 describe("staff credential email delivery", () => {
@@ -21,7 +22,8 @@ describe("staff credential email delivery", () => {
     expect(payload.subject).toContain("Tài khoản nhân viên");
     expect(payload.text).toContain("temporary-password");
     expect(payload.html).toContain("Đăng nhập lần đầu");
-    expect(payload.html).toContain("https://www.kineticsports.io.vn/");
+    expect(payload.html).toContain('href="https://kineticsports.io.vn/login"');
+    expect(payload.text).toContain("https://kineticsports.io.vn/login");
   });
 
   it("keeps a manual fallback when email is not configured", async () => {

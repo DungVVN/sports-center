@@ -45,7 +45,7 @@ export const authRepository = {
           await transaction.member_emergency_contacts.deleteMany({ where: { member_id: member.id } });
           if (input.contacts.length) {
             await transaction.member_emergency_contacts.createMany({
-              data: input.contacts.map((contact) => ({ ...contact, member_id: member.id })),
+              data: input.contacts.map((contact) => ({ full_name: contact.fullName, relationship: contact.relationship, phone: contact.phone, is_primary: contact.isPrimary, member_id: member.id })),
             });
           }
         }
@@ -223,6 +223,7 @@ export const authRepository = {
 
   async approveRegistration({ approvedBy, userId }) {
     return prisma.$transaction(async (transaction) => {
+      await transaction.$queryRaw`SELECT id FROM users WHERE id=${userId}::uuid FOR UPDATE`;
       const user = await transaction.users.findUnique({ where: { id: userId } });
       if (!user || user.role !== "member") return null;
       if (user.status !== "pending_approval") return { user, member: null, approved: false };
@@ -232,6 +233,7 @@ export const authRepository = {
         where: { user_id: userId },
         data: { approved_by: approvedBy, approved_at: approvedAt },
       });
+      await transaction.audit_logs.create({ data: { actor_user_id: approvedBy, action: "member.registration.approved", entity_type: "member", entity_id: member.id, summary: "Lễ tân đã duyệt tài khoản hội viên.", new_value: { userStatus: "active" } } });
       return { user: approvedUser, member, approved: true };
     });
   },

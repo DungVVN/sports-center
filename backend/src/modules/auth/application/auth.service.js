@@ -316,7 +316,6 @@ export function createAuthService({
       const approved = await repository.approveRegistration({ approvedBy, userId });
       if (!approved) throw new AppError({ statusCode: 404, code: "ACCOUNT_NOT_FOUND", message: "Không tìm thấy đăng ký hội viên." });
       if (!approved.approved) throw new AppError({ statusCode: 409, code: "REGISTRATION_NOT_PENDING", message: "Tài khoản không ở trạng thái chờ duyệt." });
-      await auditService.record({ actorUserId: approvedBy, action: "member.registration.approved", entityType: "member", entityId: approved.member.id, summary: "Lễ tân đã duyệt tài khoản hội viên.", newValue: { userStatus: "active" } });
       return { user: publicUser(approved.user), member: approved.member };
     },
   };

@@ -2,6 +2,18 @@ import { describe, expect, it, vi } from "vitest";
 import { createBookingService } from "../src/modules/bookings/index.js";
 
 describe("booking service", () => {
+  it.each([[{ unavailable: true }, "CLASS_UNAVAILABLE"], [{ ineligible: true }, "MEMBERSHIP_BOOKING_NOT_ELIGIBLE"]])("returns a business error if eligibility changes while creating a booking", async (result, code) => {
+    const repository = {
+      member: vi.fn().mockResolvedValue({ id: "member-1" }),
+      class: vi.fn().mockResolvedValue({ status: "published", starts_at: new Date(Date.now() + 86400000) }),
+      activeMembership: vi.fn().mockResolvedValue({ package_id: "package-1" }),
+      entitlement: vi.fn().mockResolvedValue({ entitlement: "group_class_booking" }),
+      createWithCapacity: vi.fn().mockResolvedValue(result),
+    };
+    const auditService = { record: vi.fn() };
+    await expect(createBookingService({ repository, auditService }).create({ memberId: "member-1", classId: "class-1" }, { id: "staff-1", role: "receptionist" })).rejects.toMatchObject({ code, statusCode: 422 });
+    expect(auditService.record).not.toHaveBeenCalled();
+  });
   it("limits a Coach booking list to classes they are assigned to", async () => {
     const repository = { list: vi.fn().mockResolvedValue([]) };
     const service = createBookingService({ repository, auditService: { record: vi.fn() } });

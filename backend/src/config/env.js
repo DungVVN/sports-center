@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { z } from "zod";
+import { defaultPublicWebOrigin, emailWebLink } from "../shared/email/web-link.js";
 
 export function parseEnvBoolean(value) {
   if (typeof value !== "string") return value;
@@ -13,6 +14,9 @@ const environmentSchema = z.object({
   PORT: z.coerce.number().int().min(1).max(65535).default(8880),
   API_BASE_PATH: z.string().startsWith("/").default("/api/v1"),
   PUBLIC_API_ORIGIN: z.string().url().optional(),
+  PUBLIC_WEB_ORIGIN: z.string().url().refine((publicWebOrigin) => {
+    try { emailWebLink("/", { publicWebOrigin }); return true; } catch { return false; }
+  }, "Must be a public HTTPS origin without credentials or a path.").default(defaultPublicWebOrigin),
   RENDER_EXTERNAL_URL: z.string().url().optional(),
   CORS_ORIGIN: z.string().min(1).default("http://localhost:5173"),
   AUTH_JWT_SECRET: z.string().min(32).default("development-only-auth-secret-change-before-production"),
@@ -65,6 +69,7 @@ export const env = Object.freeze({
   port: values.PORT,
   apiBasePath: values.API_BASE_PATH,
   publicApiOrigin: (values.PUBLIC_API_ORIGIN ?? values.RENDER_EXTERNAL_URL ?? "").replace(/\/$/, ""),
+  publicWebOrigin: values.PUBLIC_WEB_ORIGIN.replace(/\/$/, ""),
   corsOrigins: values.CORS_ORIGIN.split(",").map((origin) => origin.trim()).filter(Boolean),
   authJwtSecret: values.AUTH_JWT_SECRET,
   authSessionTtlHours: values.AUTH_SESSION_TTL_HOURS,

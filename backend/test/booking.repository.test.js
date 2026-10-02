@@ -37,6 +37,11 @@ describe("booking repository entitlement inheritance", () => {
     prisma.membership_freeze_requests.findMany.mockResolvedValue([]);
     prisma.$queryRaw.mockResolvedValue([]);
     prisma.bookings.count.mockResolvedValue(0);
+    prisma.class_sessions.findUnique.mockResolvedValue({ status: "published", capacity: 1, starts_at: new Date(Date.now() + 86400000) });
+    prisma.member_memberships.findMany.mockResolvedValue([{ id: "membership-1", package_id: "premium" }]);
+    prisma.membership_packages.findUnique.mockResolvedValue({ tier_rank: 3 });
+    prisma.membership_packages.findMany.mockResolvedValue([{ id: "premium", tier_rank: 3 }]);
+    prisma.membership_package_entitlements.findMany.mockResolvedValue([{ package_id: "premium", entitlement: "group_class_booking" }]);
   });
 
   it("uses a lower-tier booking entitlement when the current package does not duplicate it", async () => {
@@ -80,7 +85,6 @@ describe("booking repository entitlement inheritance", () => {
 
   it("notifies a member when a full class adds them to the waitlist", async () => {
     prisma.bookings.findFirst.mockResolvedValue(null);
-    prisma.class_sessions.findUnique.mockResolvedValue({ capacity: 1 });
     prisma.bookings.count.mockResolvedValue(1);
     prisma.bookings.create.mockResolvedValue({ id: "booking-1", status: "waitlisted" });
     prisma.members.findUnique.mockResolvedValue({ user_id: "user-1" });
@@ -96,7 +100,6 @@ describe("booking repository entitlement inheritance", () => {
       .mockRejectedValueOnce(Object.assign(new Error("serialization conflict"), { code: "P2034" }))
       .mockImplementationOnce(async (callback) => callback(prisma));
     prisma.bookings.findFirst.mockResolvedValue(null);
-    prisma.class_sessions.findUnique.mockResolvedValue({ capacity: 1 });
     prisma.bookings.count.mockResolvedValue(1);
     prisma.bookings.create.mockResolvedValue({ id: "booking-race", status: "waitlisted" });
     prisma.members.findUnique.mockResolvedValue({ user_id: "user-race" });
@@ -157,6 +160,26 @@ describe("booking repository entitlement inheritance", () => {
 
     await expect(bookingRepository.promoteWaitlisted("class-1")).resolves.toBeNull();
     expect(prisma.bookings.update).not.toHaveBeenCalled();
+  });
+
+  it.each([null, { status: "cancelled", starts_at: new Date(Date.now() + 86400000) }, { status: "published", starts_at: new Date(Date.now() - 1000) }])("does not create a booking when the locked class is no longer bookable", async (session) => {
+    prisma.class_sessions.findUnique.mockResolvedValue(session);
+    await expect(bookingRepository.createWithCapacity({ bookingCode: "BKG-STALE", memberId: "member-1", classId: "class-1", bookedBy: "user-1" })).resolves.toEqual({ unavailable: true });
+    expect(prisma.bookings.create).not.toHaveBeenCalled();
+  });
+
+  it("does not create a booking when membership changes after service preflight", async () => {
+    prisma.bookings.findFirst.mockResolvedValue(null);
+    prisma.member_memberships.findMany.mockResolvedValue([]);
+    await expect(bookingRepository.createWithCapacity({ bookingCode: "BKG-STALE", memberId: "member-1", classId: "class-1", bookedBy: "user-1" })).resolves.toEqual({ ineligible: true });
+    expect(prisma.bookings.create).not.toHaveBeenCalled();
+  });
+
+  it("does not create a booking when the package loses its booking entitlement", async () => {
+    prisma.bookings.findFirst.mockResolvedValue(null);
+    prisma.membership_package_entitlements.findMany.mockResolvedValue([]);
+    await expect(bookingRepository.createWithCapacity({ bookingCode: "BKG-STALE", memberId: "member-1", classId: "class-1", bookedBy: "user-1" })).resolves.toEqual({ ineligible: true });
+    expect(prisma.bookings.create).not.toHaveBeenCalled();
   });
 
   it("does not promote when confirmed and attended bookings already fill the class", async () => {

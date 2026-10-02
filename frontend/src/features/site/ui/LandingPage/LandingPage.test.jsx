@@ -6,6 +6,8 @@ import { PublicPricingSection } from "../Pricing/PublicPricingSection.jsx";
 import { publicMembershipPackages } from "../../../memberships/index.js";
 
 vi.mock("../../../memberships/index.js", () => ({ publicMembershipPackages: vi.fn() }));
+vi.mock("../../../courses/index.js", () => ({ courseApi: { publicCatalog: vi.fn().mockResolvedValue([]) } }));
+vi.mock("../../../pt/index.js", () => ({ ptApi: { publicCatalog: vi.fn().mockResolvedValue([]) } }));
 
 function renderPricing(onRegisterClick = vi.fn()) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -44,7 +46,8 @@ describe("public membership pricing", () => {
 
 it("links to four separate pages without loading pricing on the homepage", () => {
   publicMembershipPackages.mockClear();
-  render(<LandingPage onLoginClick={vi.fn()} onRegisterClick={vi.fn()} />);
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  render(<QueryClientProvider client={client}><LandingPage onLoginClick={vi.fn()} onRegisterClick={vi.fn()} /></QueryClientProvider>);
   for (const [name, path] of [["Về Chúng Tôi", "/ve-chung-toi"], ["Dịch Vụ", "/dich-vu"], ["Bảng Giá", "/bang-gia"], ["Liên Hệ", "/lien-he"]]) {
     expect(screen.getAllByRole("link", { name, exact: true })[0]).toHaveAttribute("href", path);
   }

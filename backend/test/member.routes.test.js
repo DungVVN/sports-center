@@ -58,3 +58,13 @@ describe("Member create route", () => {
     expect(memberService.issueAccountCredentials).not.toHaveBeenCalled();
   });
 });
+
+describe("Member phone validation", () => {
+  it("explains a short phone number before invoking the update service", async () => {
+    const memberService = { update: vi.fn() };
+    const authService = { getAuthentication: vi.fn().mockResolvedValue({ user: { id: "staff-1", role: "receptionist" }, permissions: ["member.write"] }) };
+    const response = await request(createApp({ memberService, authService })).patch("/api/v1/members/17d813e0-a5e7-48e8-92bb-81fa123a8240").set("Authorization", "Bearer session-token").send({ phone: "123" }).expect(422);
+    expect(response.body.error.details).toContainEqual(expect.objectContaining({ path: "body.phone", message: expect.stringContaining("0901234567") }));
+    expect(memberService.update).not.toHaveBeenCalled();
+  });
+});

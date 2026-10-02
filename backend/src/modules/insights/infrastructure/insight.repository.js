@@ -23,20 +23,27 @@ export const insightRepository = {
   async managerMetrics(from, to) {
     const classes = await prisma.class_sessions.findMany({ where: { status: "published", starts_at: { gte: from, lte: to } }, select: { id: true, capacity: true } });
     const classIds = classes.map((item) => item.id);
-    const [revenueRows, members, bookings, attendanceRows] = await Promise.all([
+    const [revenueRows, members, bookings, attendanceRows, refunds] = await Promise.all([
       prisma.payments.groupBy({ by: ["status"], where: { paid_at: { gte: from, lte: to } }, _sum: { amount_vnd: true }, _count: { id: true } }),
       prisma.members.count({ where: { joined_at: { gte: from, lte: to } } }),
       classIds.length ? prisma.bookings.count({ where: { class_session_id: { in: classIds }, status: { in: activeBookingStatuses } } }) : 0,
       prisma.attendance_records.groupBy({ by: ["status"], where: { recorded_at: { gte: from, lte: to } }, _count: { id: true } }),
+      prisma.service_refunds.aggregate({ where: { status: "completed", executed_at: { gte: from, lte: to } }, _sum: { amount_vnd: true } }),
     ]);
-    const paid = revenueRows.find((item) => item.status === "paid");
+    const receipts = revenueRows.filter((item) => ["paid", "refunded"].includes(item.status));
+    const gross = receipts.reduce((sum, item) => sum + (item._sum.amount_vnd ?? 0n), 0n);
     const attendance = Object.fromEntries(attendanceRows.map((item) => [item.status, item._count.id]));
     const marked = (attendance.present ?? 0) + (attendance.late ?? 0) + (attendance.absent ?? 0);
     return {
-      revenueVnd: (paid?._sum.amount_vnd ?? BigInt(0)).toString(), paidPayments: paid?._count.id ?? 0, newMembers: members,
+      revenueVnd: (gross - (refunds._sum.amount_vnd ?? 0n)).toString(), paidPayments: receipts.reduce((sum, item) => sum + item._count.id, 0), newMembers: members,
       classes: classes.length, bookings, capacity: classes.reduce((total, item) => total + item.capacity, 0),
       attendance: { present: attendance.present ?? 0, late: attendance.late ?? 0, absent: attendance.absent ?? 0, marked },
     };
   },
-  revenuePayments: (from, to) => prisma.payments.findMany({ where: { status: "paid", paid_at: { gte: from, lte: to } }, select: { paid_at: true, amount_vnd: true }, orderBy: { paid_at: "asc" } }),
+  async revenueRefunds(from, to) {
+    const refunds = await prisma.service_refunds.findMany({ where: { status: "completed", executed_at: { gte: from, lte: to } }, orderBy: { executed_at: "asc" } });
+    const payments = await prisma.payments.findMany({ where: { id: { in: refunds.map((refund) => refund.payment_id) } } });
+    return refunds.map((refund) => ({ ...refund, payments: payments.find((payment) => payment.id === refund.payment_id) }));
+  },
+  revenuePayments: (from, to) => prisma.payments.findMany({ where: { status: { in: ["paid", "refunded"] }, paid_at: { gte: from, lte: to } }, select: { paid_at: true, amount_vnd: true, membership_id: true, course_enrollment_id: true, pt_purchase_id: true, facility_reservation_id: true, fulfillment_error: true }, orderBy: { paid_at: "asc" } }),
 };

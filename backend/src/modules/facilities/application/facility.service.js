@@ -1,4 +1,5 @@
 import { AppError } from "../../../shared/errors/app-error.js";
+import { rentalInstant } from "../domain/rental-policy.js";
 
 const fail = (statusCode, code, message) => { throw new AppError({ statusCode, code, message }); };
 const dayString = (value) => value.toISOString().slice(0, 10);
@@ -8,9 +9,9 @@ const currentMinuteInVietnam = () => {
   return Number(parts.find((part) => part.type === "hour").value) * 60 + Number(parts.find((part) => part.type === "minute").value);
 };
 const duplicate = (error) => error.code === "P2002";
-const overlap = (error) => error.code === "P2004" || error.code === "23P01" || error.message?.includes("facility_approved_no_overlap");
+const overlap = (error) => error.code === "P2004" || error.code === "23P01" || /facility_approved_no_overlap|Physical room is already occupied|Room mapping creates overlapping/.test(error.message ?? "");
 
-export function createFacilityService({ repository, auditService }) {
+export function createFacilityService({ repository, auditService, paymentService }) {
   async function decorated(items, includeRequester) {
     const days = await repository.daysByIds([...new Set(items.map((item) => item.day_id))]);
     const facilities = await repository.facilitiesByIds([...new Set(days.map((day) => day.facility_id))]);
@@ -21,23 +22,54 @@ export function createFacilityService({ repository, auditService }) {
     return items.map((item) => {
       const day = dayById.get(item.day_id);
       const facility = facilityById.get(day?.facility_id);
-      return { id: item.id, dayId: item.day_id, date: day ? dayString(day.open_on) : null, facilityName: facility?.name ?? "Sân không còn hoạt động", status: item.status, requestedStartMinute: item.requested_start_minute, requestedEndMinute: item.requested_end_minute, assignedStartMinute: item.assigned_start_minute, assignedEndMinute: item.assigned_end_minute, participantCount: item.participant_count, phone: item.contact_phone, requestedAt: item.requested_at, decisionReason: item.decision_reason, cancellationPending: ["pending", "approved"].includes(item.status) && Boolean(item.cancellation_requested_at), cancellationReason: item.cancellation_reason ?? null, cancellationRequestedAt: item.cancellation_requested_at ?? null, ...(includeRequester && { requesterName: requesterById.get(item.requester_user_id)?.display_name ?? "Người đặt" }) };
+      return { totalVnd: item.total_vnd_snapshot?.toString() ?? null, hourlyRateVnd: item.hourly_rate_vnd_snapshot?.toString() ?? null, paymentState: item.payment_state ?? "legacy", completedAt: item.completed_at ?? null, completionNote: item.completion_note ?? null, activationPaymentId: item.activation_payment_id ?? null, id: item.id, dayId: item.day_id, date: day ? dayString(day.open_on) : null, facilityName: facility?.name ?? "Sân không còn hoạt động", status: item.status, requestedStartMinute: item.requested_start_minute, requestedEndMinute: item.requested_end_minute, assignedStartMinute: item.assigned_start_minute, assignedEndMinute: item.assigned_end_minute, participantCount: item.participant_count, phone: item.contact_phone, requestedAt: item.requested_at, decisionReason: item.decision_reason, cancellationPending: ["pending", "approved"].includes(item.status) && Boolean(item.cancellation_requested_at), cancellationReason: item.cancellation_reason ?? null, cancellationRequestedAt: item.cancellation_requested_at ?? null, ...(includeRequester && { requesterName: requesterById.get(item.requester_user_id)?.display_name ?? "Người đặt" }) };
     });
   }
   return {
+    async settings() { return repository.settings(); },
+    async configure(id, input, actorUserId) {
+      if (!await repository.facility(id)) fail(404, "FACILITY_NOT_FOUND", "Không tìm thấy sân/phòng.");
+      try { return await repository.configure(id, input, actorUserId); }
+      catch (error) {
+        if (overlap(error)) fail(409, "FACILITY_TIME_BOOKED", "Liên kết phòng tạo lịch trùng với lớp hoặc PT hiện có.");
+        if (duplicate(error)) fail(409, "FACILITY_ROOM_ALREADY_LINKED", "Phòng đã được liên kết với một sân/phòng cho thuê.");
+        throw error;
+      }
+    },
+    async payment(id, input, actor) {
+      const current = await repository.reservation(id);
+      if (!current || current.requester_user_id !== actor.id) fail(404, "FACILITY_REQUEST_NOT_FOUND", "Không tìm thấy đơn đặt sân của bạn.");
+      const existing = await repository.openPayment(id);
+      if (existing) return paymentService.get(existing.id);
+      if (current.status !== "approved" || current.payment_state !== "unpaid") fail(422, "FACILITY_PAYMENT_NOT_ELIGIBLE", "Đơn không còn chờ thanh toán.");
+      const member = await repository.memberByUser(actor.id);
+      if (!member) fail(422, "MEMBER_PROFILE_REQUIRED", "Cần hồ sơ khách hàng để lập thanh toán.");
+      return paymentService.create({ memberId: member.id, facilityReservationId: id, amountVnd: current.total_vnd_snapshot.toString(), method: input.method, ...(input.method === "online" && { provider: "payos" }) }, actor.id);
+    },
+    async complete(id, note, actorUserId) { return repository.complete(id, note, actorUserId); },
     async publicCalendar({ from, to, typeId }) {
       const [types, allFacilities, allDays] = await Promise.all([repository.types(), repository.facilities(), repository.days(new Date(from), new Date(to))]);
       const activeTypeIds = new Set(types.map((type) => type.id));
       const facilities = allFacilities.filter((facility) => activeTypeIds.has(facility.type_id) && (!typeId || facility.type_id === typeId));
       const facilityIds = new Set(facilities.map((facility) => facility.id));
       const days = allDays.filter((day) => facilityIds.has(day.facility_id));
+      const roomIds = facilities.map((item) => item.room_id).filter(Boolean);
+      const busy = roomIds.length ? await repository.roomBusy(roomIds, rentalInstant(from, 0), rentalInstant(to, 1440)) : [];
       const approved = await repository.approved(days.map((day) => day.id));
       const bookedByDay = new Map();
       for (const item of approved) bookedByDay.set(item.day_id, [...(bookedByDay.get(item.day_id) ?? []), { startMinute: item.assigned_start_minute, endMinute: item.assigned_end_minute }]);
+      for (const day of days) {
+        const facility = facilities.find((item) => item.id === day.facility_id);
+        const midnight = rentalInstant(dayString(day.open_on), 0).getTime();
+        const periods = busy.filter((item) => item.room_id === facility.room_id && item.starts_at.getTime() < midnight + 86400000 && item.ends_at.getTime() > midnight)
+          .map((item) => ({ startMinute: Math.max(facility.open_minute, Math.floor((item.starts_at.getTime() - midnight) / 60000)), endMinute: Math.min(facility.close_minute, Math.ceil((item.ends_at.getTime() - midnight) / 60000)) }))
+          .filter((item) => item.endMinute > item.startMinute);
+        bookedByDay.set(day.id, [...(bookedByDay.get(day.id) ?? []), ...periods]);
+      }
       const facilityById = new Map(facilities.map((facility) => [facility.id, facility]));
       const today = todayInVietnam();
       const nowMinute = currentMinuteInVietnam();
-      return { types: types.map(({ id, name }) => ({ id, name })), facilities: facilities.map(({ id, type_id, name, open_minute, close_minute }) => ({ id, typeId: type_id, name, openMinute: open_minute, closeMinute: close_minute })), days: days.map((day) => {
+      return { types: types.map(({ id, name }) => ({ id, name })), facilities: facilities.map(({ id, type_id, name, open_minute, close_minute, hourly_rate_vnd }) => ({ id, typeId: type_id, name, openMinute: open_minute, closeMinute: close_minute, hourlyRateVnd: hourly_rate_vnd?.toString() ?? null })), days: days.map((day) => {
         const facility = facilityById.get(day.facility_id);
         const booked = (bookedByDay.get(day.id) ?? []).sort((a, b) => a.startMinute - b.startMinute);
         const date = dayString(day.open_on);
@@ -105,7 +137,6 @@ export function createFacilityService({ repository, auditService }) {
       const result = ownReservation ? await repository.cancel({ id, reason, actorUserId }) : await repository.requestCancellation({ id, reason, actorUserId });
       if (result.kind === "missing") fail(404, "FACILITY_REQUEST_NOT_FOUND", "Không tìm thấy đơn đặt sân.");
       if (result.kind === "invalid") fail(409, "FACILITY_CANCELLATION_NOT_AVAILABLE", "Đơn không thể hủy hoặc đang chờ người tạo đơn xác nhận.");
-      await auditService.record({ actorUserId, action: ownReservation ? "facility.reservation.cancelled" : "facility.reservation.cancellation_requested", entityType: "facility_reservation", entityId: id, summary: ownReservation ? "Người tạo đơn đã hủy đơn đặt sân." : "Đã gửi yêu cầu hủy đơn cho người tạo đơn xác nhận.", reason });
       return { ...result.item, cancellationPending: result.kind === "requested" };
     },
     async confirmCancellation(id, actorUserId) {
@@ -114,7 +145,6 @@ export function createFacilityService({ repository, auditService }) {
       if (current.requester_user_id !== actorUserId) fail(403, "FACILITY_CANCELLATION_CONFIRMATION_DENIED", "Chỉ người tạo đơn mới có thể xác nhận hủy.");
       const result = await repository.confirmCancellation({ id, actorUserId });
       if (result.kind === "invalid") fail(409, "FACILITY_CANCELLATION_NOT_AVAILABLE", "Đơn không có yêu cầu hủy đang chờ xác nhận.");
-      await auditService.record({ actorUserId, action: "facility.reservation.cancellation_confirmed", entityType: "facility_reservation", entityId: id, summary: "Người tạo đơn đã xác nhận hủy đơn đặt sân.", reason: current.cancellation_reason });
       return result.item;
     },
   };

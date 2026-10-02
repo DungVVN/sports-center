@@ -1,14 +1,12 @@
 import { env } from "../../../config/env.js";
+import { emailWebLink } from "../../../shared/email/web-link.js";
 
 function escapeHtml(value) {
   return String(value).replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character]);
 }
 
 function message(notification, config) {
-  // Notification links are opened by people, so they must point to the web app,
-  // never to the API origin. CORS_ORIGIN is the explicit allow-list of web UIs.
-  const frontendOrigin = config.corsOrigins?.find((origin) => origin.startsWith("https://")) ?? config.corsOrigins?.[0];
-  const link = notification.link_path && frontendOrigin ? `${frontendOrigin.replace(/\/$/, "")}${notification.link_path}` : null;
+  const link = notification.link_path ? emailWebLink(notification.link_path, config) : null;
   return {
     from: `${env.resendFromName} <${env.resendFromEmail}>`,
     to: [notification.recipient.email],

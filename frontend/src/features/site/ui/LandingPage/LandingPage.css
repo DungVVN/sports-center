@@ -714,7 +714,7 @@
   text-align: center;
   padding-top: var(--space-16);
   border-top: 1px solid var(--color-border);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   font-size: 0.9rem;
 }
 
@@ -1366,3 +1366,11 @@
 .public-page-directory__link:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 4px; }
 @media (max-width: 1024px) { .public-page-directory { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 600px) { .public-page-directory { grid-template-columns: 1fr; } }
+
+/* Collapse public navigation before links compete with the logo and login. */
+@media (min-width: 769px) and (max-width: 1180px) {
+  .landing-navbar .navbar-links { display: none; }
+  .landing-navbar .navbar-actions { align-items: center; flex-shrink: 0; }
+  .landing-navbar .mobile-menu-toggle { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border: 0; border-radius: 8px; background: var(--color-surface-muted); color: var(--color-text); cursor: pointer; }
+  .landing-navbar .mobile-nav-menu.open { display: flex; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; background: var(--color-surface); padding: 16px 5%; box-shadow: var(--shadow-card); max-height: calc(100dvh - 80px); overflow-y: auto; }
+}

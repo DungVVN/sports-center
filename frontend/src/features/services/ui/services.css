@@ -1,0 +1,4 @@
+.my-services__groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 20px; margin-top: 20px; }
+.my-services__group { border: 1px solid var(--color-border, #d9e0e6); border-radius: 12px; padding: 20px; min-width: 0; }
+.my-services__group article { padding: 12px 0; border-bottom: 1px solid var(--color-border, #d9e0e6); overflow-wrap: anywhere; }
+.my-services__group > button { margin-top: 16px; }

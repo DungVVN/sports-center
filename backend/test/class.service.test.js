@@ -3,14 +3,20 @@ import { createClassService } from "../src/modules/classes/index.js";
 
 const input = { name: "Yoga sáng", type: "group", coachUserId: "coach-1", roomId: "room-1", startsAt: "2026-09-15T01:00:00.000Z", endsAt: "2026-09-15T02:00:00.000Z", capacity: 20 };
 
-function dependencies({ room = { id: "room-1" }, coach = { id: "coach-1" } } = {}) {
+function dependencies({ room = { id: "room-1", is_active: true, capacity: 30 }, coach = { id: "coach-1" } } = {}) {
   return {
-    repository: { findRoom: vi.fn().mockResolvedValue(room), findCoach: vi.fn().mockResolvedValue(coach), hasScheduleConflict: vi.fn().mockResolvedValue(null), find: vi.fn().mockResolvedValue({ id: "class-1", status: "published", room_id: "room-1", coach_user_id: "coach-1", starts_at: new Date(input.startsAt), ends_at: new Date(input.endsAt) }), create: vi.fn().mockResolvedValue({ id: "class-1" }), update: vi.fn().mockResolvedValue({ id: "class-1" }), createChange: vi.fn().mockResolvedValue({ id: "change-1" }), change: vi.fn(), reviewChange: vi.fn().mockResolvedValue({ id: "change-1" }), cancelBookings: vi.fn().mockResolvedValue([]), notifyClassMembers: vi.fn(), notifyUser: vi.fn() },
+    repository: { findRoom: vi.fn().mockResolvedValue(room), findCoach: vi.fn().mockResolvedValue(coach), hasScheduleConflict: vi.fn().mockResolvedValue(null), find: vi.fn().mockResolvedValue({ id: "class-1", status: "published", room_id: "room-1", coach_user_id: "coach-1", starts_at: new Date(input.startsAt), ends_at: new Date(input.endsAt) }), create: vi.fn().mockResolvedValue({ id: "class-1" }), update: vi.fn().mockResolvedValue({ id: "class-1" }), createChange: vi.fn().mockResolvedValue({ id: "change-1" }), change: vi.fn(), reviewChange: vi.fn().mockResolvedValue({ id: "change-1" }) },
     auditService: { record: vi.fn().mockResolvedValue(undefined) },
   };
 }
 
 describe("Class service", () => {
+  it("returns a useful schedule error when concurrent creation hits the DB guard", async () => {
+    const { repository, auditService } = dependencies();
+    repository.create.mockRejectedValue(new Error("Coach or room already has an overlapping class"));
+    await expect(createClassService({ repository, auditService }).create(input, "manager-1")).rejects.toMatchObject({ code: "CLASS_SCHEDULE_CONFLICT", statusCode: 422 });
+    expect(auditService.record).not.toHaveBeenCalled();
+  });
   it("returns only assigned classes to a Coach", async () => {
     const repository = {
       listForCoach: vi.fn().mockResolvedValue([{ id: "class-1", coach_user_id: "coach-1" }]),
@@ -44,6 +50,24 @@ describe("Class service", () => {
     expect(repository.create).not.toHaveBeenCalled();
   });
 
+  it("rejects a class larger than its room", async () => {
+    const { repository, auditService } = dependencies({ room: { id: "room-1", is_active: true, capacity: 10 } });
+    await expect(createClassService({ repository, auditService }).create(input, "manager-1")).rejects.toMatchObject({ code: "CLASS_ROOM_CAPACITY_EXCEEDED" });
+    expect(repository.create).not.toHaveBeenCalled();
+  });
+
+  it("rechecks room availability before publishing an existing draft", async () => {
+    const { repository, auditService } = dependencies({ room: { id: "room-1", is_active: false, capacity: 30 } });
+    await expect(createClassService({ repository, auditService }).publish("class-1", "manager-1")).rejects.toMatchObject({ code: "ROOM_NOT_FOUND" });
+    expect(repository.update).not.toHaveBeenCalled();
+  });
+
+  it("rechecks coach availability before publishing", async () => {
+    const { repository, auditService } = dependencies({ coach: null });
+    await expect(createClassService({ repository, auditService }).publish("class-1", "manager-1")).rejects.toMatchObject({ code: "COACH_NOT_AVAILABLE" });
+    expect(repository.update).not.toHaveBeenCalled();
+  });
+
   it("creates a draft class with an audit entry", async () => {
     const { repository, auditService } = dependencies();
     await expect(createClassService({ repository, auditService }).create(input, "manager-1")).resolves.toEqual({ id: "class-1" });
@@ -64,6 +88,14 @@ describe("Class service", () => {
     expect(auditService.record).toHaveBeenCalledWith(expect.objectContaining({ action: "class.updated" }));
   });
 
+  it("allows metadata edits on historical overlapping schedules without changing their time", async () => {
+    const { repository, auditService } = dependencies();
+    repository.hasScheduleConflict.mockResolvedValue({ id: "legacy-overlap" });
+    await createClassService({ repository, auditService }).update("class-1", { name: "Yoga đã cập nhật" }, "manager-1");
+    expect(repository.hasScheduleConflict).not.toHaveBeenCalled();
+    expect(repository.update).toHaveBeenCalledWith("class-1", { name: "Yoga đã cập nhật" });
+  });
+
   it("rejects a proposed reschedule that overlaps another class", async () => {
     const { repository, auditService } = dependencies();
     repository.hasScheduleConflict.mockResolvedValue({ id: "class-2" });
@@ -75,20 +107,31 @@ describe("Class service", () => {
     const { repository, auditService } = dependencies();
     repository.change.mockResolvedValue({ id: "change-1", status: "pending", requested_by: "coach-1", class_session_id: "class-1", type: "cancel" });
     await createClassService({ repository, auditService }).reviewChange("change-1", false, "receptionist-1");
-    expect(repository.notifyUser).toHaveBeenCalledWith("coach-1", expect.stringContaining("từ chối"), expect.any(String), "/classes/class-1");
-    expect(auditService.record).toHaveBeenCalledWith(expect.objectContaining({ action: "class.change_rejected" }));
+    expect(repository.reviewChange).toHaveBeenCalledWith("change-1", "rejected", "receptionist-1", expect.objectContaining({
+      notification: expect.objectContaining({ title: expect.stringContaining("từ chối") }),
+      audit: expect.objectContaining({ action: "class.change_rejected" }),
+    }));
+    expect(auditService.record).not.toHaveBeenCalled();
   });
 
-  it("notifies only members whose bookings were cancelled by the approved change", async () => {
+  it("passes the cancellation notice and audit to the atomic review operation", async () => {
     const { repository, auditService } = dependencies();
     repository.change.mockResolvedValue({ id: "change-1", status: "pending", requested_by: "coach-1", class_session_id: "class-1", type: "cancel" });
-    repository.cancelBookings.mockResolvedValue(["member-active"]);
     await createClassService({ repository, auditService }).reviewChange("change-1", true, "receptionist-1");
-    expect(repository.notifyClassMembers).toHaveBeenCalledWith("class-1", ["member-active"], "Lớp học đã hủy", expect.any(String));
-    repository.notifyClassMembers.mockClear();
-    repository.cancelBookings.mockResolvedValue([]);
-    await createClassService({ repository, auditService }).reviewChange("change-1", true, "receptionist-1");
-    expect(repository.notifyClassMembers).not.toHaveBeenCalled();
+    expect(repository.reviewChange).toHaveBeenCalledWith("change-1", "approved", "receptionist-1", expect.objectContaining({
+      notification: expect.objectContaining({ title: "Lớp học đã hủy" }),
+      audit: expect.objectContaining({ action: "class.change_approved" }),
+    }));
+    expect(repository.update).not.toHaveBeenCalled();
+    expect(auditService.record).not.toHaveBeenCalled();
+  });
+
+  it("maps a database conflict during review without recording a second audit", async () => {
+    const { repository, auditService } = dependencies();
+    repository.change.mockResolvedValue({ id: "change-1", status: "pending", class_session_id: "class-1", type: "cancel" });
+    repository.reviewChange.mockRejectedValue(new Error("class_schedule_conflict_guard"));
+    await expect(createClassService({ repository, auditService }).reviewChange("change-1", true, "receptionist-1")).rejects.toMatchObject({ code: "CLASS_SCHEDULE_CONFLICT" });
+    expect(auditService.record).not.toHaveBeenCalled();
   });
 
   it("does not approve a reschedule when the schedule becomes unavailable", async () => {

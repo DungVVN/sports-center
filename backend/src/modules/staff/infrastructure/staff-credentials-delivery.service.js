@@ -1,12 +1,12 @@
 import { env } from "../../../config/env.js";
+import { emailWebLink } from "../../../shared/email/web-link.js";
 
 function escapeHtml(value) {
   return String(value).replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character]);
 }
 
 function loginUrl(config) {
-  const frontendOrigin = config.corsOrigins?.find((origin) => origin.startsWith("https://")) ?? config.corsOrigins?.[0];
-  return frontendOrigin ? `${frontendOrigin.replace(/\/$/, "")}/` : null;
+  return emailWebLink("/login", config);
 }
 
 export function createStaffCredentialsDeliveryService({ config = env, fetchImpl = fetch, logger = console } = {}) {

@@ -5,3 +5,4 @@ backup-restore-results/
 .env
 .env.*
 !.env.example
+!.env.production.example

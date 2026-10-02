@@ -1,0 +1,7 @@
+.pt-page { display: grid; gap: 1rem; }
+.pt-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: 1rem; }
+.pt-card, .pt-form { border: 1px solid var(--border, #dbe1e8); border-radius: .75rem; padding: 1rem; background: var(--surface, #fff); overflow-wrap: anywhere; }
+.pt-form { display: grid; gap: .75rem; max-width: 42rem; }
+.pt-form label { display: grid; gap: .25rem; }
+.pt-form input, .pt-form select { width: 100%; min-width: 0; box-sizing: border-box; padding: .65rem; border: 1px solid var(--border, #dbe1e8); border-radius: .4rem; font: inherit; }
+.pt-card .button { margin: .25rem; }
