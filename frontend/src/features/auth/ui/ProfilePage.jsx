@@ -1,3 +1,4 @@
+import { PageHeader } from "../../../shared/ui/PageHeader.jsx";
 export { ProfileAvatar } from "./ProfileAvatar.jsx";
 import { toForm } from "../domain/profile-form.js";
 import { ProfileDetailsForm } from "./ProfileDetailsForm.jsx";
@@ -63,7 +64,9 @@ export function ProfilePage({ onSessionRevoked, onProfileSaved, session }) {
     setAvatarUploading(true);
     workspace.clearFeedback();
     try {
-      updateField("avatarUrl", await uploadProfileAvatar(file));
+      const url = await uploadProfileAvatar(file);
+      updateField("avatarUrl", url);
+      return url;
     } catch (cause) {
       workspace.setError(cause?.message || "Không thể tải ảnh đại diện lên.");
     } finally {
@@ -141,10 +144,7 @@ export function ProfilePage({ onSessionRevoked, onProfileSaved, session }) {
   const isMember = profile.role === "member";
   return (
     <main className="members-page profile-page">
-      <header>
-        <p>Hồ sơ</p>
-        <h1>Hồ sơ cá nhân</h1>
-      </header>
+      <PageHeader eyebrow="Hồ sơ" title="Hồ sơ cá nhân" />
       {workspace.error && (
         <p className="auth-alert" role="alert">
           {workspace.error}
@@ -176,12 +176,6 @@ export function ProfilePage({ onSessionRevoked, onProfileSaved, session }) {
               workspace={workspace}
             />
 
-            {hasSessionPermission(
-              session,
-              "notification.preference.manage",
-            ) && (
-              <NotificationPreferencesPanel className="profile-page__notifications" />
-            )}
           </div>
         </div>
 
@@ -199,6 +193,9 @@ export function ProfilePage({ onSessionRevoked, onProfileSaved, session }) {
           {!isMember && <ProfileSummary profile={profile} />}
 
           <TotpEnrollmentPanel onEnrollmentCompleted={onSessionRevoked} />
+          {hasSessionPermission(session, "notification.preference.manage") && (
+            <NotificationPreferencesPanel className="profile-page__notifications" />
+          )}
         </div>
       </section>
     </main>

@@ -1,12 +1,14 @@
 import { ApiError } from "./api-error.js";
 
-const acceptedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"];
-const maxBytes = 10 * 1024 * 1024;
+const imageType = /^image\/[a-z0-9][a-z0-9.+-]*$/i;
+const imageExtension = /\.(avif|bmp|dib|gif|heic|heif|ico|jfif|jpe|jpeg|jpg|jxl|pjp|pjpeg|png|psd|svg|svgz|tif|tiff|webp)$/i;
+const maxBytes = 20 * 1024 * 1024;
 
 export async function uploadCloudinaryImage(file, getSignature, afterUpload = async () => {}) {
   if (!file) throw new ApiError({ code: "IMAGE_REQUIRED", message: "Hãy chọn một ảnh để tải lên." });
-  if (!acceptedTypes.includes(file.type)) throw new ApiError({ code: "IMAGE_TYPE_INVALID", message: "Chỉ nhận ảnh JPG, PNG, WebP, GIF hoặc AVIF." });
-  if (file.size > maxBytes) throw new ApiError({ code: "IMAGE_TOO_LARGE", message: "Ảnh tối đa 10 MB." });
+  const isImage = imageType.test(file.type) || ((!file.type || file.type === "application/octet-stream") && imageExtension.test(file.name));
+  if (!isImage) throw new ApiError({ code: "IMAGE_TYPE_INVALID", message: "Vui lòng chọn một tệp ảnh." });
+  if (file.size > maxBytes) throw new ApiError({ code: "IMAGE_TOO_LARGE", message: "Ảnh tối đa 20 MB." });
   const signature = await getSignature();
   if (file.size > signature.maxBytes) throw new ApiError({ code: "IMAGE_TOO_LARGE", message: "Ảnh vượt quá dung lượng được máy chủ cho phép." });
   const body = new FormData();

@@ -133,7 +133,6 @@ export function ProfilePasswordForm({
         <Button loading={workspace.changePassword.isPending} type="submit">
           Đổi mật khẩu
         </Button>
-        <span>Mọi phiên đăng nhập hiện có sẽ được thu hồi.</span>
       </div>
     </form>
   );

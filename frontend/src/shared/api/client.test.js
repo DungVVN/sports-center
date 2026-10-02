@@ -1,12 +1,27 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "./api-error.js";
-import { apiClient } from "./client.js";
+import { apiClient, mutationSucceededEvent } from "./client.js";
 import { apiBaseUrl } from "../../config/runtime.js";
 import { errorMessageFor } from "./error-message.js";
 
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 describe("apiClient", () => {
+  it("refreshes notifications for successful writes but not reads or marking notifications read", async () => {
+    const listener = vi.fn();
+    window.addEventListener(mutationSucceededEvent, listener);
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(async () => new Response(JSON.stringify({ success: true, data: {} }), { status: 200, headers: { "content-type": "application/json" } })));
+    try {
+      await apiClient.post("/courses", {});
+      expect(listener).toHaveBeenCalledTimes(1);
+      await apiClient.get("/notifications");
+      await apiClient.patch("/notifications/id/read", {});
+      expect(listener).toHaveBeenCalledTimes(1);
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ success: false }), { status: 422, headers: { "content-type": "application/json" } })));
+      await expect(apiClient.post("/courses", {})).rejects.toBeInstanceOf(ApiError);
+      expect(listener).toHaveBeenCalledTimes(1);
+    } finally { window.removeEventListener(mutationSucceededEvent, listener); }
+  });
   it("ends a stalled request with a retryable timeout message", async () => {
     vi.useFakeTimers();
     vi.stubGlobal("fetch", vi.fn((_url, { signal }) => new Promise((_resolve, reject) => {

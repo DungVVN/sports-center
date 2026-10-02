@@ -35,3 +35,4 @@
 
 .auth-form { gap: var(--form-row-gap); }
 .auth-form .field { gap: var(--field-gap); }
+.admin-login-card .auth-form { width: 100%; max-width: 304px; }

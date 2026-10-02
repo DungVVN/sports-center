@@ -1,3 +1,4 @@
+import { PageHeader } from "../../../shared/ui/PageHeader.jsx";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "../../../shared/ui/Button.jsx";
@@ -25,10 +26,7 @@ export function MemberAttendancePage() {
 
   return (
     <main className="members-page">
-      <header>
-        <p>Điểm danh</p>
-        <h1>Lịch sử điểm danh</h1>
-      </header>
+      <PageHeader eyebrow="Điểm danh" title="Lịch sử điểm danh" />
       {attendanceQuery.isError && <p className="auth-alert" role="alert">{errorMessageFor(attendanceQuery.error, "Không thể tải lịch sử điểm danh.")}</p>}
       {classesQuery.isError && <p className="auth-alert" role="alert">{errorMessageFor(classesQuery.error, "Không thể tải thông tin lớp học.")}</p>}
       <section className="members-list">

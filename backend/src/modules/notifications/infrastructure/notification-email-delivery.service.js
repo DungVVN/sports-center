@@ -1,5 +1,6 @@
 import { env } from "../../../config/env.js";
 import { emailWebLink } from "../../../shared/email/web-link.js";
+import { shouldEmailNotification } from "../domain/email-policy.js";
 
 function escapeHtml(value) {
   return String(value).replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character]);
@@ -27,7 +28,7 @@ export function createNotificationEmailDeliveryService({ repository, config = en
       for (const notification of pending) {
         const claimed = await repository.claim({ id: notification.id, staleBefore, lockedAt: startedAt });
         if (claimed.count !== 1) continue;
-        if (!notification.recipient || !notification.emailEnabled) {
+        if (!notification.recipient || !notification.emailEnabled || !shouldEmailNotification(notification)) {
           await repository.skipped(notification.id, now());
           skipped += 1;
           continue;

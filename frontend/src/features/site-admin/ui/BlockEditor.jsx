@@ -35,8 +35,8 @@ function ImageField({ block, onChange }) {
   }
   return <div className="site-admin__image-field">
     <BlockField block={block} field="imageUrl" label="URL ảnh" onChange={onChange} />
-    <label>Hoặc tải ảnh từ máy<input accept="image/jpeg,image/png,image/webp,image/gif,image/avif" disabled={uploading} onChange={selectImage} type="file" /></label>
-    <small>JPG, PNG, WebP, GIF hoặc AVIF · tối đa 10 MB{uploading ? " · Đang tải..." : ""}</small>
+    <label>Hoặc tải ảnh từ máy<input accept="image/*" disabled={uploading} onChange={selectImage} type="file" /></label>
+    <small>Các định dạng ảnh · tối đa 20 MB{uploading ? " · Đang tải..." : ""}</small>
     {error && <p role="alert" className="site-admin__error">{error}</p>}
   </div>;
 }

@@ -1,3 +1,4 @@
+import { PageHeader } from "../../../shared/ui/PageHeader.jsx";
 import { useMemo, useRef, useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { Button } from "../../../shared/ui/Button.jsx";
@@ -128,10 +129,7 @@ export function StaffPage({ session }) {
   }
   return (
     <main className="staff-page">
-      <header>
-        <p>Quản trị</p>
-        <h1>Quản lý nhân viên</h1>
-      </header>
+      <PageHeader eyebrow="Quản trị" title="Quản lý nhân viên" />
       {workspace.error && (
         <p className="auth-alert" role="alert">
           {workspace.error}

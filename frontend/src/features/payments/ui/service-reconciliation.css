@@ -1,0 +1,108 @@
+.service-reconciliation {
+  display: grid;
+  gap: var(--space-20);
+  min-width: 0;
+}
+
+.service-reconciliation > :is(h2, p) {
+  margin: 0;
+}
+
+.service-reconciliation p {
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.service-reconciliation form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: end;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+.service-reconciliation form > :is(label, p) {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.service-reconciliation label {
+  display: grid;
+  gap: var(--space-8);
+  min-width: 0;
+  font-size: .875rem;
+  font-weight: var(--font-weight-semibold);
+}
+
+.service-reconciliation :is(input:not([type="checkbox"]), select) {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  height: var(--control-height-lg);
+  padding: 0 var(--space-12);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.service-reconciliation :is(input, select):focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.service-reconciliation form > .button {
+  justify-self: start;
+  min-height: var(--control-height-lg);
+}
+
+.service-reconciliation form.service-reconciliation__request {
+  grid-template-columns: minmax(0, .9fr) minmax(0, 1.3fr) auto;
+}
+
+.service-reconciliation .service-reconciliation__request > label {
+  grid-column: auto;
+}
+
+.service-reconciliation__request > .button {
+  height: var(--control-height-lg);
+  padding-block: 0;
+}
+
+.service-reconciliation label.service-reconciliation__confirmation {
+  display: flex;
+  align-items: center;
+  font-weight: var(--font-weight-regular);
+}
+
+.service-reconciliation__confirmation input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  flex: 0 0 auto;
+  accent-color: var(--color-primary);
+}
+
+.service-reconciliation > article {
+  display: grid;
+  gap: var(--space-16);
+  padding-top: var(--space-20);
+  border-top: 1px solid var(--color-border);
+  min-width: 0;
+}
+
+.service-reconciliation article > :is(h3, p) {
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .service-reconciliation form,
+  .service-reconciliation form.service-reconciliation__request {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .service-reconciliation form > .button {
+    width: 100%;
+  }
+}

@@ -1,3 +1,4 @@
+import { PageHeader } from "../../../shared/ui/PageHeader.jsx";
 import { Button } from "../../../shared/ui/Button.jsx";
 import { errorMessageFor } from "../../../shared/api/error-message.js";
 import { useMyServices } from "../api/useMyServices.js";
@@ -10,9 +11,7 @@ const date = (value) => value ? new Date(value).toLocaleDateString("vi-VN", { ti
 export function MyServicesPage({ session, onNavigate }) {
   const groups = useMyServices(session);
   return <main className="members-page my-services">
-    <h1>Dịch vụ của tôi</h1>
-    <p>Gói hội viên, khóa học, PT và sân/phòng dùng chung tài khoản. Mỗi dịch vụ có quyền sử dụng và điều kiện thanh toán riêng.</p>
-    <Button variant="ghost" onClick={() => onNavigate("bookings")}>Xem lịch của tôi</Button>
+    <PageHeader eyebrow="Dịch vụ" title="Dịch vụ của tôi" description="Gói hội viên, khóa học, PT và sân/phòng dùng chung tài khoản. Mỗi dịch vụ có quyền sử dụng và điều kiện thanh toán riêng." actions={<Button variant="ghost" onClick={() => onNavigate("bookings")}>Xem lịch của tôi</Button>} />
     <div className="my-services__groups">
       {groups.filter(({ query }) => query.isEnabled).map(({ type, label, view, query }) => <section className="my-services__group" key={type} aria-label={label}>
         <h2>{label}</h2>

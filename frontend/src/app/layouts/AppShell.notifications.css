@@ -47,6 +47,14 @@
 .app-notification-panel article strong {
   font-size: 14px;
 }
+
+.app-notification-panel__time {
+  display: block;
+  margin: var(--space-8) 0;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
 .app-notification-panel article p {
   color: var(--color-text-secondary);
   font-size: 13px;

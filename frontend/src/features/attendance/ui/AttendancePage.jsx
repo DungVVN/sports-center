@@ -1,3 +1,4 @@
+import { PageHeader } from "../../../shared/ui/PageHeader.jsx";
 import { useEffect, useMemo, useState } from "react";
 import { ClipboardCheck, Users } from "lucide-react";
 import { Button } from "../../../shared/ui/Button.jsx";
@@ -118,7 +119,6 @@ export function AttendancePage({ session }) {
 
   function checkIn(nextBookingId) {
     setDraftStatuses((current) => ({ ...current, [nextBookingId]: "present" }));
-    workspace.setNotice("Đã đánh dấu có mặt. Hãy bấm Lưu điểm danh để ghi nhận chính thức.", "info");
   }
 
   function submitAttendance() {
@@ -148,10 +148,7 @@ export function AttendancePage({ session }) {
 
   return (
     <main className="members-page">
-      <header>
-        <p>Điểm danh</p>
-        <h1>Điểm danh theo buổi học</h1>
-      </header>
+      <PageHeader eyebrow="Điểm danh" title="Điểm danh theo buổi học" />
       {workspace.error && (
         <p className="auth-alert" role="alert">
           {workspace.error}

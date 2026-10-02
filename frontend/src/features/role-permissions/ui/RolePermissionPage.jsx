@@ -1,3 +1,4 @@
+import { PageHeader } from "../../../shared/ui/PageHeader.jsx";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMutationFeedback, useSubmitMutation } from "../../../shared/lib/useMutationFeedback.js";
@@ -7,6 +8,12 @@ import { errorMessageFor } from "../../../shared/api/error-message.js";
 import "./role-permissions.css";
 
 const roleOrder = ["manager", "receptionist", "coach", "member"];
+const groupLabels = {
+  course: "Khóa có hướng dẫn",
+  pt: "Huấn luyện cá nhân",
+  payment: "Thanh toán, hoàn tiền và đối soát",
+  member: "Hồ sơ hội viên",
+};
 
 export function RolePermissionPage() {
   const client = useQueryClient();
@@ -83,17 +90,14 @@ export function RolePermissionPage() {
 
   return (
     <section className="role-permissions">
-      <header className="role-permissions__header">
-        <div><p className="role-permissions__eyebrow">QUẢN TRỊ</p><h1>Phân quyền chức năng</h1><p>Tích chọn chức năng cho bốn vai trò. Admin luôn có toàn quyền.</p></div>
-        <Button disabled={saveMatrix.isPending} loading={matrixQuery.isFetching} onClick={reload} variant="secondary">Tải lại</Button>
-      </header>
+      <PageHeader eyebrow="Quản trị" title="Phân quyền chức năng" description={<><p>Tích chọn chức năng cho bốn vai trò. Admin luôn có toàn quyền.</p><p>Quyền xem hồ sơ hội viên cho phép xem toàn trung tâm, kể cả khi cấp cho HLV. Quyền PT và giáo án vẫn giới hạn theo người được phân công.</p></>} actions={<Button disabled={saveMatrix.isPending} loading={matrixQuery.isFetching} onClick={reload} variant="secondary">Tải lại</Button>} />
       {feedback.error && <p role="alert" className="role-permissions__error">{feedback.error}</p>}
       {feedback.notice && <p role="status" className="role-permissions__success">{feedback.notice}</p>}
       <div className="role-permissions__scroll">
         <table className="role-permissions__table">
           <thead><tr><th scope="col">Chức năng</th>{roleOrder.map((code) => <th key={code} scope="col">{matrix.roles.find((role) => role.code === code)?.label ?? code}</th>)}</tr></thead>
           <tbody>{groups.map(([group, permissions]) => (
-            <FragmentGroup group={group} key={group} permissions={permissions} roles={roleOrder} draft={displayedDraft} onToggle={toggle} disabled={saveMatrix.isPending || matrixQuery.isFetching} />
+            <FragmentGroup group={groupLabels[group] ?? group} key={group} permissions={permissions} roles={roleOrder} roleLabels={Object.fromEntries(matrix.roles.map((role) => [role.code, role.label]))} draft={displayedDraft} onToggle={toggle} disabled={saveMatrix.isPending || matrixQuery.isFetching} />
           ))}</tbody>
         </table>
       </div>
@@ -102,6 +106,6 @@ export function RolePermissionPage() {
   );
 }
 
-function FragmentGroup({ group, permissions, roles, draft, onToggle, disabled }) {
-  return <><tr className="role-permissions__group"><th colSpan={roles.length + 1} scope="colgroup">{group}</th></tr>{permissions.map((permission) => <tr key={permission.code}><th scope="row"><span>{permission.description}</span></th>{roles.map((role) => <td key={role}><input aria-label={`${permission.description} — ${role}`} checked={(draft[role] ?? []).includes(permission.code)} disabled={disabled || Boolean(permission.availableRoles && !permission.availableRoles.includes(role))} onChange={() => onToggle(role, permission.code)} title={permission.availableRoles && !permission.availableRoles.includes(role) ? "Cần hồ sơ hội viên" : undefined} type="checkbox" /></td>)}</tr>)}</>;
+function FragmentGroup({ group, permissions, roles, roleLabels, draft, onToggle, disabled }) {
+  return <><tr className="role-permissions__group"><th colSpan={roles.length + 1} scope="colgroup">{group}</th></tr>{permissions.map((permission) => <tr key={permission.code}><th scope="row"><span>{permission.description}</span></th>{roles.map((role) => <td key={role}><input aria-label={`${permission.description} — ${role}`} checked={(draft[role] ?? []).includes(permission.code)} disabled={disabled || Boolean(permission.availableRoles && !permission.availableRoles.includes(role))} onChange={() => onToggle(role, permission.code)} title={permission.availableRoles && !permission.availableRoles.includes(role) ? `Quyền này chỉ áp dụng cho: ${permission.availableRoles.map((code) => roleLabels[code] ?? code).join(", ")}.` : undefined} type="checkbox" /></td>)}</tr>)}</>;
 }

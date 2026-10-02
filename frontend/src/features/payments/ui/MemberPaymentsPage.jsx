@@ -1,3 +1,4 @@
+import { PageHeader } from "../../../shared/ui/PageHeader.jsx";
 import { ServiceReconciliation } from "./ServiceReconciliation.jsx";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -35,10 +36,7 @@ export function MemberPaymentsPage({ session }) {
 
   return (
     <main className="members-page">
-      <header>
-        <p>Thanh toán</p>
-        <h1>Phiếu thu của tôi</h1>
-      </header>
+      <PageHeader eyebrow="Thanh toán" title="Phiếu thu của tôi" />
       {(paymentsQuery.isError || receiptQuery.isError) && <p className="auth-alert" role="alert">{paymentsQuery.isError ? errorMessageFor(paymentsQuery.error, "Không thể tải phiếu thu.") : errorMessageFor(receiptQuery.error, "Không thể tải chi tiết phiếu thu.")}</p>}
       <section className="members-list">
         {payments.some((item) => item.fulfillment_error) && <p role="status">Có thanh toán đã thu tiền nhưng cần trung tâm đối soát quyền sử dụng. Vui lòng liên hệ hỗ trợ; bạn chưa được cấp quyền tự động cho giao dịch này.</p>}

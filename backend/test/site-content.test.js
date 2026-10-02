@@ -11,6 +11,7 @@ const siteService = () => ({
   listPages: vi.fn().mockResolvedValue([]),
   pageDetail: vi.fn().mockResolvedValue({ page: { route_key: "home" }, draft: null, published: null, revisions: [] }),
   createPage: vi.fn().mockResolvedValue({ page: { route_key: "home" } }),
+  deletePage: vi.fn().mockResolvedValue({ routeKey: "about", path: "/about", deleted: true }),
   startPageDraft: vi.fn().mockResolvedValue({ id: uuid }),
   savePageDraft: vi.fn().mockResolvedValue({ id: uuid }),
   publishPage: vi.fn().mockResolvedValue({ revisionId: uuid }),
@@ -23,6 +24,24 @@ const siteService = () => ({
 });
 
 describe("site content contracts", () => {
+  it("restricts page deletion to authenticated admins", async () => {
+    const service = siteService();
+    const memberApp = createApp({ authService: auth("member"), siteService: service });
+    await request(memberApp).delete("/api/v1/admin/site/pages/about").expect(401);
+    await request(memberApp).delete("/api/v1/admin/site/pages/about").set("Authorization", "Bearer token").expect(403);
+    expect(service.deletePage).not.toHaveBeenCalled();
+    const adminApp = createApp({ authService: auth("admin"), siteService: service });
+    const result = await request(adminApp).delete("/api/v1/admin/site/pages/about").set("Authorization", "Bearer token").expect(200);
+    expect(service.deletePage).toHaveBeenCalledExactlyOnceWith("about", uuid);
+    expect(result.body.data.deleted).toBe(true);
+  });
+  it.each(["image/svg+xml", "image/bmp", "image/tiff", "image/heic", "image/x-icon"])("accepts %s image metadata", async (mimeType) => {
+    const service = siteService();
+    const app = createApp({ authService: auth("admin"), siteService: service, cloudinaryMediaService: service });
+    await request(app).post("/api/v1/admin/site/media/cloudinary").set("Authorization", "Bearer token").send({ secureUrl: "https://res.cloudinary.com/demo/image/upload/test", publicId: "kinetic-sports/site/test", originalName: "test", mimeType, bytes: 100, width: null, height: null }).expect(200);
+    expect(service.recordUpload).toHaveBeenCalledWith(expect.objectContaining({ mimeType }), uuid);
+  });
+
   it.each(["gallery", "calendar"])("allows CMS content at /%s while protecting child routes", (routeKey) => {
     expect(pageCreateSchema.safeParse({ routeKey, path: `/${routeKey}`, kind: "static", title: "Nội dung website" }).success).toBe(true);
     expect(pageCreateSchema.safeParse({ routeKey, path: `/${routeKey}/private`, kind: "static", title: "Sai" }).success).toBe(false);

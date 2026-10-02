@@ -2,6 +2,7 @@ import { apiClient } from "../../../shared/api/client.js";
 
 export const siteAdminApi = Object.freeze({
   pages: () => apiClient.get("/admin/site/pages"),
+  deletePage: (routeKey) => apiClient.delete(`/admin/site/pages/${encodeURIComponent(routeKey)}`),
   createPage: (input) => apiClient.post("/admin/site/pages", input),
   page: (routeKey) => apiClient.get(`/admin/site/pages/${encodeURIComponent(routeKey)}`),
   startPageDraft: (routeKey) => apiClient.post(`/admin/site/pages/${encodeURIComponent(routeKey)}/draft`, {}),

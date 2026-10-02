@@ -5,6 +5,34 @@ const config = { verificationDeliveryMode: "provider", resendApiKey: "re_test", 
 const notification = { id: "notification-1", title: "Đã có chỗ trong lớp", body: "Bạn đã được xác nhận.", link_path: "/bookings/booking-1", recipient: { email: "member@example.com" }, emailEnabled: true };
 
 describe("notification email delivery service", () => {
+  it.each([
+    { category: "system", title: "Cập nhật khóa học thành công" },
+    { category: "member", title: "Kết quả điểm danh đã được chốt" },
+    { category: "operations", title: "Đã ghi nhận buổi PT" },
+    { category: "operations", title: "Cần cập nhật giáo án" },
+    { category: "member", title: "Gợi ý luyện tập" },
+  ])("keeps routine notification $title in the bell without sending email", async (item) => {
+    const repository = { pending: vi.fn().mockResolvedValue([{ ...notification, ...item }]), claim: vi.fn().mockResolvedValue({ count: 1 }), delivered: vi.fn(), skipped: vi.fn(), failed: vi.fn() };
+    const fetchImpl = vi.fn();
+    const result = await createNotificationEmailDeliveryService({ repository, config, fetchImpl }).deliverPending();
+    expect(result).toMatchObject({ delivered: 0, skipped: 1 });
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(repository.skipped).toHaveBeenCalledWith("notification-1", expect.any(Date));
+  });
+
+  it.each([
+    { category: "finance", title: "Đã hoàn tiền dịch vụ" },
+    { category: "operations", title: "Lớp học đã đổi lịch" },
+    { category: "operations", title: "Đã hủy lịch PT" },
+    { category: "member", title: "Gói tập đã hết hạn chính thức" },
+    { category: "member", title: "Phản hồi yêu cầu HT-01", link_path: "/support" },
+  ])("sends important notification $title when email is enabled", async (item) => {
+    const repository = { pending: vi.fn().mockResolvedValue([{ ...notification, ...item }]), claim: vi.fn().mockResolvedValue({ count: 1 }), delivered: vi.fn(), skipped: vi.fn(), failed: vi.fn() };
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: true });
+    const result = await createNotificationEmailDeliveryService({ repository, config, fetchImpl }).deliverPending();
+    expect(result).toMatchObject({ delivered: 1, skipped: 0 });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
   it("keeps both HTML and text links public when legacy configuration only allows localhost", async () => {
     const repository = { pending: vi.fn().mockResolvedValue([notification]), claim: vi.fn().mockResolvedValue({ count: 1 }), delivered: vi.fn(), skipped: vi.fn(), failed: vi.fn() };
     const fetchImpl = vi.fn().mockResolvedValue({ ok: true });

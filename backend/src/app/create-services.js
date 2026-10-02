@@ -1,3 +1,4 @@
+import { createOperationNotificationService, operationNotificationRepository } from "../modules/notifications/index.js";
 import { authRepository } from "../modules/auth/index.js";
 import { createAuthService } from "../modules/auth/index.js";
 import { verificationDeliveryService } from "../modules/auth/index.js";
@@ -37,6 +38,7 @@ import { courseRepository, createCourseService } from "../modules/courses/index.
 import { ptRepository, createPtService } from "../modules/pt/index.js";
 
 export function createServices({
+  operationNotificationService = createOperationNotificationService({ repository: operationNotificationRepository }),
   authService = createAuthService({ repository: authRepository, verificationDelivery: verificationDeliveryService, auditService }),
   staffService = createStaffService({ repository: staffRepository, auditService, credentialsDelivery: staffCredentialsDeliveryService }),
   memberService = createMemberService({ repository: memberRepository, auditService, credentialsDelivery: staffCredentialsDeliveryService }),
@@ -59,5 +61,5 @@ export function createServices({
   siteService = createSiteService({ repository: siteRepository }),
   cloudinaryMediaService = createCloudinaryMediaService({ repository: siteRepository }),
 } = {}) {
-  return { ptService, courseService, authService, staffService, memberService, membershipService, classService, bookingService, facilityService, attendanceService, paymentService, supportService, notificationPreferenceService, aiAssistService, trainingService, insightService, assignmentService, auditLogService, rolePermissionService, siteService, cloudinaryMediaService };
+  return { operationNotificationService, ptService, courseService, authService, staffService, memberService, membershipService, classService, bookingService, facilityService, attendanceService, paymentService, supportService, notificationPreferenceService, aiAssistService, trainingService, insightService, assignmentService, auditLogService, rolePermissionService, siteService, cloudinaryMediaService };
 }

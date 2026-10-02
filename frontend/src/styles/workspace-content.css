@@ -338,16 +338,13 @@
 }
 
 .membership-workspace .members-form {
-  padding-bottom: calc(var(--space-20) + 44px);
-  position: relative;
+  align-content: start;
 }
 
 .membership-workspace .members-form > button:last-child {
-  bottom: var(--space-20);
-  left: var(--space-20);
   margin: 0;
-  position: absolute;
-  right: var(--space-20);
+  grid-column: 1 / -1;
+  position: static;
 }
 
 /* Manager configures a package at left and reviews its catalogue at right. */

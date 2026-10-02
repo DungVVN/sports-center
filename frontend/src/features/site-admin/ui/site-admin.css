@@ -1,7 +1,7 @@
-.site-admin { display: grid; gap: 18px; color: var(--color-text-primary); max-width: 1500px; margin: 0 auto; }
-.site-admin__header, .site-admin__toolbar, .site-admin__subhead { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
-.site-admin__header h1 { margin: 0; font-size: clamp(26px, 2.4vw, 34px); letter-spacing: -.035em; line-height: 1.13; }
-.site-admin__header p, .site-admin__toolbar p { margin: 6px 0 0; color: var(--color-text-secondary); }
+.site-admin { --workspace-row-gap: var(--section-gap); display: grid; gap: var(--section-gap); color: var(--color-text-primary); margin: 0; }
+.site-admin__toolbar, .site-admin__subhead { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+
+.site-admin__toolbar p { margin: 6px 0 0; color: var(--color-text-secondary); }
 .site-admin__eyebrow { color: var(--color-primary) !important; font-size: 12px; font-weight: 700; letter-spacing: .08em; }
 .site-admin__panel { padding: 20px; border: 1px solid var(--color-border); border-radius: 16px; background: var(--color-surface); }
 .site-admin__main, .site-admin__fields { display: grid; gap: 16px; min-width: 0; }
@@ -98,9 +98,9 @@
 
 /* AHBI-inspired catalog and canvas hierarchy, in Sports Center colors. */
 .site-admin--catalog, .site-admin--page-editor { max-width: none; }
-.site-admin__catalog-header { align-items: end; }
-.site-admin__catalog-header h1 { font-size: clamp(30px, 2.5vw, 40px); }
-.site-admin__catalog-header p:not(.site-admin__eyebrow) { max-width: 65ch; }
+
+
+
 .site-admin__action-link { display: inline-flex; align-items: center; min-height: 38px; padding: 0 14px; border: 1px solid var(--color-border); border-radius: 9px; background: var(--color-surface); color: var(--color-text-primary); font-size: 13px; font-weight: 700; text-decoration: none; }
 .site-admin__action-link:hover { border-color: var(--color-primary); color: var(--color-primary); }
 .site-admin__catalog { padding: 0; overflow: hidden; border-radius: 14px; }
@@ -147,11 +147,11 @@
 .site-admin--page-editor .site-admin__page-settings { padding: 0; }
 .site-admin--page-editor .site-admin__page-settings > .site-admin__subhead { padding: 18px 20px 0; }
 .site-admin--page-editor .site-admin__page-settings > label, .site-admin--page-editor .site-admin__page-settings > .site-admin__cols { margin: 0 20px 18px; }
-@media (max-width: 760px) { .site-admin__catalog-header { align-items: start; } .site-admin__catalog-filters .site-admin__search { width: 100%; } }
+@media (max-width: 760px) {  .site-admin__catalog-filters .site-admin__search { width: 100%; } }
 
-.site-admin--menu { max-width: none; gap: 12px; }
-.site-admin__menu-heading { display: flex; align-items: center; justify-content: space-between; gap: 15px; flex-wrap: wrap; padding: 14px 18px; }
-.site-admin__menu-heading h1 { margin: 2px 0 0; font-size: clamp(20px, 2vw, 28px); letter-spacing: -.03em; }
+.site-admin--menu { max-width: none; }
+
+
 .site-admin__menu-tabs { display: flex; gap: 3px; padding: 3px; border: 1px solid var(--color-border); border-radius: 9px; background: var(--color-surface-muted); }
 .site-admin__menu-tabs button { padding: 8px 12px; border: 0; border-radius: 7px; background: transparent; color: var(--color-text-primary); cursor: pointer; font: inherit; font-size: 12px; font-weight: 700; }
 .site-admin__menu-tabs button.is-active { background: var(--color-primary); color: white; }
@@ -187,4 +187,7 @@
 .site-admin__menu-inspector .site-admin__block { border: 0; padding: 0; }
 .site-admin__menu-inspector .site-admin__subhead { flex-wrap: nowrap; }
 .site-admin__history-panel summary { cursor: pointer; font-weight: 700; }
-@media (max-width: 700px) { .site-admin__menu-heading { align-items: flex-start; } .site-admin__tree-viewport { height: 520px; } .site-admin__menu-inspector { position: relative; top: auto; right: auto; width: 100%; max-height: none; margin-top: 10px; } }
+@media (max-width: 700px) {  .site-admin__tree-viewport { height: 520px; } .site-admin__menu-inspector { position: relative; top: auto; right: auto; width: 100%; max-height: none; margin-top: 10px; } }
+
+.site-admin__row-actions .site-admin__delete-action{color:var(--color-danger, #dc2626)}
+.site-admin__row-actions button:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}

@@ -56,6 +56,15 @@ describe("AttendancePage", () => {
     expect(await screen.findByRole("status")).toHaveTextContent("Đã lưu điểm danh");
   });
 
+  it("keeps individual marking local and silent until the bulk submission", async () => {
+    renderPage();
+    fireEvent.click(await screen.findByRole("button", { name: "Xem điểm danh" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Điểm danh", exact: true }));
+    expect(screen.getByText("Có mặt")).toBeInTheDocument();
+    expect(attendanceApi.submit).not.toHaveBeenCalled();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
   it("shows an API 409 conflict message after submit", async () => {
     attendanceApi.submit.mockRejectedValue(new ApiError({ status: 409, message: "Buổi học đã bị khóa." }));
     renderPage();

@@ -16,10 +16,19 @@ afterEach(() => {
 });
 
 describe("Cloudinary site media", () => {
+  it("accepts 20 MB metadata and rejects any bytes above the limit", async () => {
+    const repository = { createMediaAsset: vi.fn().mockResolvedValue({ id: "asset-id" }) };
+    const service = createCloudinaryMediaService({ repository });
+    const input = { secureUrl: "https://res.cloudinary.com/kinetic-demo/image/upload/v1/kinetic-sports/site/image.jpg", publicId: "kinetic-sports/site/image", originalName: "image.jpg", mimeType: "image/jpeg", bytes: 20 * 1024 * 1024 };
+    await expect(service.recordUpload(input, "actor")).resolves.toEqual({ id: "asset-id" });
+    await expect(service.recordUpload({ ...input, bytes: input.bytes + 1 }, "actor")).rejects.toMatchObject({ code: "CLOUDINARY_FILE_TOO_LARGE" });
+    expect(repository.createMediaAsset).toHaveBeenCalledOnce();
+  });
+
   it("creates a scoped, deterministic short-lived signature without returning the secret", () => {
     const service = createCloudinaryMediaService({ repository: {}, now: () => 1700000000 });
     expect(service.createUploadSignature()).toEqual(expect.objectContaining({
-      cloudName: "kinetic-demo", apiKey: "12345", timestamp: 1700000000, folder: "kinetic-sports/site",
+      cloudName: "kinetic-demo", apiKey: "12345", timestamp: 1700000000, folder: "kinetic-sports/site", maxBytes: 20 * 1024 * 1024,
       signature: "c899c3477a4a5f5bf8142f8eabb432914086e48d",
     }));
     expect(service.createUploadSignature()).not.toHaveProperty("apiSecret");
@@ -28,7 +37,7 @@ describe("Cloudinary site media", () => {
   it("signs avatar uploads using the avatar folder rather than the CMS folder", () => {
     const service = createCloudinaryMediaService({ repository: {}, now: () => 1700000000 });
     expect(service.createProfileUploadSignature()).toEqual(expect.objectContaining({
-      folder: "kinetic-sports/avatars",
+      folder: "kinetic-sports/avatars", maxBytes: 20 * 1024 * 1024,
       signature: "6f2852083a52ecaf0485f7edae7f9b44260b8461",
     }));
   });

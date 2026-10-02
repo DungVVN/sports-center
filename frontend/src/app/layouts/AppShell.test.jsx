@@ -21,6 +21,18 @@ function renderShell() {
 describe("AppShell mobile navigation", () => {
   afterEach(cleanup);
 
+  it("shows the arrival date and time in Vietnam time and retains the read action", () => {
+    const onRead = vi.fn();
+    render(<AppShell currentView="dashboard" navigation={[]} notifications={[{ id: "notice-1", title: "Cập nhật khóa học thành công", body: "Admin đã cập nhật.", created_at: "2026-10-03T01:02:03Z", read_at: null }]} onLogout={vi.fn()} onNavigate={vi.fn()} onReadNotification={onRead} roleLabel="Quản trị hệ thống" />);
+    fireEvent.click(screen.getByRole("button", { name: /Thông báo/i }));
+    const time = screen.getByText(/08:02:03/);
+    expect(time.tagName).toBe("TIME");
+    expect(time).toHaveAttribute("datetime", "2026-10-03T01:02:03Z");
+    expect(time).toHaveTextContent("03/10/2026");
+    fireEvent.click(screen.getByRole("button", { name: "Đánh dấu đã đọc" }));
+    expect(onRead).toHaveBeenCalledExactlyOnceWith("notice-1");
+  });
+
   it("opens the active group, allows collapsing it and reopens it for a new destination", () => {
     const props = {
       navigation: [{ id: "operations", label: "Lịch & hoạt động", children: [{ id: "classes", label: "Lớp học" }, { id: "bookings", label: "Đặt chỗ" }] }],

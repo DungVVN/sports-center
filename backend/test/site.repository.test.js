@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const prisma = {
+  $transaction: vi.fn(),
   site_pages: { findMany: vi.fn() },
   site_page_revisions: { findMany: vi.fn() },
   site_page_publications: { findMany: vi.fn() },
@@ -13,9 +14,23 @@ const { siteRepository } = await import("../src/modules/site/infrastructure/site
 describe("site page catalog repository", () => {
   beforeEach(() => vi.clearAllMocks());
 
+  it("serializes CMS writes before executing the operation", async () => {
+    const tx = { $queryRaw: vi.fn().mockResolvedValue([]) };
+    prisma.$transaction.mockImplementation(async (work) => work(tx));
+    const work = vi.fn(async (client) => {
+      expect(client).toBe(tx);
+      expect(tx.$queryRaw).toHaveBeenCalledTimes(1);
+      return "saved";
+    });
+    await expect(siteRepository.transaction(work)).resolves.toBe("saved");
+    expect(tx.$queryRaw.mock.calls[0][0].join("")).toContain("pg_advisory_xact_lock");
+    expect(work).toHaveBeenCalledTimes(1);
+  });
+
   it("returns an empty catalog without querying revisions", async () => {
     prisma.site_pages.findMany.mockResolvedValue([]);
     await expect(siteRepository.listPages()).resolves.toEqual([]);
+    expect(prisma.site_pages.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { is_active: true } }));
     expect(prisma.site_page_revisions.findMany).not.toHaveBeenCalled();
   });
 

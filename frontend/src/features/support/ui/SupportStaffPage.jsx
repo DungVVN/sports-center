@@ -1,3 +1,4 @@
+import { PageHeader } from "../../../shared/ui/PageHeader.jsx";
 import { useState } from "react";
 import { MessageSquare } from "lucide-react";
 import { Button } from "../../../shared/ui/Button.jsx";
@@ -40,10 +41,7 @@ export function SupportStaffPage({ session }) {
 
   return (
     <main className="members-page">
-      <header>
-        <p>Hỗ trợ</p>
-        <h1>Yêu cầu cần xử lý</h1>
-      </header>
+      <PageHeader eyebrow="Hỗ trợ" title="Yêu cầu cần xử lý" />
       {workspace.error && <p className="auth-alert" role="alert">{workspace.error}</p>}
       {workspace.notice && <p className="auth-success" role="status">{workspace.notice}</p>}
       <section className="members-workspace-stacked support-staff-workspace">

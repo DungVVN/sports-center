@@ -1,3 +1,4 @@
+import { PageHeader } from "../../../shared/ui/PageHeader.jsx";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../../../shared/ui/Button.jsx";
@@ -75,6 +76,14 @@ export function SitePagesPage() {
     const result = await action(() => siteAdminApi.createPage(input), "Đã tạo trang và bản nháp đầu tiên.");
     if (result) { setSelected(input.routeKey); setShowCreate(false); setCreateForm({ routeKey: "", path: "", title: "" }); setFormState(null); }
   }
+  async function deletePage(page) {
+    const result = await action(() => siteAdminApi.deletePage(page.route_key), "Đã xóa trang khỏi danh mục và website.");
+    if (result) {
+      client.removeQueries({ queryKey: ["site-admin-page", page.route_key] });
+      await client.invalidateQueries({ queryKey: ["public-site-path", page.path] });
+    }
+    return result;
+  }
   function openPage(routeKey, showPreview = false) {
     setSelected(routeKey); setFormState(null); setSelectedBlockId(null); setPreview(showPreview); setError(""); setNotice("");
   }
@@ -107,9 +116,9 @@ export function SitePagesPage() {
 
   if (pagesQuery.isPending) return <p role="status">Đang tải danh sách trang...</p>;
   if (pagesQuery.isError) return <p role="alert">{errorMessageFor(pagesQuery.error, "Không tải được danh sách trang.")}</p>;
-  if (!selected) return <SitePageCatalog pages={pages} onOpen={openPage} onCreate={create} showCreate={showCreate} setShowCreate={setShowCreate} createForm={createForm} setCreateForm={setCreateForm} working={working} notice={notice} error={error} />;
+  if (!selected) return <SitePageCatalog pages={pages} onOpen={openPage} onDelete={deletePage} onCreate={create} showCreate={showCreate} setShowCreate={setShowCreate} createForm={createForm} setCreateForm={setCreateForm} working={working} notice={notice} error={error} />;
   return <section className="site-admin site-admin--page-editor">
-    <header className="site-admin__header"><div><button className="site-admin__back" type="button" onClick={backToCatalog}>← Danh mục trang</button><p className="site-admin__eyebrow">NỘI DUNG WEBSITE / TRANG</p><h1>{form?.title ?? detail?.published?.title ?? (selected === "home" ? "Trang chủ" : selected)}</h1><p>Chỉnh sửa nội dung trang; website chỉ thay đổi sau khi xuất bản.</p></div></header>
+    <PageHeader eyebrow="CMS · Trang" title={form?.title ?? detail?.published?.title ?? (selected === "home" ? "Trang chủ" : selected)} description="Chỉnh sửa nội dung trang; website chỉ thay đổi sau khi xuất bản." back={<button className="site-admin__back" type="button" onClick={backToCatalog}>← Danh mục trang</button>} />
     {notice && <p className="site-admin__notice" role="status">{notice}</p>}
     {error && <p className="site-admin__error" role="alert">{error}</p>}
     <Dialog isOpen={publishConfirmationOpen} onClose={() => { if (!working) setPublishConfirmationOpen(false); }} title="Xuất bản trang">

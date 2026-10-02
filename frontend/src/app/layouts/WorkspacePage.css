@@ -68,6 +68,7 @@
 .members-list__package { overflow-wrap: anywhere; }
 .list-heading { align-items: center; display: flex; gap: var(--space-12); justify-content: space-between; margin-bottom: var(--space-16); }
 .list-heading h2 { margin-bottom: 0; }
+.members-form > .list-heading { margin-bottom: 0; }
 .list-heading__actions { align-items: center; display: flex; gap: var(--space-8); }
 .search-control { align-items: center; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-control); color: var(--color-text-muted); display: flex; height: 36px; min-width: 220px; padding: 0 10px; transition: border-color .15s, box-shadow .15s; }
 .search-control:focus-within { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }

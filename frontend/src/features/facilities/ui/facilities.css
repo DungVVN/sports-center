@@ -7,29 +7,13 @@
   scroll-margin-top: 88px;
 }
 
-.facility-calendar__header {
-  margin-bottom: var(--space-24);
-}
 
-.facility-calendar__header h1 {
-  font-size: 26px;
-  line-height: 1.2;
-  margin: var(--space-4) 0 var(--space-12);
-  text-wrap: balance;
-}
 
-.facility-calendar__header p:last-child {
-  color: var(--color-text-secondary);
-  margin: 0;
-  max-width: 65ch;
-}
 
-.facility-calendar__eyebrow {
-  color: var(--color-primary);
-  font-weight: 700;
-  letter-spacing: .06em;
-  font-size: 12px;
-}
+
+
+
+
 
 .facility-calendar__filter-panel,
 .facility-calendar__panel {
@@ -298,13 +282,9 @@ form.facility-calendar__panel>button[type="submit"] {
 }
 
 @media (max-width: 767px) {
-  .facility-calendar__header {
-    margin-bottom: 20px;
-  }
 
-  .facility-calendar__header h1 {
-    font-size: 22px;
-  }
+
+
 
   .facility-calendar__filters,
   .facility-calendar__fields {
@@ -326,4 +306,10 @@ form.facility-calendar__panel>button[type="submit"] {
   .facility-calendar__prompt button {
     width: 100%;
   }
+}
+
+.facility-calendar__rental-config > button[type="submit"] {
+  align-self: end;
+  height: var(--control-height);
+  padding-block: 0;
 }

@@ -19,6 +19,17 @@ function setup() {
 }
 
 describe("role permission configuration", () => {
+  it("labels global member access explicitly and lets Admin grant or revoke it for Coach", async () => {
+    const { service, repository } = setup();
+    repository.matrix.mockResolvedValueOnce({ ...matrix, permissions: [{ code: "member.read", description: "Xem hội viên" }] });
+    const result = await service.matrix();
+    expect(result.permissions[0].description).toContain("toàn bộ danh sách và hồ sơ hội viên");
+    expect(result.permissions[0].availableRoles).toContain("coach");
+    await service.replace({ role: "coach", version: 0, permissionCodes: ["member.read"], actorUserId: "admin-1" });
+    await service.replace({ role: "coach", version: 1, permissionCodes: [], actorUserId: "admin-1" });
+    expect(repository.replace).toHaveBeenLastCalledWith({ role: "coach", version: 1, permissionCodes: [], actorUserId: "admin-1" });
+  });
+
   it("lets a member cancel with self-read without global read", async () => {
     const { service, repository } = setup();
     await service.replace({ role: "member", version: 0, permissionCodes: ["facility.booking.self.read", "facility.booking.cancel"], actorUserId: "admin-1" });

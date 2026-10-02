@@ -1,3 +1,4 @@
+import { PageHeader } from "../../../shared/ui/PageHeader.jsx";
 import { ServiceReconciliation } from "./ServiceReconciliation.jsx";
 import { useMemo, useState } from "react";
 import { Button } from "../../../shared/ui/Button.jsx";
@@ -119,10 +120,7 @@ export function PaymentsPage({ session }) {
 
   return (
     <main className="members-page">
-      <header>
-        <p>{isCashier ? "Thu tiền mặt" : "Thanh toán"}</p>
-        <h1>{isCashier ? "Phiếu thu và kích hoạt gói" : "Theo dõi phiếu thu"}</h1>
-      </header>
+      <PageHeader eyebrow={isCashier ? "Thu tiền mặt" : "Thanh toán"} title={isCashier ? "Phiếu thu và kích hoạt gói" : "Theo dõi phiếu thu"} />
       {workspace.error && (
         <p className="auth-alert" role="alert">
           {workspace.error}

@@ -4,6 +4,7 @@ import { paymentApi } from "../api/payment-api.js";
 import { hasSessionPermission } from "../../auth/index.js";
 import { errorMessageFor } from "../../../shared/api/error-message.js";
 import { Button } from "../../../shared/ui/Button.jsx";
+import "./service-reconciliation.css";
 
 const labels = { pending: "Chờ quản lý duyệt", approved: "Đã duyệt, chờ trả tiền", rejected: "Từ chối", completed: "Đã đối soát hoàn tiền" };
 export function ServiceReconciliation({ session, payments }) {
@@ -26,12 +27,12 @@ export function ServiceReconciliation({ session, payments }) {
   });
   const send = (action, id, input) => { setNotice(""); mutation.mutate({ action, id, input }); };
   if (!canRead && !canReconcile) return null;
-  return <section className="members-list" aria-label="Đối soát và hoàn tiền dịch vụ">
+  return <section className="members-list service-reconciliation" aria-label="Đối soát và hoàn tiền dịch vụ">
     <h2>Đối soát và hoàn tiền dịch vụ</h2>
     <p>Hoàn toàn bộ khóa/PT/sân chưa sử dụng hoặc khoản đã thu nhưng chưa cấp được dịch vụ. Giữ nguyên chính sách membership. Quản lý duyệt sẽ đóng quyền sử dụng; nhân viên chỉ xác nhận hoàn sau khi thực sự trả tiền.</p>
     {notice && <p role="status">{notice}</p>}
     {mutation.isError && <p role="alert">{errorMessageFor(mutation.error, "Không xử lý được giao dịch.")}</p>}
-    {canRequest && <form onSubmit={(event) => { event.preventDefault(); send("requestRefund", form.paymentId, { reason: form.reason }); }}>
+    {canRequest && <form className="service-reconciliation__request" onSubmit={(event) => { event.preventDefault(); send("requestRefund", form.paymentId, { reason: form.reason }); }}>
       <label>Giao dịch đề nghị hoàn<select required value={form.paymentId} onChange={(event) => setForm({ ...form, paymentId: event.target.value })}><option value="">Chọn giao dịch</option>{payments.filter((item) => item.status === "paid" && !item.membership_id && (item.course_enrollment_id || item.pt_purchase_id || item.facility_reservation_id)).map((item) => <option key={item.id} value={item.id}>{item.transaction_code} · {item.service?.name} · {Number(item.amountVnd).toLocaleString("vi-VN")} đ</option>)}</select></label>
       <label>Lý do hoàn<input required minLength={10} maxLength={500} value={form.reason} onChange={(event) => setForm({ ...form, reason: event.target.value })} /></label>
       <Button type="submit" loading={mutation.isPending}>Gửi đề nghị hoàn tiền</Button>
@@ -56,7 +57,7 @@ export function ServiceReconciliation({ session, payments }) {
       </form>}
       {canExecute && item.status === "approved" && <form onSubmit={(event) => { event.preventDefault(); send("executeRefund", item.id, { transferReference: notes[item.id] }); }}>
         <label>Mã chuyển tiền/phiếu chi đã thực hiện<input required minLength={10} maxLength={500} value={notes[item.id] ?? ""} onChange={(event) => setNotes({ ...notes, [item.id]: event.target.value })} /></label>
-        <label><input type="checkbox" required />Tôi đã trả tiền và kiểm tra chứng từ</label>
+        <label className="service-reconciliation__confirmation"><input type="checkbox" required />Tôi đã trả tiền và kiểm tra chứng từ</label>
         <Button type="submit" loading={mutation.isPending}>Xác nhận đã hoàn tiền</Button>
       </form>}
     </article>)}

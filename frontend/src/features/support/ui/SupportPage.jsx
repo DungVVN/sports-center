@@ -1,3 +1,4 @@
+import { PageHeader } from "../../../shared/ui/PageHeader.jsx";
 import { useState } from "react";
 import { Button } from "../../../shared/ui/Button.jsx";
 import { Dialog } from "../../../shared/ui/Dialog.jsx";
@@ -35,10 +36,7 @@ export function SupportPage({ session }) {
 
   return (
     <main className="members-page">
-      <header>
-        <p>Hỗ trợ</p>
-        <h1>Yêu cầu hỗ trợ</h1>
-      </header>
+      <PageHeader eyebrow="Hỗ trợ" title="Yêu cầu hỗ trợ" />
       {workspace.error && <p className="auth-alert" role="alert">{workspace.error}</p>}
       {workspace.notice && <p className="auth-success" role="status">{workspace.notice}</p>}
       <section className="members-grid">

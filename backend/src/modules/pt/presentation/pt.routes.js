@@ -1,31 +1,236 @@
 import { Router } from "express";
 import { z } from "zod";
-import { authenticate, requirePermission } from "../../../shared/auth/authentication.middleware.js";
+import {
+  authenticate,
+  requirePermission,
+} from "../../../shared/auth/authentication.middleware.js";
 import { validateRequest } from "../../../shared/validation/validate-request.js";
-import { sendSuccess } from "../../../shared/http/response.js";
+import { handleServiceRequest } from "../../../shared/http/service-handler.js";
 const id = z.string().uuid();
-const params = z.object({ id });
+const params = z.object({
+  id,
+});
 const reason = z.string().trim().min(3).max(500);
-const run = (action, statusCode = 200) => async (req, res, next) => { try { sendSuccess(res, { statusCode, data: await action(req) }); } catch (error) { next(error); } };
 export function createPtRouter(service, authService) {
   const router = Router();
-  router.get("/public/pt-packages", run(() => service.publicCatalog()));
+  router.get(
+    "/public/pt-packages",
+    handleServiceRequest(() => service.publicCatalog()),
+  );
   const read = [authenticate(authService), requirePermission("pt.read")];
   const manage = [authenticate(authService), requirePermission("pt.manage")];
-  const purchase = [authenticate(authService), requirePermission("pt.purchase")];
-  const complete = [authenticate(authService), requirePermission("pt.complete")];
-  router.patch("/pt-packages/:id/availability", ...manage, validateRequest(z.object({ params, body: z.object({ isActive: z.boolean() }).strict() })), run((req) => service.setPackageActive(req.validated.params.id, req.validated.body.isActive, req.auth.user)));
-  router.post("/pt-purchases/:id/cancel", ...purchase, validateRequest(z.object({ params })), run((req) => service.cancelPurchase(req.validated.params.id, req.auth.user)));
-  router.get("/pt-packages", ...read, run((req) => service.packages(req.auth.user)));
-  router.post("/pt-packages", ...manage, validateRequest(z.object({ body: z.object({ name: z.string().min(2).max(120), description: z.string().max(1000).optional(), priceVnd: z.string().regex(/^\d+$/).refine((value) => BigInt(value) <= 1000000000000n), sessionCount: z.number().int().min(1).max(500), durationDays: z.number().int().min(1).max(730), sessionMinutes: z.number().int().min(15).max(240), cancellationHours: z.number().int().min(0).max(168) }) })), run((req) => service.create(req.validated.body, req.auth.user), 201));
-  router.get("/pt-purchases", ...read, run((req) => service.purchases(req.auth.user)));
-  router.get("/pt-resources", ...read, run(() => service.resources()));
-  router.post("/pt-packages/:id/buy", ...purchase, validateRequest(z.object({ params })), run((req) => service.buy(req.validated.params.id, req.auth.user), 201));
-  router.post("/pt-purchases/:id/payment", ...purchase, validateRequest(z.object({ params, body: z.object({ method: z.enum(["bank_transfer", "online"]) }) })), run((req) => service.payment(req.validated.params.id, req.validated.body, req.auth.user), 201));
-  router.patch("/pt-purchases/:id/coach", ...manage, validateRequest(z.object({ params, body: z.object({ coachUserId: id }) })), run((req) => service.assign(req.validated.params.id, req.validated.body.coachUserId, req.auth.user)));
-  router.post("/pt-purchases/:id/appointments", ...purchase, validateRequest(z.object({ params, body: z.object({ roomId: id, startsAt: z.string().datetime() }) })), run((req) => service.book(req.validated.params.id, req.validated.body, req.auth.user), 201));
-  router.post("/pt-appointments/:id/cancel", ...purchase, validateRequest(z.object({ params, body: z.object({ reason }) })), run((req) => service.cancel(req.validated.params.id, req.validated.body.reason, req.auth.user)));
-  router.post("/pt-appointments/:id/staff-cancel", ...manage, validateRequest(z.object({ params, body: z.object({ reason }) })), run((req) => service.cancel(req.validated.params.id, req.validated.body.reason, req.auth.user)));
-  router.post("/pt-appointments/:id/complete", ...complete, validateRequest(z.object({ params, body: z.object({ status: z.enum(["completed", "absent"]), reason }) })), run((req) => service.complete(req.validated.params.id, req.validated.body, req.auth.user)));
+  const purchase = [
+    authenticate(authService),
+    requirePermission("pt.purchase"),
+  ];
+  const complete = [
+    authenticate(authService),
+    requirePermission("pt.complete"),
+  ];
+  router.patch(
+    "/pt-packages/:id/availability",
+    ...manage,
+    validateRequest(
+      z.object({
+        params,
+        body: z
+          .object({
+            isActive: z.boolean(),
+          })
+          .strict(),
+      }),
+    ),
+    handleServiceRequest((req) =>
+      service.setPackageActive(
+        req.validated.params.id,
+        req.validated.body.isActive,
+        req.auth.user,
+      ),
+    ),
+  );
+  router.post(
+    "/pt-purchases/:id/cancel",
+    ...purchase,
+    validateRequest(
+      z.object({
+        params,
+      }),
+    ),
+    handleServiceRequest((req) =>
+      service.cancelPurchase(req.validated.params.id, req.auth.user),
+    ),
+  );
+  router.get(
+    "/pt-packages",
+    ...read,
+    handleServiceRequest((req) => service.packages(req.auth.user)),
+  );
+  router.post(
+    "/pt-packages",
+    ...manage,
+    validateRequest(
+      z.object({
+        body: z.object({
+          name: z.string().min(2).max(120),
+          description: z.string().max(1000).optional(),
+          priceVnd: z
+            .string()
+            .regex(/^\d+$/)
+            .refine((value) => BigInt(value) <= 1000000000000n),
+          sessionCount: z.number().int().min(1).max(500),
+          durationDays: z.number().int().min(1).max(730),
+          sessionMinutes: z.number().int().min(15).max(240),
+          cancellationHours: z.number().int().min(0).max(168),
+        }),
+      }),
+    ),
+    handleServiceRequest(
+      (req) => service.create(req.validated.body, req.auth.user),
+      201,
+    ),
+  );
+  router.get(
+    "/pt-purchases",
+    ...read,
+    handleServiceRequest((req) => service.purchases(req.auth.user)),
+  );
+  router.get(
+    "/pt-resources",
+    ...read,
+    handleServiceRequest(() => service.resources()),
+  );
+  router.post(
+    "/pt-packages/:id/buy",
+    ...purchase,
+    validateRequest(
+      z.object({
+        params,
+      }),
+    ),
+    handleServiceRequest(
+      (req) => service.buy(req.validated.params.id, req.auth.user),
+      201,
+    ),
+  );
+  router.post(
+    "/pt-purchases/:id/payment",
+    ...purchase,
+    validateRequest(
+      z.object({
+        params,
+        body: z.object({
+          method: z.enum(["bank_transfer", "online"]),
+        }),
+      }),
+    ),
+    handleServiceRequest(
+      (req) =>
+        service.payment(
+          req.validated.params.id,
+          req.validated.body,
+          req.auth.user,
+        ),
+      201,
+    ),
+  );
+  router.patch(
+    "/pt-purchases/:id/coach",
+    ...manage,
+    validateRequest(
+      z.object({
+        params,
+        body: z.object({
+          coachUserId: id,
+        }),
+      }),
+    ),
+    handleServiceRequest((req) =>
+      service.assign(
+        req.validated.params.id,
+        req.validated.body.coachUserId,
+        req.auth.user,
+      ),
+    ),
+  );
+  router.post(
+    "/pt-purchases/:id/appointments",
+    ...purchase,
+    validateRequest(
+      z.object({
+        params,
+        body: z.object({
+          roomId: id,
+          startsAt: z.string().datetime(),
+        }),
+      }),
+    ),
+    handleServiceRequest(
+      (req) =>
+        service.book(
+          req.validated.params.id,
+          req.validated.body,
+          req.auth.user,
+        ),
+      201,
+    ),
+  );
+  router.post(
+    "/pt-appointments/:id/cancel",
+    ...purchase,
+    validateRequest(
+      z.object({
+        params,
+        body: z.object({
+          reason,
+        }),
+      }),
+    ),
+    handleServiceRequest((req) =>
+      service.cancel(
+        req.validated.params.id,
+        req.validated.body.reason,
+        req.auth.user,
+      ),
+    ),
+  );
+  router.post(
+    "/pt-appointments/:id/staff-cancel",
+    ...manage,
+    validateRequest(
+      z.object({
+        params,
+        body: z.object({
+          reason,
+        }),
+      }),
+    ),
+    handleServiceRequest((req) =>
+      service.cancel(
+        req.validated.params.id,
+        req.validated.body.reason,
+        req.auth.user,
+      ),
+    ),
+  );
+  router.post(
+    "/pt-appointments/:id/complete",
+    ...complete,
+    validateRequest(
+      z.object({
+        params,
+        body: z.object({
+          status: z.enum(["completed", "absent"]),
+          reason,
+        }),
+      }),
+    ),
+    handleServiceRequest((req) =>
+      service.complete(
+        req.validated.params.id,
+        req.validated.body,
+        req.auth.user,
+      ),
+    ),
+  );
   return router;
 }

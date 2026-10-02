@@ -1,5 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "../layouts/AppShell.jsx";
+import { mutationSucceededEvent } from "../../shared/api/client.js";
 import { dashboardPath, dashboardView } from "../dashboard-routes.js";
 import { dashboardApi } from "../../features/dashboard/index.js";
 import { authApi } from "../../features/auth/index.js";
@@ -59,6 +60,14 @@ const memberSelfItems = [
   { id: "my-training", label: "Giáo án của tôi", permission: "training.self.read" },
   { id: "my-payments", label: "Thanh toán của tôi", permission: "payment.self.read" },
 ];
+const adminNavigationOrder = [
+  "dashboard", "administration", "insights", "website",
+  "payments", "memberManagement", "packages", "operations", "training", "support", "profile",
+];
+const adminChildOrder = {
+  administration: ["rolePermissions", "staff"],
+  insights: ["audit", "reports"],
+};
 const accessByView = {
   pt: ["pt.read"],
   courses: ["course.read"],
@@ -87,6 +96,13 @@ export function DashboardPlaceholder({ initialView = "dashboard", session, onLog
       }
       return allowed(item.id) ? [item] : [];
     });
+    if (session.user.role === "admin") {
+      items.sort((left, right) => adminNavigationOrder.indexOf(left.id) - adminNavigationOrder.indexOf(right.id));
+      for (const item of items) {
+        const order = adminChildOrder[item.id];
+        if (order) item.children.sort((left, right) => order.indexOf(left.id) - order.indexOf(right.id));
+      }
+    }
     if (session.user.role === "member") items.push(...memberSelfItems.filter((item) => item.permissions ? item.permissions.some((code) => granted.has(code)) : granted.has(item.permission)));
     return items;
   }, [granted, session.user.role]);
@@ -109,7 +125,10 @@ export function DashboardPlaceholder({ initialView = "dashboard", session, onLog
   }, [allowedViews, initialView]);
   const notificationIds = useRef(null);
   const notificationLoadFailed = useRef(false);
+  const notificationLoading = useRef(false);
   const loadNotifications = useCallback(async () => {
+    if (notificationLoading.current) return;
+    notificationLoading.current = true;
     try {
       const data = await dashboardApi.notifications();
       if (notificationIds.current !== null) {
@@ -123,12 +142,21 @@ export function DashboardPlaceholder({ initialView = "dashboard", session, onLog
       // Preserve the last snapshot, and report an outage once rather than every polling interval.
       if (!notificationLoadFailed.current) showToast?.(errorMessageFor(cause, "Không thể tải thông báo mới."), "error");
       notificationLoadFailed.current = true;
+    } finally {
+      notificationLoading.current = false;
     }
   }, [showToast]);
   useEffect(() => {
     void Promise.resolve().then(loadNotifications);
-    const timer = window.setInterval(() => void loadNotifications(), 30_000);
-    return () => window.clearInterval(timer);
+    const refresh = () => void loadNotifications();
+    const timer = window.setInterval(refresh, 2_000);
+    window.addEventListener(mutationSucceededEvent, refresh);
+    window.addEventListener("focus", refresh);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener(mutationSucceededEvent, refresh);
+      window.removeEventListener("focus", refresh);
+    };
   }, [loadNotifications]);
   async function logout() {
     try {

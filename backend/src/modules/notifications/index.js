@@ -4,3 +4,6 @@ export { notificationPublisher } from "./infrastructure/notification-publisher.j
 export { createNotificationPreferenceRouter } from "./presentation/notification-preference.routes.js";
 export { createNotificationEmailDeliveryService } from "./infrastructure/notification-email-delivery.service.js";
 export { notificationEmailDeliveryRepository } from "./infrastructure/notification-email-delivery.repository.js";
+
+export { createOperationNotificationService } from "./application/operation-notification.service.js";
+export { operationNotificationRepository } from "./infrastructure/operation-notification.repository.js";

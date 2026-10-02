@@ -1,7 +1,7 @@
-.role-permissions { display: grid; gap: 20px; }
-.role-permissions__header { display: flex; justify-content: space-between; align-items: start; gap: 16px; }
-.role-permissions__header h1 { margin: 0; font-size: 24px; }
-.role-permissions__header p { color: var(--color-text-secondary); }
+.role-permissions { --workspace-row-gap: var(--section-gap); display: grid; gap: var(--section-gap); }
+
+
+
 .role-permissions__eyebrow { color: var(--color-primary) !important; font-size: 12px; font-weight: 700; }
 .role-permissions__scroll { overflow-x: auto; border: 1px solid var(--color-border); border-radius: 16px; background: var(--color-surface); }
 .role-permissions__table { width: 100%; min-width: 680px; border-collapse: collapse; }
@@ -14,4 +14,4 @@
 .role-permissions__actions { display: flex; gap: 12px; flex-wrap: wrap; }
 .role-permissions__error { color: var(--color-danger); }
 .role-permissions__success { color: var(--color-success); }
-@media (max-width: 767px) { .role-permissions__header { flex-direction: column; } .role-permissions__actions > * { flex: 1 1 45%; } }
+@media (max-width: 767px) {  .role-permissions__actions > * { flex: 1 1 45%; } }

@@ -1,3 +1,4 @@
+import { PageHeader } from "../../../shared/ui/PageHeader.jsx";
 import { MembershipList } from "./MembershipList.jsx";
 import { MemberMembershipOverview } from "./MemberMembershipOverview.jsx";
 import { FreezeRequestReview } from "./FreezeRequestReview.jsx";
@@ -340,10 +341,7 @@ export function MembershipsPage({ mode = "workspace", session }) {
   if (isMember)
     return (
       <main className="members-page">
-        <header>
-          <p>Gói tập</p>
-          <h1>Gói tập của tôi</h1>
-        </header>
+        <PageHeader eyebrow="Gói tập" title="Gói tập của tôi" />
         {(error || queryError) && (
           <p className="auth-alert" role="alert">
             {error || queryError}
@@ -370,10 +368,7 @@ export function MembershipsPage({ mode = "workspace", session }) {
     );
   return (
     <main className={`members-page${isManager ? " packages-page" : ""}`}>
-      <header>
-        <p>Gói tập</p>
-        <h1>
-          {isManager
+      <PageHeader eyebrow="Gói tập" title={isManager
             ? mode === "create"
               ? "Tạo gói tập"
               : mode === "catalog"
@@ -381,9 +376,7 @@ export function MembershipsPage({ mode = "workspace", session }) {
                 : mode === "assign"
                   ? "Gói tập hội viên"
                   : "Cấu hình gói tập"
-            : "Quản lý gói tập hội viên"}
-        </h1>
-      </header>
+            : "Quản lý gói tập hội viên"} />
       {(error || queryError) && (
         <p className="auth-alert" role="alert">
           {error || queryError}

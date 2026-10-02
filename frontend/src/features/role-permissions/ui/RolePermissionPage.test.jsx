@@ -18,6 +18,31 @@ const matrix = {
 function renderPage() { const client = new QueryClient({ defaultOptions: { queries: { retry: false } } }); return { ...render(<QueryClientProvider client={client}><RolePermissionPage /></QueryClientProvider>), client }; }
 
 describe("Admin role permission matrix", () => {
+  it("shows service permissions with role restrictions and selects refund dependencies", async () => {
+    rolePermissionApi.matrix.mockResolvedValueOnce({ ...matrix, permissions: [
+      { code: "course.read", description: "Xem khóa", group: "course", requires: [] },
+      { code: "course.manage", description: "Quản lý khóa", group: "course", requires: ["course.read"], availableRoles: ["receptionist"] },
+      { code: "pt.read", description: "Xem PT", group: "pt", requires: [] },
+      { code: "pt.complete", description: "Chốt buổi PT", group: "pt", requires: ["pt.read"], availableRoles: ["coach"] },
+      { code: "payment.read", description: "Xem thanh toán", group: "payment", requires: [] },
+      { code: "payment.refund.read", description: "Xem hoàn tiền", group: "payment", requires: [] },
+      { code: "payment.refund.review", description: "Duyệt hoàn tiền", group: "payment", requires: ["payment.read", "payment.refund.read"], availableRoles: ["manager"] },
+    ] });
+    renderPage();
+    const manage = await screen.findByRole("checkbox", { name: "Quản lý khóa — manager" });
+    expect(manage).toBeDisabled();
+    expect(manage).toHaveAttribute("title", "Quyền này chỉ áp dụng cho: Lễ tân.");
+    expect(screen.getByText("Khóa có hướng dẫn")).toBeInTheDocument();
+    expect(screen.getByText("Huấn luyện cá nhân")).toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: "Chốt buổi PT — coach" })).not.toBeDisabled();
+    expect(screen.getByRole("checkbox", { name: "Chốt buổi PT — member" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Duyệt hoàn tiền — manager" }));
+    expect(screen.getByRole("checkbox", { name: "Xem thanh toán — manager" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Xem hoàn tiền — manager" })).toBeChecked();
+    fireEvent.click(screen.getByRole("button", { name: "Lưu thay đổi" }));
+    await waitFor(() => expect(rolePermissionApi.replace).toHaveBeenCalledWith("manager", { version: 2, permissionCodes: expect.arrayContaining(["payment.refund.review", "payment.refund.read", "payment.read"]) }));
+  });
+
   afterEach(cleanup);
   beforeEach(() => {
     rolePermissionApi.matrix.mockReset().mockResolvedValue(matrix);

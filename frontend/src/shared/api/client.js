@@ -4,6 +4,7 @@ import { portalSurface } from "../../config/portal.js";
 
 export const authenticationExpiredEvent = "sports-center:authentication-expired";
 export const permissionsChangedEvent = "sports-center:permissions-changed";
+export const mutationSucceededEvent = "sports-center:mutation-succeeded";
 
 function buildUrl(path) {
   return `${apiBaseUrl}/${path.replace(/^\//, "")}`;
@@ -73,6 +74,9 @@ export async function request(path, { method = "GET", body, headers, signal, tim
       throw apiErrorFromResponse(response, payload, { suppressAuthenticationExpiredEvent });
     }
 
+    if (method !== "GET" && method !== "HEAD" && !path.startsWith("/notifications/") && typeof window !== "undefined") {
+      window.dispatchEvent(new Event(mutationSucceededEvent));
+    }
     return payload.data;
   } catch (error) {
     if (timedOut && !signal?.aborted) throw new ApiError({
@@ -88,6 +92,7 @@ export async function request(path, { method = "GET", body, headers, signal, tim
 
 export const apiClient = Object.freeze({
   get: (path, options) => request(path, options),
+  delete: (path, options) => request(path, { ...options, method: "DELETE" }),
   post: (path, body, options) => request(path, { ...options, method: "POST", body }),
   patch: (path, body, options) => request(path, { ...options, method: "PATCH", body }),
   put: (path, body, options) => request(path, { ...options, method: "PUT", body }),

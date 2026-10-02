@@ -1,3 +1,4 @@
+import { PageHeader } from "../../../shared/ui/PageHeader.jsx";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMutationFeedback, useSubmitMutation } from "../../../shared/lib/useMutationFeedback.js";
 import { Button } from "../../../shared/ui/Button.jsx";
@@ -19,10 +20,7 @@ export function RegistrationApprovalPage() {
   }
   return (
     <main className="members-page">
-      <header>
-        <p>Đăng ký hội viên</p>
-        <h1>Chờ Lễ tân duyệt</h1>
-      </header>
+      <PageHeader eyebrow="Đăng ký hội viên" title="Chờ Lễ tân duyệt" />
       {(feedback.error || registrationsQuery.isError) && (
         <p className="auth-alert" role="alert">
           {feedback.error || errorMessageFor(registrationsQuery.error, "Không thể tải danh sách đăng ký chờ duyệt.")}

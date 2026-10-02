@@ -1,3 +1,4 @@
+import { PageHeader } from "../../../shared/ui/PageHeader.jsx";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useMutationFeedback, useSubmitMutation } from "../../../shared/lib/useMutationFeedback.js";
@@ -47,10 +48,10 @@ export function NotificationPreferencesPanel({ className = "" }) {
               />
               <label htmlFor="email-notif-toggle">
                 <span>
-                  <Mail size={16} /> Nhận email vận hành & hỗ trợ
+                  <Mail size={16} /> Nhận email quan trọng
                 </span>
                 <small>
-                  Nhận email nhắc lịch tập, xác nhận đặt chỗ, thông báo trạng thái hội viên và phản hồi hỗ trợ.
+                  Email cho thanh toán, hoàn tiền, lịch tập, quyền sử dụng gói và phản hồi hỗ trợ. Các thao tác cập nhật thường chỉ hiển thị ở chuông thông báo.
                 </small>
               </label>
             </div>
@@ -72,10 +73,7 @@ export function NotificationPreferencesPanel({ className = "" }) {
 export function NotificationPreferencesPage() {
   return (
     <main className="members-page">
-      <header>
-        <p>Thông báo</p>
-        <h1>Tùy chọn thông báo</h1>
-      </header>
+      <PageHeader eyebrow="Thông báo" title="Tùy chọn thông báo" />
       <NotificationPreferencesPanel />
     </main>
   );

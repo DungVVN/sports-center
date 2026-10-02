@@ -9,5 +9,10 @@ export function sendSuccess(response, { statusCode = 200, data = null, meta } = 
   // boundary so a successful mutation is never turned into a 500 while JSON
   // serialization is happening.
   const jsonPayload = JSON.parse(JSON.stringify(payload, (_key, value) => (typeof value === "bigint" ? value.toString() : value)));
-  return response.status(statusCode).json(jsonPayload);
+  const send = () => response.status(statusCode).json(jsonPayload);
+  if (!response.locals?.beforeSuccess) return send();
+  return Promise.resolve().then(() => response.locals.beforeSuccess(data)).catch((error) => {
+    // The business change has committed. Notification failure must not invite a duplicate submission.
+    console.error("Operation notification failed", { requestId: response.req?.id, code: error.code ?? "NOTIFICATION_FAILED" });
+  }).then(send);
 }

@@ -1,3 +1,4 @@
+import { PageHeader } from "../../../shared/ui/PageHeader.jsx";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -296,12 +297,7 @@ export function DashboardHome({ onNavigate, role }) {
 
   return (
     <section className="dashboard-home">
-      <header className="dashboard-home__header">
-        <div>
-          <p>{heading.eyebrow}</p>
-          <h1>{heading.title}</h1>
-        </div>
-        {isOperationsLeader && (
+      <PageHeader eyebrow={heading.eyebrow} title={heading.title} actions={isOperationsLeader && (
           <div aria-label="Chọn kỳ báo cáo" className="dashboard-periods">
             {periods.map((item) => (
               <button
@@ -315,8 +311,7 @@ export function DashboardHome({ onNavigate, role }) {
               </button>
             ))}
           </div>
-        )}
-      </header>
+      )} />
       {error ? (
         <article className="dashboard-error">
           <strong>Lỗi tải dữ liệu Tổng quan</strong>

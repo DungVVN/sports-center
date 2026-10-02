@@ -1,3 +1,4 @@
+import { PageHeader } from "../../../shared/ui/PageHeader.jsx";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "../../../shared/ui/Button.jsx";
@@ -71,10 +72,7 @@ export function AuditLogsPage() {
   }
   return (
     <main className="members-page">
-      <header>
-        <p>Nhật kí hoạt động</p>
-        <h1>Nhật kí hoạt động</h1>
-      </header>
+      <PageHeader eyebrow="Nhật kí hoạt động" title="Nhật kí hoạt động" />
       {auditQuery.isError && (
         <p className="auth-alert" role="alert">
           {errorMessageFor(auditQuery.error, "Không thể tải nhật kí hoạt động.")}

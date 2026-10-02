@@ -1,3 +1,4 @@
+import { PageHeader } from "../../../shared/ui/PageHeader.jsx";
 import { useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { Button } from "../../../shared/ui/Button.jsx";
@@ -139,10 +140,7 @@ export function BookingsPage({ onNavigate, session }) {
 
   return (
     <main className="members-page">
-      <header>
-        <p>Đặt chỗ</p>
-        <h1>{isMember ? "Lịch tập của tôi" : role === "coach" ? "Lịch đặt lớp phụ trách" : "Quản lý đặt lớp"}</h1>
-      </header>
+      <PageHeader eyebrow="Đặt chỗ" title={isMember ? "Lịch tập của tôi" : role === "coach" ? "Lịch đặt lớp phụ trách" : "Quản lý đặt lớp"} />
       {isMember && !workspace.loading && <UpcomingSchedule bookings={items} onNavigate={onNavigate} session={session} />}
       {workspace.error && (
         <p className="auth-alert" role="alert">

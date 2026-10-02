@@ -1,3 +1,4 @@
+import { PageHeader } from "../../../shared/ui/PageHeader.jsx";
 import { useMemo, useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { Button } from "../../../shared/ui/Button.jsx";
@@ -80,7 +81,7 @@ export function MembersPage({ readOnly = false, canResetCredentials = !readOnly 
       // Feedback is rendered from the shared mutation hook; keep the dialog open for correction.
     }
   };
-  return <main className="members-page"><header><p>Hội viên</p><h1>Quản lý hội viên</h1></header>
+  return <main className="members-page"><PageHeader eyebrow="Hội viên" title="Quản lý hội viên" />
     {workspace.error && <p className="auth-alert" role="alert">{workspace.error}</p>}{workspace.notice && <p className="auth-success" role="status">{workspace.notice}</p>}
     {credentials && <section className="member-credentials"><strong>Mật khẩu tạm thời — chỉ hiển thị lần này</strong><div><code>{credentials.password}</code><Button onClick={copyPassword} size="sm" type="button" variant="outline">{copiedPassword ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}{copiedPassword ? "Đã sao chép!" : "Sao chép"}</Button></div><p>Email chưa gửi được. Hãy gửi riêng thông tin đăng nhập đến {credentials.email}; mật khẩu này không được lưu hoặc hiển thị lại.</p><Button onClick={() => setCredentials(null)} type="button" variant="secondary">Đã lưu an toàn</Button></section>}
     <section className="members-workspace-stacked">{!readOnly && <MemberCreateForm form={memberForm} onChange={updateMemberForm} onSubmit={create} submitting={workspace.createMember.isPending} />}<MembersTable canResetCredentials={canResetCredentials} filters={{ coach: coachFilters, isOpen: isFilterOpen, package: packageFilters, search, status: statusFilters }} loading={workspace.loading} members={workspace.members} onEdit={(member) => setEditingMemberId(member.id)} onFilterToggle={() => setIsFilterOpen((value) => !value)} onIssueAccountCredentials={issueAccountCredentials} onOpenAssignment={setAssignmentMember} onReload={workspace.reload} onSearchChange={setSearch} onToggleFilterValue={toggleFilterValue} onClearFilters={clearFilters} pagination={pagination} readOnly={readOnly} visibleMembers={visibleMembers} /></section>

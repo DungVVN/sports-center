@@ -1,3 +1,4 @@
+import { PageHeader } from "../../../shared/ui/PageHeader.jsx";
 import {
   newPlan,
   newTemplate,
@@ -100,10 +101,7 @@ export function TrainingPage({ session }) {
   }
   return (
     <main className="members-page">
-      <header>
-        <p>Giáo án</p>
-        <h1>Mẫu và kế hoạch tập luyện</h1>
-      </header>
+      <PageHeader eyebrow="Giáo án" title="Mẫu và kế hoạch tập luyện" />
       {workspace.error && (
         <p className="auth-alert" role="alert">
           {workspace.error}

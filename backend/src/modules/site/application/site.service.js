@@ -12,7 +12,7 @@ const audit = (tx, actorUserId, action, entityType, entityId, previousValue, new
 export function createSiteService({ repository }) {
   const pageDetail = async (routeKey) => {
     const page = await repository.page(routeKey);
-    if (!page) throw missing();
+    if (!page?.is_active) throw missing();
     const [draft, publication, revisions] = await Promise.all([
       repository.pageDraft(page.id), repository.pagePublication(page.id), repository.pageRevisions(page.id),
     ]);
@@ -20,7 +20,15 @@ export function createSiteService({ repository }) {
     return { page, draft, published, revisions: revisions.map(({ id, version_number, status, updated_at }) => ({ id, versionNumber: version_number, status, updatedAt: updated_at })) };
   };
 
-  const validateMenuLinks = async (items) => {
+  const transactionLinks = (tx) => ({
+    pageByPath: (path) => tx.site_pages.findUnique({ where: { path } }),
+    pagePublication: (pageId) => tx.site_page_publications.findUnique({ where: { page_id: pageId } }),
+  });
+  const requireActivePage = async (tx, pageId) => {
+    const page = await tx.site_pages.findUnique({ where: { id: pageId } });
+    if (!page?.is_active) throw missing();
+  };
+  const validateMenuLinks = async (items, store = repository) => {
     const visit = async (nodes) => {
       for (const node of nodes) {
         if (!node.active) continue;
@@ -28,8 +36,8 @@ export function createSiteService({ repository }) {
           const path = node.href.split(/[?#]/)[0];
           const builtIn = ["/", "/gallery", "/calendar", "/login", "/register"];
           if (!builtIn.includes(path)) {
-            const page = await repository.pageByPath(path);
-            if (!page?.is_active || !(await repository.pagePublication(page.id))) {
+            const page = await store.pageByPath(path);
+            if (!page?.is_active || !(await store.pagePublication(page.id))) {
               throw new AppError({ statusCode: 422, code: "SITE_MENU_TARGET_UNPUBLISHED", message: `Trang đích ${path} chưa được xuất bản.` });
             }
           }
@@ -40,11 +48,11 @@ export function createSiteService({ repository }) {
     await visit(items);
   };
 
-  const validatePageLinks = async (blocks) => {
+  const validatePageLinks = async (blocks, store = repository) => {
     for (const block of blocks) {
       const parsed = pageDraftSchema.safeParse({ editRevision: 1, title: "Trang", blocks: [block] });
       if (!parsed.success) throw new AppError({ statusCode: 422, code: "SITE_PAGE_BLOCK_INVALID", message: "Khối nội dung chưa hợp lệ." });
-      if (block.buttonHref?.startsWith("/")) await validateMenuLinks([{ id: block.id, label: block.title, kind: "link", href: block.buttonHref, active: block.active, children: [] }]);
+      if (block.buttonHref?.startsWith("/")) await validateMenuLinks([{ id: block.id, label: block.title, kind: "link", href: block.buttonHref, active: block.active, children: [] }], store);
     }
   };
 
@@ -61,6 +69,28 @@ export function createSiteService({ repository }) {
   return {
     listPages: repository.listPages,
     pageDetail,
+    async deletePage(routeKey, actorUserId) {
+      return repository.transaction(async (tx) => {
+        const page = await tx.site_pages.findUnique({ where: { route_key: routeKey } });
+        if (!page?.is_active) throw missing();
+        if (["/", "/gallery", "/calendar"].includes(page.path)) {
+          throw new AppError({ statusCode: 409, code: "SITE_PAGE_PROTECTED", message: "Không thể xóa trang chủ, thư viện ảnh hoặc lịch hoạt động và đặt sân." });
+        }
+        const publications = await tx.site_menu_publications.findMany({ select: { revision_id: true } });
+        const menus = await tx.site_menu_revisions.findMany({ where: { OR: [
+          { status: "draft" }, { id: { in: publications.map((entry) => entry.revision_id) } },
+        ] }, select: { items: true } });
+        const referencesPage = (items) => items.some((item) =>
+          (item.kind === "link" && item.href?.split(/[?#]/)[0] === page.path) || referencesPage(item.children ?? []));
+        if (menus.some((menu) => referencesPage(menu.items))) {
+          throw new AppError({ statusCode: 409, code: "SITE_PAGE_IN_MENU", message: "Trang còn được sử dụng trong menu. Gỡ liên kết khỏi bản nháp và menu đã xuất bản trước khi xóa." });
+        }
+        await tx.site_pages.update({ where: { id: page.id }, data: { is_active: false } });
+        await audit(tx, actorUserId, "site.page.deleted", "site_page", page.id,
+          { routeKey, path: page.path, isActive: true }, { routeKey, path: page.path, isActive: false });
+        return { routeKey, path: page.path, deleted: true };
+      });
+    },
     async createPage(input, actorUserId) {
       try { return await repository.transaction(async (tx) => {
         const page = await tx.site_pages.create({ data: { route_key: input.routeKey, path: input.path, kind: input.kind } });
@@ -74,8 +104,9 @@ export function createSiteService({ repository }) {
     },
     async startPageDraft(routeKey, actorUserId) {
       const page = await repository.page(routeKey);
-      if (!page) throw missing();
+      if (!page?.is_active) throw missing();
       try { return await repository.transaction(async (tx) => {
+        await requireActivePage(tx, page.id);
         const existing = await tx.site_page_revisions.findFirst({ where: { page_id: page.id, status: "draft" } });
         if (existing) return existing;
         const latest = await tx.site_page_revisions.findFirst({ where: { page_id: page.id }, orderBy: { version_number: "desc" } });
@@ -91,11 +122,12 @@ export function createSiteService({ repository }) {
     },
     async savePageDraft(routeKey, input, actorUserId) {
       const page = await repository.page(routeKey);
-      if (!page) throw missing();
+      if (!page?.is_active) throw missing();
       const draft = await repository.pageDraft(page.id);
       if (!draft) throw noDraft();
       if (draft.edit_revision !== input.editRevision) throw conflict();
       return repository.transaction(async (tx) => {
+        await requireActivePage(tx, page.id);
         const changed = await tx.site_page_revisions.updateMany({ where: { id: draft.id, status: "draft", edit_revision: input.editRevision }, data: {
           title: input.title, seo_title: input.seoTitle, seo_description: input.seoDescription, blocks: input.blocks, edit_revision: { increment: 1 }, updated_by: actorUserId,
         } });
@@ -107,16 +139,18 @@ export function createSiteService({ repository }) {
     },
     async publishPage(routeKey, editRevision, actorUserId) {
       const page = await repository.page(routeKey);
-      if (!page) throw missing();
+      if (!page?.is_active) throw missing();
       const preflight = await repository.pageDraft(page.id);
       if (!preflight) throw noDraft();
       if (preflight.edit_revision !== editRevision) throw conflict();
       if (!preflight.blocks.some((block) => block.active)) throw new AppError({ statusCode: 422, code: "SITE_PAGE_NOT_READY", message: "Cần ít nhất một khối nội dung đang hiển thị." });
       await validatePageLinks(preflight.blocks);
       return repository.transaction(async (tx) => {
+        await requireActivePage(tx, page.id);
         const draft = await tx.site_page_revisions.findFirst({ where: { page_id: page.id, status: "draft" } });
         if (!draft) throw noDraft();
         if (draft.edit_revision !== editRevision || !draft.blocks.some((block) => block.active)) throw conflict();
+        await validatePageLinks(draft.blocks, transactionLinks(tx));
         const before = await tx.site_page_publications.findUnique({ where: { page_id: page.id } });
         const changed = await tx.site_page_revisions.updateMany({ where: { id: draft.id, status: "draft", edit_revision: editRevision }, data: { status: "published" } });
         if (!changed.count) throw conflict();
@@ -127,8 +161,9 @@ export function createSiteService({ repository }) {
     },
     async restorePage(routeKey, revisionId, actorUserId) {
       const page = await repository.page(routeKey);
-      if (!page) throw missing();
+      if (!page?.is_active) throw missing();
       return repository.transaction(async (tx) => {
+        await requireActivePage(tx, page.id);
         const revision = await tx.site_page_revisions.findFirst({ where: { id: revisionId, page_id: page.id, status: "published" } });
         if (!revision) throw notFoundError("Không tìm thấy phiên bản đã xuất bản.");
         const before = await tx.site_page_publications.findUnique({ where: { page_id: page.id } });
@@ -175,6 +210,7 @@ export function createSiteService({ repository }) {
       if (!hasVisibleMenuLink(draft.items)) throw new AppError({ statusCode: 422, code: "SITE_MENU_NOT_READY", message: "Cần ít nhất một liên kết đang hiển thị trước khi xuất bản menu." });
       await validateMenuLinks(draft.items);
       return repository.transaction(async (tx) => {
+        await validateMenuLinks(draft.items, transactionLinks(tx));
         const before = await tx.site_menu_publications.findUnique({ where: { location } });
         const changed = await tx.site_menu_revisions.updateMany({ where: { id: draft.id, status: "draft", edit_revision: editRevision }, data: { status: "published" } });
         if (!changed.count) throw conflict();
@@ -187,6 +223,7 @@ export function createSiteService({ repository }) {
       return repository.transaction(async (tx) => {
         const revision = await tx.site_menu_revisions.findFirst({ where: { id: revisionId, location, status: "published" } });
         if (!revision) throw notFoundError("Không tìm thấy phiên bản menu đã xuất bản.");
+        await validateMenuLinks(revision.items, transactionLinks(tx));
         const before = await tx.site_menu_publications.findUnique({ where: { location } });
         await tx.site_menu_publications.upsert({ where: { location }, create: { location, revision_id: revision.id, published_by: actorUserId }, update: { revision_id: revision.id, published_by: actorUserId, published_at: new Date() } });
         await audit(tx, actorUserId, "site.menu.restored", "site_menu", revision.id, { revisionId: before?.revision_id }, { revisionId });

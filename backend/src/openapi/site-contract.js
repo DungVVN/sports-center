@@ -52,8 +52,8 @@ export function applySiteContract(spec) {
     SitePageDetail: object({ page: ref("SitePageRecord"), draft: nullable(ref("SitePageRevision")), published: nullable(ref("SitePageRevision")), revisions: history }),
     SiteMenuDetail: object({ draft: nullable(ref("SiteMenuRevision")), published: nullable(ref("SiteMenuRevision")), revisions: history }),
     SiteRevisionPointer: object({ revisionId: uuid }),
-    SiteMediaUploadRequest: object({ secureUrl: { type: "string", format: "uri", maxLength: 2048 }, publicId: text(255, 1), originalName: text(255, 1), mimeType: { type: "string", pattern: "^image/(jpeg|png|webp|gif|avif)$" }, bytes: { type: "integer", minimum: 1, maximum: 10485760 }, width: nullable({ type: "integer", minimum: 1, maximum: 10000 }), height: nullable({ type: "integer", minimum: 1, maximum: 10000 }) }),
-    SiteMediaSignature: object({ cloudName: { type: "string" }, apiKey: { type: "string" }, timestamp: { type: "integer" }, signature: { type: "string" }, folder: { type: "string", const: "kinetic-sports/site" }, uploadUrl: { type: "string", format: "uri" }, maxBytes: { type: "integer", const: 10485760 } }),
+    SiteMediaUploadRequest: object({ secureUrl: { type: "string", format: "uri", maxLength: 2048 }, publicId: text(255, 1), originalName: text(255, 1), mimeType: { type: "string", pattern: "^image/[a-z0-9][a-z0-9.+-]*$" }, bytes: { type: "integer", minimum: 1, maximum: 20971520 }, width: nullable({ type: "integer", minimum: 1, maximum: 10000 }), height: nullable({ type: "integer", minimum: 1, maximum: 10000 }) }),
+    SiteMediaSignature: object({ cloudName: { type: "string" }, apiKey: { type: "string" }, timestamp: { type: "integer" }, signature: { type: "string" }, folder: { type: "string", const: "kinetic-sports/site" }, uploadUrl: { type: "string", format: "uri" }, maxBytes: { type: "integer", const: 20971520 } }),
     SiteMediaRecord: object({ id: uuid, storage_key: text(255), original_name: text(255), mime_type: text(64), byte_size: { type: "integer" }, width: nullable({ type: "integer" }), height: nullable({ type: "integer" }), alt_text: text(500), uploaded_by: nullable(uuid), created_at: recordFields.created_at, deleted_at: nullable(recordFields.created_at) }),
     SiteErrorResponse: object({ success: { type: "boolean", const: false }, error: object({ code: { type: "string" }, message: { type: "string" }, requestId: { type: "string" }, details: {} }, ["code", "message", "requestId"]) }),
   });
@@ -77,7 +77,12 @@ export function applySiteContract(spec) {
       get: adminOp("Admin liệt kê trang", array(object({ ...pageRecordFields, title: pageFields.title, draft_version: nullable({ type: "integer" }), published_version: nullable({ type: "integer" }), block_count: { type: "integer" }, updated_at: nullable(recordFields.updated_at) }))),
       post: adminOp("Admin tạo trang và bản nháp đầu tiên", object({ page: ref("SitePageRecord"), draft: ref("SitePageRevision") }), [], "SitePageCreateRequest", { 409: error("SITE_PAGE_EXISTS: routeKey hoặc path đã tồn tại") }, "Trả HTTP 200. Tạo draft rỗng; trang chưa xuất bản và public read vẫn trả 404."),
     },
-    "/admin/site/pages/{routeKey}": { get: adminOp("Admin xem bản nháp, bản công khai và lịch sử", ref("SitePageDetail"), [routeKey], undefined, missing) },
+    "/admin/site/pages/{routeKey}": {
+      get: adminOp("Admin xem bản nháp, bản công khai và lịch sử", ref("SitePageDetail"), [routeKey], undefined, missing),
+      delete: adminOp("Xóa mềm trang website", object({ routeKey: pageRecordFields.route_key, path: pageFields.path, deleted: { type: "boolean", const: true } }), [routeKey], undefined,
+        { ...missing, 409: error("SITE_PAGE_PROTECTED / SITE_PAGE_IN_MENU: trang tích hợp được bảo vệ hoặc còn liên kết trong menu nháp/công khai") },
+        "Gỡ trang khỏi danh mục và public read (404), giữ phiên bản và audit. Đường dẫn vẫn được giữ để bảo toàn lịch sử. Không xóa /, /gallery, /calendar. Cần gỡ liên kết trong cả menu nháp và menu đã xuất bản trước khi xóa."),
+    },
     "/admin/site/pages/{routeKey}/draft": {
       post: adminOp("Tạo bản nháp từ phiên bản gần nhất", ref("SitePageRevision"), [routeKey], undefined, { ...missing, 409: stale[409] }, "Nếu đã có draft, trả draft đó. Không đổi publication pointer."),
       put: adminOp("Lưu bản nháp, không xuất bản", ref("SitePageRevision"), [routeKey], "SitePageDraftRequest", { ...missing, ...stale }, "Tăng edit_revision sau khi lưu. Dùng giá trị trả về cho lần lưu/xuất bản tiếp theo."),
@@ -87,9 +92,9 @@ export function applySiteContract(spec) {
     "/admin/site/menus/{location}": { get: adminOp("Admin xem menu nháp, công khai và lịch sử", ref("SiteMenuDetail"), [location]) },
     "/admin/site/menus/{location}/draft": { put: adminOp("Lưu menu nháp, không xuất bản", ref("SiteMenuRevision"), [location], "SiteMenuDraftRequest", { 409: stale[409] }, "Header/footer độc lập. editRevision=0 tạo draft đầu tiên; draft đang có cần đúng edit_revision.") },
     "/admin/site/menus/{location}/publish": { post: adminOp("Xuất bản menu đã kiểm tra liên kết", ref("SiteRevisionPointer"), [location], "SitePublishRequest", menuPublishErrors, "Cần ít nhất một liên kết hiển thị. Liên kết CMS nội bộ phải trỏ trang active đã xuất bản. /, /gallery, /calendar, /login và /register là đường dẫn tích hợp được phép.") },
-    "/admin/site/menus/{location}/restore": { post: adminOp("Chọn lại phiên bản menu đã xuất bản", ref("SiteRevisionPointer"), [location], "SiteRestoreRequest", { 404: error("NOT_FOUND: phiên bản không thuộc location hoặc chưa xuất bản") }) },
+    "/admin/site/menus/{location}/restore": { post: adminOp("Chọn lại phiên bản menu đã xuất bản", ref("SiteRevisionPointer"), [location], "SiteRestoreRequest", { 404: error("NOT_FOUND: phiên bản không thuộc location hoặc chưa xuất bản"), 422: error("SITE_MENU_TARGET_UNPUBLISHED: trang đích đã xóa hoặc chưa xuất bản") }) },
     "/admin/site/media/cloudinary/signature": { post: adminOp("Cấp chữ ký Cloudinary cho admin tải ảnh", ref("SiteMediaSignature"), [], undefined, { 503: error("CLOUDINARY_NOT_CONFIGURED: chưa đủ cấu hình Cloudinary") }, "Upload trực tiếp theo uploadUrl bằng file, api_key, timestamp, signature và folder. API secret không trả về client.") },
-    "/admin/site/media/cloudinary": { post: adminOp("Lưu metadata ảnh Cloudinary đã tải", ref("SiteMediaRecord"), [], "SiteMediaUploadRequest", { 422: error("VALIDATION_ERROR / CLOUDINARY_ASSET_INVALID / CLOUDINARY_FILE_TOO_LARGE: JPG, PNG, WebP, GIF, AVIF tối đa 10 MB, đúng cloud và folder"), 503: error("CLOUDINARY_NOT_CONFIGURED") }, "Nhận metadata sau upload; đây không phải endpoint nhận multipart file. secureUrl phải thuộc Cloudinary đã cấu hình và publicId bắt đầu bằng kinetic-sports/site/; ghi metadata theo storage_key để tránh trùng."),
+    "/admin/site/media/cloudinary": { post: adminOp("Lưu metadata ảnh Cloudinary đã tải", ref("SiteMediaRecord"), [], "SiteMediaUploadRequest", { 422: error("VALIDATION_ERROR / CLOUDINARY_ASSET_INVALID / CLOUDINARY_FILE_TOO_LARGE: Tệp ảnh tối đa 20 MB, đúng cloud và folder"), 503: error("CLOUDINARY_NOT_CONFIGURED") }, "Nhận metadata sau upload; đây không phải endpoint nhận multipart file. secureUrl phải thuộc Cloudinary đã cấu hình và publicId bắt đầu bằng kinetic-sports/site/; ghi metadata theo storage_key để tránh trùng."),
     },
   });
 }

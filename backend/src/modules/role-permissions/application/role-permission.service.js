@@ -3,6 +3,7 @@ import { permissionDependencies, permissionRoleDependencies, permissionRoleScope
 
 export const configurableRoles = ["manager", "receptionist", "coach", "member"];
 const descriptions = {
+  "member.read": "Xem toàn bộ danh sách và hồ sơ hội viên của trung tâm",
   "facility.booking.read": "Xem danh sách và chi tiết mọi đơn đặt sân (nhân viên)",
   "facility.booking.self.read": "Xem danh sách và chi tiết đơn đặt sân của bản thân",
   "facility.booking.cancel": "Hủy đơn đặt sân có lý do (Hội viên: chỉ đơn của mình)",

@@ -1,3 +1,4 @@
+import { PageHeader } from "../../../shared/ui/PageHeader.jsx";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { classApi } from "../../classes/index.js";
@@ -41,10 +42,7 @@ export function ReportsPage() {
   }
   return (
     <main className="members-page">
-      <header>
-        <p>Báo cáo</p>
-        <h1>Doanh thu và điểm danh</h1>
-      </header>
+      <PageHeader eyebrow="Báo cáo" title="Doanh thu và điểm danh" />
       {feedback.error && <p className="auth-alert" role="alert">{feedback.error}</p>}
       {feedback.notice && <p className="auth-success" role="status">{feedback.notice}</p>}
       {reportQuery.isError && <p className="auth-alert" role="alert">{errorMessageFor(reportQuery.error, "Không thể tải số liệu báo cáo.")}</p>}
@@ -103,7 +101,7 @@ export function ReportsPage() {
                     <p className="report-help">Thực thu = tiền nhận trong kỳ trừ tiền thực tế hoàn trong kỳ. Khoản thu gốc giữ nguyên ngày xác nhận.</p>
                   </div>
                 </div>
-                <div className="report-metrics">
+                <div className="report-metrics report-metrics--revenue">
                   <Metric label="Thực thu" value={money(report.paid)} note={`${number(report.payments)} giao dịch đã thanh toán`} tone="success" />
                   <Metric label="Đã hoàn trong kỳ" value={money(report.refunded ?? "0")} note={`Tổng tiền nhận: ${money(report.gross ?? report.paid)}`} />
                   <Metric label="Chờ xác nhận" value={money(report.createdSummary.pending)} note={`${number(report.createdSummary.pendingPayments)} phiếu tạo trong kỳ`} tone="warning" />

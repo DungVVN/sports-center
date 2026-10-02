@@ -3,7 +3,7 @@ import { AppError } from "../../../shared/errors/app-error.js";
 
 const siteFolder = "kinetic-sports/site";
 const profileFolder = "kinetic-sports/avatars";
-const maxBytes = 10 * 1024 * 1024;
+const maxBytes = 20 * 1024 * 1024;
 
 function configuration() {
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME?.trim();
@@ -40,7 +40,7 @@ export function createCloudinaryMediaService({ repository, now = () => Math.floo
       if (!input.secureUrl.startsWith(urlPrefix) || !input.publicId.startsWith(`${siteFolder}/`)) {
         throw new AppError({ statusCode: 422, code: "CLOUDINARY_ASSET_INVALID", message: "Ảnh không thuộc thư mục Cloudinary của website." });
       }
-      if (input.bytes > maxBytes) throw new AppError({ statusCode: 422, code: "CLOUDINARY_FILE_TOO_LARGE", message: "Ảnh vượt quá dung lượng 10 MB." });
+      if (input.bytes > maxBytes) throw new AppError({ statusCode: 422, code: "CLOUDINARY_FILE_TOO_LARGE", message: "Ảnh vượt quá dung lượng 20 MB." });
       return repository.createMediaAsset({
         storage_key: input.publicId,
         original_name: input.originalName,

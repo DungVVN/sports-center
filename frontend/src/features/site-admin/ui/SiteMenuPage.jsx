@@ -1,3 +1,4 @@
+import { PageHeader } from "../../../shared/ui/PageHeader.jsx";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../../../shared/ui/Button.jsx";
@@ -68,19 +69,13 @@ export function SiteMenuPage() {
 
   return (
     <section className="site-admin site-admin--menu">
-      <header className="site-admin__menu-heading site-admin__panel">
-        <div>
-          <p className="site-admin__eyebrow">THIẾT LẬP / MENU WEBSITE</p>
-          <h1>Menu & điều hướng website</h1>
-        </div>
-        <div className="site-admin__actions">
+      <PageHeader eyebrow="CMS · Menu" title="Menu & điều hướng website" actions={<>
           <div className="site-admin__menu-tabs" role="group" aria-label="Vị trí menu">
             <button className={location === "header" ? "is-active" : ""} onClick={() => changeLocation("header")} type="button">Header Menu</button>
             <button className={location === "footer" ? "is-active" : ""} onClick={() => changeLocation("footer")} type="button">Footer Links</button>
           </div>
           <Button onClick={() => setPreview((value) => !value)} variant="outline">{preview ? "Đóng preview" : "Mở preview"}</Button>
-        </div>
-      </header>
+      </>} />
 
       {notice && <p className="site-admin__notice" role="status">{notice}</p>}
       {error && <p className="site-admin__error" role="alert">{error}</p>}
@@ -107,10 +102,6 @@ export function SiteMenuPage() {
               <Button disabled={draft.dirty || !draft.revision || !hasVisibleLink(draft.items) || working} onClick={() => setConfirmPublish(true)}>Xuất bản</Button>
             </div>
           </div>
-          <p className="site-admin__workflow-note">
-            Lưu nháp không đổi điều hướng hiện tại. Website chỉ dùng menu đã xuất bản khi CMS công khai được bật.
-          </p>
-
           <section className="site-admin__panel" aria-label="Danh sách liên kết menu">
             <h2>Các trang trong menu {location === "header" ? "đầu trang" : "chân trang"}</h2>
             <div className="site-admin__menu-catalog">

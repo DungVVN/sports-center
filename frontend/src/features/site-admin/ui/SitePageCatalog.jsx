@@ -1,5 +1,7 @@
+import { PageHeader } from "../../../shared/ui/PageHeader.jsx";
 import { useState } from "react";
-import { Eye, FilePenLine, FileText, LayoutTemplate, Search } from "lucide-react";
+import { Eye, FilePenLine, FileText, LayoutTemplate, Search, Trash2 } from "lucide-react";
+import { Dialog } from "../../../shared/ui/Dialog.jsx";
 import { Button } from "../../../shared/ui/Button.jsx";
 
 const pageName = (page) => page.title || (page.route_key === "home" ? "Trang chủ" : page.route_key);
@@ -25,7 +27,7 @@ function PageCatalogToolbar({ search, setSearch, status, setStatus }) {
   );
 }
 
-function PageCatalogTable({ pages, onOpen }) {
+function PageCatalogTable({ pages, onOpen, onDelete, working }) {
   if (pages.length === 0) {
     return <div className="site-admin__catalog-empty">Không có trang phù hợp với bộ lọc.</div>;
   }
@@ -85,6 +87,11 @@ function PageCatalogTable({ pages, onOpen }) {
                   <button type="button" aria-label={`Xem trước trang ${pageName(page)}`} onClick={() => onOpen(page.route_key, true)}>
                     <Eye size={18} />
                   </button>
+                  <button type="button" className="site-admin__delete-action" aria-label={`Xóa trang ${pageName(page)}`}
+                    title={["/", "/gallery", "/calendar"].includes(page.path) ? "Trang tích hợp được bảo vệ, không thể xóa" : "Xóa trang"}
+                    disabled={working || ["/", "/gallery", "/calendar"].includes(page.path)} onClick={() => onDelete(page)}>
+                    <Trash2 size={18} />
+                  </button>
                 </div>
               </td>
             </tr>
@@ -95,9 +102,16 @@ function PageCatalogTable({ pages, onOpen }) {
   );
 }
 
-export function SitePageCatalog({ pages, onOpen, onCreate, showCreate, setShowCreate, createForm, setCreateForm, working, notice, error }) {
+export function SitePageCatalog({ pages, onOpen, onDelete, onCreate, showCreate, setShowCreate, createForm, setCreateForm, working, notice, error }) {
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
+
+  async function confirmDelete() {
+    if (!deleteTarget || working) return;
+    const deleted = await onDelete(deleteTarget);
+    if (deleted) setDeleteTarget(null);
+  }
 
   const filtered = pages.filter((page) => {
     const matchesText = `${pageName(page)} ${page.route_key} ${page.path}`.toLocaleLowerCase("vi").includes(search.toLocaleLowerCase("vi"));
@@ -106,18 +120,20 @@ export function SitePageCatalog({ pages, onOpen, onCreate, showCreate, setShowCr
 
   return (
     <section className="site-admin site-admin--catalog">
-      <header className="site-admin__header site-admin__catalog-header">
-        <div>
-          <p className="site-admin__eyebrow">CMS · TRANG</p>
-          <h1>Danh mục trang toàn website</h1>
-          <p>Mỗi trang có bố cục riêng; dữ liệu gói tập, lịch và đặt chỗ được quản lý ở các mục nghiệp vụ.</p>
-        </div>
-        <div className="site-admin__actions">
+      <PageHeader eyebrow="CMS · Trang" title="Danh mục trang toàn website" actions={<>
           <a className="site-admin__action-link" href="/admin/site/menu">Menu website</a>
           <Button onClick={() => setShowCreate((value) => !value)}>+ Tạo trang</Button>
-        </div>
-      </header>
+      </>} />
 
+      <Dialog isOpen={Boolean(deleteTarget)} onClose={() => { if (!working) setDeleteTarget(null); }} title="Xóa trang website">
+        <p>Xóa trang <strong>{deleteTarget && pageName(deleteTarget)}</strong> ({deleteTarget?.path}) khỏi danh mục và website?</p>
+        <p>Lịch sử phiên bản được giữ lại. Đường dẫn này vẫn được dành riêng cho trang đã xóa.</p>
+        {error && <p role="alert" className="site-admin__error">{error}</p>}
+        <div className="site-admin__actions">
+          <Button variant="outline" disabled={working} onClick={() => setDeleteTarget(null)}>Hủy</Button>
+          <Button variant="danger" disabled={working} onClick={confirmDelete}>{working ? "Đang xóa..." : "Xác nhận xóa"}</Button>
+        </div>
+      </Dialog>
       {notice && <p className="site-admin__notice" role="status">{notice}</p>}
       {error && <p className="site-admin__error" role="alert">{error}</p>}
 
@@ -139,7 +155,7 @@ export function SitePageCatalog({ pages, onOpen, onCreate, showCreate, setShowCr
 
       <div className="site-admin__catalog site-admin__panel">
         <PageCatalogToolbar search={search} setSearch={setSearch} status={status} setStatus={setStatus} />
-        <PageCatalogTable pages={filtered} onOpen={onOpen} />
+        <PageCatalogTable pages={filtered} onOpen={onOpen} onDelete={setDeleteTarget} working={working} />
         <footer className="site-admin__catalog-footer">
           Đang hiển thị <strong>{filtered.length}</strong> trên tổng số <strong>{pages.length}</strong> trang
         </footer>

@@ -65,10 +65,6 @@ export function ProfileSummary({ profile }) {
           <p>Chưa có chuyên môn được cập nhật trong hồ sơ.</p>
         )}
       </section>
-      <p className="profile-page__summary-note">
-        Thông tin công việc được quản lý bởi trung tâm. Liên hệ Quản lý nếu cần
-        điều chỉnh.
-      </p>
     </aside>
   );
 }

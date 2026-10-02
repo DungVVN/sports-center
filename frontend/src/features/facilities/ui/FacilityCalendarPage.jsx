@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PageHeader } from "../../../shared/ui/PageHeader.jsx";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMutationFeedback } from "../../../shared/lib/useMutationFeedback.js";
 import { errorMessageFor } from "../../../shared/api/error-message.js";
@@ -71,7 +72,7 @@ export function FacilityCalendarPage({ session, onLoginClick, embedded = false }
   }
 
   return <section id="facility-calendar" className="members-page facility-calendar">
-    <header className="facility-calendar__header"><p className="facility-calendar__eyebrow">LỊCH SÂN</p><CalendarHeading>Giờ trống & lịch đã đặt</CalendarHeading></header>
+    <PageHeader eyebrow="Lịch sân" title="Giờ trống & lịch đã đặt" headingAs={CalendarHeading} />
     <section className="facility-calendar__filter-panel" aria-label="Bộ lọc lịch sân">
       <div className="facility-calendar__filters">
         <label>Loại sân<select value={typeId} onChange={(event) => setTypeId(event.target.value)}><option value="">Tất cả</option>{(calendar.data?.types ?? []).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>

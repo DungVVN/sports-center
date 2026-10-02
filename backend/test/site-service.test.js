@@ -8,6 +8,7 @@ const activeBlock = { id: "44444444-4444-4444-8444-444444444444", type: "richTex
 
 function pageRepository({ draft, publication = null }) {
   const tx = {
+    site_pages: { findUnique: vi.fn().mockResolvedValue({ id: pageId, path: "/", is_active: true }) },
     site_page_revisions: {
       findFirst: vi.fn().mockResolvedValue(draft),
       updateMany: vi.fn().mockResolvedValue({ count: 1 }),

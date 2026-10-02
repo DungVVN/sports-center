@@ -2,6 +2,7 @@ import { act, cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DashboardPlaceholder } from "./DashboardPlaceholder.jsx";
 import { dashboardApi } from "../../features/dashboard/index.js";
+import { mutationSucceededEvent } from "../../shared/api/client.js";
 
 const showToast = vi.hoisted(() => vi.fn());
 
@@ -11,6 +12,40 @@ vi.mock("../../shared/ui/useToast.js", () => ({ useToast: () => showToast }));
 
 describe("role navigation", () => {
   afterEach(() => { cleanup(); vi.useRealTimers(); vi.clearAllMocks(); dashboardApi.notifications.mockResolvedValue([]); });
+
+  it("prioritizes admin governance ahead of daily operations", () => {
+    render(<DashboardPlaceholder session={{ user: { role: "admin" }, permissions: [] }} />);
+    expect(screen.getByRole("navigation").textContent).toBe([
+      "Tổng quan", "Nhân sự & phân quyền", "Phân quyền chức năng", "Danh tính & nhân sự",
+      "Báo cáo & nhật kí", "Nhật kí hoạt động", "Báo cáo", "Website", "Trang website", "Menu website",
+      "Thanh toán", "Quản lý hội viên", "Hội viên", "Duyệt đăng ký",
+      "Gói tập", "Tạo gói tập", "Danh mục gói", "Gán gói hội viên",
+      "Lịch & hoạt động", "Huấn luyện cá nhân", "Khóa có hướng dẫn", "Lớp học", "Đặt chỗ", "Lịch sân", "Điểm danh",
+      "Giáo án", "Hỗ trợ", "Hồ sơ",
+    ].join(""));
+    cleanup();
+    render(<DashboardPlaceholder session={{ user: { role: "manager" }, permissions: ["staff.manage", "report.read", "payment.read"] }} />);
+    const labels = [...screen.getByRole("navigation").querySelectorAll("span")].map((item) => item.textContent);
+    expect(labels.indexOf("Hồ sơ")).toBeLessThan(labels.indexOf("Thanh toán"));
+    expect(labels.indexOf("Thanh toán")).toBeLessThan(labels.indexOf("Nhân sự & phân quyền"));
+  });
+
+  it.each(["admin", "manager", "receptionist", "coach", "member"])("refreshes %s notifications immediately after submit and every two seconds", async (role) => {
+    vi.useFakeTimers();
+    dashboardApi.notifications.mockResolvedValueOnce([]).mockResolvedValue([{ id: "notice-1", title: "Cập nhật khóa học thành công", read_at: null }]);
+    const { unmount } = render(<DashboardPlaceholder session={{ user: { role }, permissions: [] }} />);
+    await act(async () => { await Promise.resolve(); });
+    expect(dashboardApi.notifications).toHaveBeenCalledTimes(1);
+    await act(async () => { window.dispatchEvent(new Event(mutationSucceededEvent)); });
+    expect(dashboardApi.notifications).toHaveBeenCalledTimes(2);
+    expect(showToast).toHaveBeenCalledExactlyOnceWith("Cập nhật khóa học thành công", "info");
+    await act(async () => { await vi.advanceTimersByTimeAsync(2_000); });
+    expect(dashboardApi.notifications).toHaveBeenCalledTimes(3);
+    expect(showToast).toHaveBeenCalledTimes(1);
+    unmount();
+    window.dispatchEvent(new Event(mutationSucceededEvent));
+    expect(dashboardApi.notifications).toHaveBeenCalledTimes(3);
+  });
 
   it("filters children inside groups and hides empty admin groups", () => {
     render(<DashboardPlaceholder session={{ user: { role: "coach" }, permissions: ["class.read"] }} />);

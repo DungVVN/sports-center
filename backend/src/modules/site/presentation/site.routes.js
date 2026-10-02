@@ -12,7 +12,7 @@ const locationParam = z.object({ params: z.object({ location: siteLocationSchema
 const revisionBody = z.object({ body: z.object({ editRevision: z.number().int().positive() }).strict(), params: z.object({ routeKey }) });
 const uploadRecordBody = z.object({ body: z.object({
   secureUrl: z.string().url().max(2048), publicId: z.string().min(1).max(255), originalName: z.string().trim().min(1).max(255),
-  mimeType: z.string().regex(/^image\/(jpeg|png|webp|gif|avif)$/).max(64), bytes: z.number().int().positive().max(10 * 1024 * 1024),
+  mimeType: z.string().regex(/^image\/[a-z0-9][a-z0-9.+-]*$/).max(64), bytes: z.number().int().positive().max(20 * 1024 * 1024),
   width: z.number().int().positive().max(10000).nullable(), height: z.number().int().positive().max(10000).nullable(),
 }).strict() });
 const handle = (work) => async (req, res, next) => { try { sendSuccess(res, { data: await work(req) }); } catch (error) { next(error); } };
@@ -29,6 +29,7 @@ export function createSiteRouter(service, authService, cloudinaryMediaService) {
   router.post("/admin/site/media/cloudinary/signature", ...admin, handle(() => cloudinaryMediaService.createSiteUploadSignature()));
   router.post("/admin/site/media/cloudinary", ...admin, validateRequest(uploadRecordBody), handle((req) => cloudinaryMediaService.recordUpload(req.validated.body, req.auth.user.id)));
   router.post("/admin/site/pages", ...admin, validateRequest(z.object({ body: pageCreateSchema })), handle((req) => service.createPage(req.validated.body, req.auth.user.id)));
+  router.delete("/admin/site/pages/:routeKey", ...admin, validateRequest(routeParam), handle((req) => service.deletePage(req.validated.params.routeKey, req.auth.user.id)));
   router.get("/admin/site/pages/:routeKey", ...admin, validateRequest(routeParam), handle((req) => service.pageDetail(req.validated.params.routeKey)));
   router.post("/admin/site/pages/:routeKey/draft", ...admin, validateRequest(routeParam), handle((req) => service.startPageDraft(req.validated.params.routeKey, req.auth.user.id)));
   router.put("/admin/site/pages/:routeKey/draft", ...admin, validateRequest(z.object({ params: z.object({ routeKey }), body: pageDraftSchema })), handle((req) => service.savePageDraft(req.validated.params.routeKey, req.validated.body, req.auth.user.id)));

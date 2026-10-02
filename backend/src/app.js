@@ -1,3 +1,4 @@
+import { operationNotificationMiddleware } from "./shared/middleware/operation-notification.js";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import express from "express";
@@ -39,6 +40,7 @@ export function createApp(overrides = {}) {
   }));
   app.get("/openapi.json", (request, response) => response.json(openApiSpec));
   app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(openApiSpec, { explorer: true }));
+  app.use(operationNotificationMiddleware(services.operationNotificationService, env.apiBasePath));
   registerRoutes(app, env.apiBasePath, services);
 
   app.use(notFound);

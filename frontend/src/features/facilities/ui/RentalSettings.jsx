@@ -6,14 +6,14 @@ import { errorMessageFor } from "../../../shared/api/error-message.js";
 function RentalConfiguration({ facility, rooms, busy, perform }) {
   const [rate, setRate] = useState(facility.hourlyRateVnd ?? "");
   const [roomId, setRoomId] = useState(facility.room_id ?? "");
-  return <form className="facility-calendar__fields" onSubmit={(event) => {
+  return <form className="facility-calendar__fields facility-calendar__rental-config" onSubmit={(event) => {
     event.preventDefault();
     void perform(() => facilityApi.configure(facility.id, { hourlyRateVnd: rate, roomId: roomId || null }), "Đã lưu giá và phòng dùng chung. Đơn đã duyệt giữ nguyên giá.");
   }}>
     <strong>{facility.name}</strong>
     <label>Đơn giá mỗi giờ (đ)<input required type="number" min="0" max="999999999999" step="1" value={rate} onChange={(event) => setRate(event.target.value)} /></label>
     <label>Phòng vật lý dùng chung<select value={roomId} onChange={(event) => setRoomId(event.target.value)}><option value="">Sân độc lập</option>{rooms.map((room) => <option key={room.id} value={room.id}>{room.name}</option>)}</select></label>
-    <button disabled={busy}>Lưu cấu hình</button>
+    <button type="submit" disabled={busy}>Lưu cấu hình</button>
   </form>;
 }
 

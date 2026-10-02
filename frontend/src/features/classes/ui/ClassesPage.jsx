@@ -1,3 +1,4 @@
+import { PageHeader } from "../../../shared/ui/PageHeader.jsx";
 import { ReceptionistClassesWorkspace } from "./ReceptionistClassesWorkspace.jsx";
 import {
   emptyChange,
@@ -227,10 +228,7 @@ export function ClassesPage({ session }) {
   }
   return (
     <main className="members-page">
-      <header>
-        <p>Lớp học</p>
-        <h1>Lịch lớp</h1>
-      </header>
+      <PageHeader eyebrow="Lớp học" title="Lịch lớp" />
       {(feedback.error || queryError) && (
         <p className="auth-alert" role="alert">
           {feedback.error || queryError}

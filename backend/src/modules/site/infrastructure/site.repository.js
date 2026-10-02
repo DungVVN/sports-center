@@ -5,7 +5,7 @@ const ordered = { version_number: "desc" };
 
 export const siteRepository = {
   async listPages() {
-    const pages = await prisma.site_pages.findMany({ select: pageProjection, orderBy: { path: "asc" } });
+    const pages = await prisma.site_pages.findMany({ where: { is_active: true }, select: pageProjection, orderBy: { path: "asc" } });
     if (!pages.length) return pages;
     const pageIds = pages.map((page) => page.id);
     const [drafts, publications] = await Promise.all([
@@ -44,5 +44,9 @@ export const siteRepository = {
   menuPublication: (location) => prisma.site_menu_publications.findUnique({ where: { location } }),
   menuRevision: (id) => prisma.site_menu_revisions.findUnique({ where: { id } }),
   createMediaAsset: (data) => prisma.site_media_assets.upsert({ where: { storage_key: data.storage_key }, create: data, update: {} }),
-  transaction: (work) => prisma.$transaction(work),
+  transaction: (work) => prisma.$transaction(async (tx) => {
+    // Serialize CMS mutations so menu publication cannot race page deletion.
+    await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext('site-cms-content'))::text`;
+    return work(tx);
+  }, { timeout: 15000 }),
 };

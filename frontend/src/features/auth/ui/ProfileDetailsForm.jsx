@@ -1,4 +1,4 @@
-import { ProfileAvatar } from "./ProfileAvatar.jsx";
+import { ProfileAvatarField } from "./ProfileAvatarField.jsx";
 import { roleLabels, statusLabels } from "../domain/profile-form.js";
 import { Button } from "../../../shared/ui/Button.jsx";
 export function ProfileDetailsForm({
@@ -59,7 +59,6 @@ export function ProfileDetailsForm({
         <label>
           Email
           <input disabled value={profile.email} />
-          <small>Email được quản lý bởi hệ thống.</small>
         </label>
         <label>
           Số điện thoại
@@ -79,38 +78,12 @@ export function ProfileDetailsForm({
             value={form.dateOfBirth}
           />
         </label>
-        <label className="profile-page__avatar-field">
-          Ảnh đại diện
-          <input
-            onChange={(event) => updateField("avatarUrl", event.target.value)}
-            placeholder="https://example.com/avatar.jpg"
-            type="url"
-            value={form.avatarUrl}
-          />
-          <input
-            accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
-            disabled={avatarUploading}
-            onChange={uploadAvatar}
-            type="file"
-          />
-          {form.avatarUrl && (
-            <ProfileAvatar
-              key={form.avatarUrl}
-              alt="Xem trước ảnh đại diện"
-              fallback={
-                <span className="profile-page__avatar-error" role="status">
-                  Không tải được ảnh từ đường dẫn này.
-                </span>
-              }
-              src={form.avatarUrl}
-            />
-          )}
-          <small>
-            Nhập URL HTTPS hoặc chọn ảnh từ máy (JPG, PNG, WebP, GIF, AVIF; tối
-            đa 10 MB){avatarUploading ? " · Đang tải..." : ""}. Bấm Lưu thay đổi
-            để cập nhật hồ sơ.
-          </small>
-        </label>
+        <ProfileAvatarField
+          value={form.avatarUrl}
+          uploading={avatarUploading}
+          onChange={(value) => updateField("avatarUrl", value)}
+          onUpload={uploadAvatar}
+        />
         {isMember && (
           <label>
             Giới tính
