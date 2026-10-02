@@ -6,11 +6,28 @@ import { mutationSucceededEvent } from "../../shared/api/client.js";
 
 const showToast = vi.hoisted(() => vi.fn());
 
-vi.mock("../layouts/AppShell.jsx", () => ({ AppShell: ({ navigation }) => <nav>{navigation.flatMap((item) => [item, ...(item.children ?? [])]).map((item) => <span key={item.id}>{item.label}</span>)}</nav> }));
+vi.mock("../layouts/AppShell.jsx", () => ({ AppShell: ({ navigation, currentView }) => <nav data-view={currentView}>{navigation.flatMap((item) => [item, ...(item.children ?? [])]).map((item) => <span key={item.id}>{item.label}</span>)}</nav> }));
 vi.mock("../../features/dashboard/index.js", () => ({ dashboardApi: { notifications: vi.fn().mockResolvedValue([]) } }));
 vi.mock("../../shared/ui/useToast.js", () => ({ useToast: () => showToast }));
 
 describe("role navigation", () => {
+  it.each([
+    ["admin", [], "/facilities/settings"],
+    ["manager", ["facility.manage"], "/facilities/settings"],
+    ["member", ["facility.booking.self.read"], "/facilities/reservations"],
+  ])("restores an authorized facility tab for %s after refresh", (role, permissions, path) => {
+    window.history.replaceState({}, "", path);
+    render(<DashboardPlaceholder session={{ user: { role }, permissions }} />);
+    expect(window.location.pathname).toBe(path);
+    expect(screen.getByRole("navigation")).toHaveAttribute("data-view", "facility-calendar");
+    window.history.replaceState({}, "", "/dashboard");
+  });
+
+  it("rejects the configuration deep link for a member", () => {
+    window.history.replaceState({}, "", "/facilities/settings");
+    render(<DashboardPlaceholder session={{ user: { role: "member" }, permissions: ["facility.booking.self.read"] }} />);
+    expect(window.location.pathname).toBe("/dashboard");
+  });
   afterEach(() => { cleanup(); vi.useRealTimers(); vi.clearAllMocks(); dashboardApi.notifications.mockResolvedValue([]); });
 
   it("prioritizes admin governance ahead of daily operations", () => {

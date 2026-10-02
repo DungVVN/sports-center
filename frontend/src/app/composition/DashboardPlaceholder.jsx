@@ -106,7 +106,13 @@ export function DashboardPlaceholder({ initialView = "dashboard", session, onLog
     if (session.user.role === "member") items.push(...memberSelfItems.filter((item) => item.permissions ? item.permissions.some((code) => granted.has(code)) : granted.has(item.permission)));
     return items;
   }, [granted, session.user.role]);
-  const allowedViews = useMemo(() => new Set(navigation.flatMap((item) => [item.id, ...(item.children ?? []).map((child) => child.id)])), [navigation]);
+  const allowedViews = useMemo(() => {
+    const views = new Set(navigation.flatMap((item) => [item.id, ...(item.children ?? []).map((child) => child.id)]));
+    const admin = session.user.role === "admin";
+    if (admin || granted.has("facility.booking.self.read") || (session.user.role !== "member" && granted.has("facility.booking.read"))) views.add("facility-reservations");
+    if (admin || (session.user.role !== "member" && ["facility.manage", "facility.day.manage"].some((code) => granted.has(code)))) views.add("facility-settings");
+    return views;
+  }, [navigation, granted, session.user.role]);
   const navigate = useCallback((next) => {
     if (!allowedViews.has(next)) return;
     setView(next);
@@ -184,7 +190,7 @@ export function DashboardPlaceholder({ initialView = "dashboard", session, onLog
   );
   return (
     <AppShell
-      currentView={view}
+      currentView={["facility-reservations", "facility-settings"].includes(view) ? "facility-calendar" : view}
       navigation={navigation}
       notifications={notifications}
       onLogout={logout}

@@ -1,14 +1,13 @@
 .audit-log-table {
-  min-width: 79rem;
+  min-width: 68rem;
 }
 
-.audit-log-table th:nth-child(1),
-.audit-log-table th:nth-child(2) { min-width: 9rem; }
-.audit-log-table th:nth-child(3) { min-width: 10rem; }
-.audit-log-table th:nth-child(4) { min-width: 10.5rem; }
-.audit-log-table th:nth-child(5) { min-width: 14rem; }
-.audit-log-table th:nth-child(6) { min-width: 13rem; }
-.audit-log-table th:nth-child(7) { min-width: 10rem; }
+.audit-log-table th:nth-child(1) { min-width: 9rem; }
+.audit-log-table th:nth-child(2) { min-width: 10rem; }
+.audit-log-table th:nth-child(3) { min-width: 10.5rem; }
+.audit-log-table th:nth-child(4) { min-width: 14rem; }
+.audit-log-table th:nth-child(5) { min-width: 13rem; }
+.audit-log-table th:nth-child(6) { min-width: 10rem; }
 
 .audit-log-table__time {
   font-variant-numeric: tabular-nums;
@@ -50,5 +49,5 @@
 }
 
 @media (max-width: 767px) {
-  .audit-log-table { min-width: 75rem; }
+  .audit-log-table { min-width: 66rem; }
 }

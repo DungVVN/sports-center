@@ -16,6 +16,8 @@ const routes = {
   classes: "/classes",
   bookings: "/bookings",
   "facility-calendar": "/facilities",
+  "facility-reservations": "/facilities/reservations",
+  "facility-settings": "/facilities/settings",
   attendance: "/attendance",
   payments: "/payments",
   staff: "/staff",

@@ -86,7 +86,7 @@ export function AuditLogsPage() {
           </Button>
         </div>
         {auditQuery.isLoading ? (
-          <TableSkeleton columns={4} />
+          <TableSkeleton columns={6} />
         ) : items.length === 0 ? (
           <p>Chưa có nhật ký phù hợp.</p>
         ) : (
@@ -97,8 +97,7 @@ export function AuditLogsPage() {
               <thead>
                 <tr>
                   <th>Mã nhật ký</th>
-                  <th>Mã người thao tác</th>
-                  <th>Người thao tác</th>
+                  <th>Tên người thao tác</th>
                   <SortableHeader activeSort={auditSort.key} column="occurred_at" direction={auditSort.direction} onSort={toggleAuditSort}>Thời điểm</SortableHeader>
                   <th>Nội dung hoạt động</th>
                   <th>Đối tượng tác động</th>
@@ -109,8 +108,7 @@ export function AuditLogsPage() {
                 {visibleItems.map((item) => (
                   <tr key={item.id}>
                     <td className="audit-log-table__identifier"><code>{item.id}</code></td>
-                    <td className="audit-log-table__identifier"><code>{item.actor?.id ?? "—"}</code></td>
-                    <td>{item.actor?.name ?? "Hệ thống"}</td>
+                    <td title={item.actor?.id ?? undefined}>{item.actor?.name ?? "Hệ thống"}</td>
                     <td className="audit-log-table__time">
                       {item.occurred_at
                         ? new Date(item.occurred_at).toLocaleString("vi-VN")
@@ -123,17 +121,15 @@ export function AuditLogsPage() {
                       >
                         {actionLabels[item.action] ?? item.summary}
                       </div>
-                      {actionLabels[item.action] && actionLabels[item.action] !== item.summary && <small>{item.summary}</small>}
                     </td>
                     <td>
-                      <div className="audit-log-table__entity">
+                      <div className="audit-log-table__entity" title={item.entity_id ?? undefined}>
                         <span>
                           {item.entity?.label ?? "Đối tượng hệ thống"}
                         </span>
-                        {item.entity?.value && (
+                        {item.entity?.value && item.entity.value !== item.entity_id && (
                           <strong>{item.entity.value}</strong>
                         )}
-                        {item.entity_id && item.entity?.value !== item.entity_id && <code>{item.entity_id}</code>}
                       </div>
                     </td>
                     <td>{item.reason ?? "—"}</td>

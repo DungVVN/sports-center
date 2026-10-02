@@ -37,4 +37,32 @@ describe("record audit filtering", () => {
     await auditRepository.list({ page: 1, pageSize: 20 });
     expect(prisma.audit_logs.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: {} }));
   });
+  it("resolves security, profile and role events without technical display values", async () => {
+    prisma.audit_logs.findMany.mockResolvedValue([
+      { entity_type: "auth_mfa_enrollment", entity_id: id, actor_user_id: "actor" },
+      { entity_type: "auth_session", entity_id: id, actor_user_id: "actor" },
+      { entity_type: "staff_profile", entity_id: id },
+      { entity_type: "role", new_value: { role: "coach" } },
+      { entity_type: "role", previous_value: { role: "member" } },
+      { entity_type: "unknown_internal_type", entity_id: id },
+    ]);
+    prisma.users.findMany.mockResolvedValueOnce([{ id: "actor", display_name: "Quản trị hệ thống" }]).mockResolvedValueOnce([{ id, display_name: "Nguyễn An" }]);
+    const { items } = await auditRepository.list({ page: 1, pageSize: 20 });
+    expect(items.map((item) => item.entity)).toEqual([
+      { label: "Đăng ký Authenticator", value: "Quản trị hệ thống" },
+      { label: "Phiên đăng nhập", value: "Quản trị hệ thống" },
+      { label: "Hồ sơ nhân sự", value: "Nguyễn An" },
+      { label: "Vai trò", value: "Huấn luyện viên" },
+      { label: "Vai trò", value: "Hội viên" },
+      { label: "Đối tượng hệ thống", value: null },
+    ]);
+    expect(items[0].entity_id).toBe(id);
+    expect(prisma.users.findMany).toHaveBeenNthCalledWith(2, expect.objectContaining({ where: { id: { in: [id] } } }));
+  });
+  it("keeps labels and original IDs when the target record is no longer available", async () => {
+    prisma.audit_logs.findMany.mockResolvedValue([{ entity_type: "staff_profile", entity_id: id }, { entity_type: "auth_mfa_login_challenge", entity_id: id }]);
+    const { items } = await auditRepository.list({ page: 1, pageSize: 20 });
+    expect(items[0]).toMatchObject({ entity_id: id, entity: { label: "Hồ sơ nhân sự", value: null } });
+    expect(items[1].entity).toEqual({ label: "Xác minh Authenticator", value: null });
+  });
 });

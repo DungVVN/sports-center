@@ -2,7 +2,21 @@ import { prisma } from "../../../database.js";
 const entityLabels = Object.freeze({
   facility_type: "Loại sân", facility: "Sân/phòng", facility_day: "Ngày mở sân", facility_reservation: "Đơn đặt sân", class_change_request: "Yêu cầu thay đổi lớp", course: "Khóa học", course_enrollment: "Đăng ký khóa", pt_purchase: "Gói PT đã mua", pt_package: "Gói PT", support_ticket: "Yêu cầu hỗ trợ", site_page: "Trang nội dung", site_menu: "Menu website",
   attendance: "Lượt điểm danh", auth_attempt: "Lần đăng nhập", auth_session: "Phiên đăng nhập", booking: "Đặt chỗ", class_session: "Lớp học", member: "Hội viên", membership: "Gói tập của hội viên", membership_package: "Gói tập", payment: "Phiếu thu", staff: "Nhân sự", training_session: "Buổi tập", training_result: "Kết quả tập luyện", training_plan: "Giáo án", training_template: "Mẫu giáo án", user: "Tài khoản",
+  auth_mfa_enrollment: "Đăng ký Authenticator", auth_mfa_login_challenge: "Xác minh Authenticator", auth_totp_factor: "Authenticator của tài khoản", staff_profile: "Hồ sơ nhân sự", role: "Vai trò", ai_suggestion_delivery: "Đề xuất tập luyện",
 });
+const roleLabels = Object.freeze({ admin: "Quản trị hệ thống", manager: "Quản lý", receptionist: "Lễ tân", coach: "Huấn luyện viên", member: "Hội viên" });
+
+function fallbackEntity(item, actorNames) {
+  const label = entityLabels[item.entity_type] ?? "Đối tượng hệ thống";
+  if (item.entity_type === "role") {
+    const role = item.new_value?.role ?? item.previous_value?.role;
+    return { label, value: roleLabels[role] ?? null };
+  }
+  if (["auth_session", "auth_mfa_enrollment", "auth_mfa_login_challenge", "auth_totp_factor"].includes(item.entity_type)) {
+    return { label, value: actorNames.get(item.actor_user_id) ?? null };
+  }
+  return { label, value: null };
+}
 
 function idsFor(logs, entityType) { return logs.filter((item) => item.entity_type === entityType && item.entity_id).map((item) => item.entity_id); }
 function actorIdsFor(logs) { return [...new Set(logs.map((item) => item.actor_user_id).filter(Boolean))]; }
@@ -22,7 +36,7 @@ export const auditRepository = {
     const [actors, classes, staff, bookings, members, memberships, payments, plans, templates] = await Promise.all([
       prisma.users.findMany({ where: { id: { in: actorIdsFor(logs) } }, select: { id: true, display_name: true } }),
       prisma.class_sessions.findMany({ where: { id: { in: idsFor(logs, "class_session") } }, select: { id: true, code: true, name: true } }),
-      prisma.users.findMany({ where: { id: { in: idsFor(logs, "staff") } }, select: { id: true, display_name: true } }),
+      prisma.users.findMany({ where: { id: { in: [...new Set(["staff", "staff_profile", "user"].flatMap((type) => idsFor(logs, type)))] } }, select: { id: true, display_name: true } }),
       prisma.bookings.findMany({ where: { id: { in: idsFor(logs, "booking") } }, select: { id: true, booking_code: true } }),
       prisma.members.findMany({ where: { id: { in: idsFor(logs, "member") } }, select: { id: true, full_name: true, member_code: true } }),
       prisma.member_memberships.findMany({ where: { id: { in: idsFor(logs, "membership") } }, select: { id: true, package_name_snapshot: true } }),
@@ -32,7 +46,7 @@ export const auditRepository = {
     ]);
     const details = new Map([
       ...classes.map((item) => [`class_session:${item.id}`, { label: "Lớp học", value: `${item.name} · ${item.code}` }]),
-      ...staff.map((item) => [`staff:${item.id}`, { label: "Nhân sự", value: item.display_name }]),
+      ...staff.flatMap((item) => ["staff", "staff_profile", "user"].map((type) => [`${type}:${item.id}`, { label: entityLabels[type], value: item.display_name }])),
       ...bookings.map((item) => [`booking:${item.id}`, { label: "Đặt chỗ", value: item.booking_code }]),
       ...members.map((item) => [`member:${item.id}`, { label: "Hội viên", value: `${item.full_name} · ${item.member_code}` }]),
       ...memberships.map((item) => [`membership:${item.id}`, { label: "Gói tập của hội viên", value: item.package_name_snapshot }]),
@@ -44,7 +58,7 @@ export const auditRepository = {
     const items = logs.map((item) => ({
       ...item,
       actor: item.actor_user_id ? { id: item.actor_user_id, name: actorNames.get(item.actor_user_id) ?? "Không xác định" } : { id: null, name: "Hệ thống" },
-      entity: details.get(`${item.entity_type}:${item.entity_id}`) ?? { label: entityLabels[item.entity_type] ?? item.entity_type?.replaceAll("_", " ") ?? "Sự kiện hệ thống", value: item.entity_id ?? (item.entity_type === "auth_session" ? "Phiên làm việc" : null) },
+      entity: details.get(`${item.entity_type}:${item.entity_id}`) ?? fallbackEntity(item, actorNames),
     }));
 
     return {

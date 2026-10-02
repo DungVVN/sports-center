@@ -7,6 +7,30 @@
   scroll-margin-top: 88px;
 }
 
+.facility-calendar__tabs,
+.facility-calendar__date-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-12);
+}
+
+.facility-calendar__tabs { margin-bottom: var(--space-24); }
+.facility-calendar__tabs a {
+  padding: var(--space-12) var(--space-16);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+}
+.facility-calendar__tabs a[aria-current="page"] {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+.facility-calendar__date-navigation { margin-top: var(--space-16); }
+
 
 
 
