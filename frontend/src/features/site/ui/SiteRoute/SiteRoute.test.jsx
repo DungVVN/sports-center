@@ -1,12 +1,12 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ManagedPublicPage } from "./SiteRoute.jsx";
+import { HomeRoute, ManagedPublicPage } from "./SiteRoute.jsx";
 import { publicSiteApi } from "../../api/site-public-api.js";
 import { publicMembershipPackages } from "../../../memberships/index.js";
 import { ApiError } from "../../../../shared/api/api-error.js";
 
-vi.mock("../../api/site-public-api.js", () => ({ siteCmsPublicEnabled: false, publicSiteApi: { pageByPath: vi.fn(), menu: vi.fn() } }));
+vi.mock("../../api/site-public-api.js", () => ({ siteCmsPublicEnabled: false, publicSiteApi: { home: vi.fn(), pageByPath: vi.fn(), menu: vi.fn() } }));
 vi.mock("../../../memberships/index.js", () => ({ publicMembershipPackages: vi.fn() }));
 vi.mock("../../../facilities/index.js", () => ({ FacilityCalendarPage: ({ embedded }) => <section aria-label="Lịch sân nghiệp vụ">{embedded ? <h2>Giờ trống & lịch đã đặt</h2> : <h1>Giờ trống & lịch đã đặt</h1>}</section> }));
 
@@ -29,6 +29,15 @@ describe("separate CMS public pages", () => {
     const result = renderPage("/calendar");
     expect(await screen.findByRole("heading", { name: "Giờ trống & lịch đã đặt", level: 2 })).toBeInTheDocument();
     expect(result.container.querySelectorAll("h1")).toHaveLength(1);
+  });
+
+  it("keeps detailed package pricing on its own page instead of appending it to the CMS home", async () => {
+    publicSiteApi.home.mockResolvedValue({ ...page, blocks: [{ id: "home-hero", type: "hero", active: true, title: "Chào mừng đến Kinetic" }] });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<QueryClientProvider client={client}><HomeRoute /></QueryClientProvider>);
+    expect(await screen.findByRole("heading", { name: "Chào mừng đến Kinetic" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Gói Hội Viên Linh Hoạt" })).not.toBeInTheDocument();
+    expect(publicMembershipPackages).not.toHaveBeenCalled();
   });
 
   it("keeps pricing connected to package data and restores SEO on unmount", async () => {

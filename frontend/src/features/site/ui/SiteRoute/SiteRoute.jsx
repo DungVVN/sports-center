@@ -46,7 +46,7 @@ function LegacyHomeContent(props) {
 export function HomeRoute({ onLoginClick, onRegisterClick, onGalleryClick, onCalendarClick, onHomeClick }) {
   const query = useQuery({ queryKey: ["public-site-page", "home"], queryFn: publicSiteApi.home, initialData: () => serverPageData("/")?.page, retry: false, staleTime: 300_000 });
   if (!query.data) return <LegacyHomeContent onLoginClick={onLoginClick} onRegisterClick={onRegisterClick} onGalleryClick={onGalleryClick} onCalendarClick={onCalendarClick} />;
-  return <PublicPageLayout onHomeClick={onHomeClick} onLoginClick={onLoginClick} showBack={false}><PublishedContent page={query.data} /><PublicPricingSection onRegisterClick={onRegisterClick} /></PublicPageLayout>;
+  return <PublicPageLayout onHomeClick={onHomeClick} onLoginClick={onLoginClick} showBack={false}><PublishedContent page={query.data} /></PublicPageLayout>;
 }
 
 export function ManagedPublicPage({ onHomeClick, onLoginClick, onRegisterClick, path, fallback }) {
