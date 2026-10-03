@@ -13,6 +13,16 @@ function dependencies({ membership = { id: membershipId, member_id: memberId, st
 }
 
 describe("Payment service", () => {
+  it("loads targets only after resolving the member ownership", async () => {
+    const { repository, auditService } = dependencies();
+    repository.targets = vi.fn().mockResolvedValue([{ id: "pt-1", targetField: "ptPurchaseId", name: "PT", amountVnd: "250000" }]);
+    await expect(createPaymentService({ repository, auditService }).targets(memberId)).resolves.toHaveLength(1);
+    expect(repository.targets).toHaveBeenCalledWith({ id: memberId });
+    repository.member.mockResolvedValue(null);
+    repository.targets.mockClear();
+    await expect(createPaymentService({ repository, auditService }).targets("missing")).rejects.toMatchObject({ statusCode: 404, code: "MEMBER_NOT_FOUND" });
+    expect(repository.targets).not.toHaveBeenCalled();
+  });
   it("includes the paying member and linked membership in the receipt list", async () => {
     const { repository, auditService } = dependencies();
     repository.listWithDetails = vi.fn().mockResolvedValue([{

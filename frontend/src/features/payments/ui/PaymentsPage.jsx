@@ -12,7 +12,7 @@ import { usePaymentsWorkspace } from "../api/usePaymentsWorkspace.js";
 import { TableSkeleton } from "../../../shared/ui/TableSkeleton.jsx";
 import "./payments-page.css";
 
-const emptyForm = { memberId: "", membershipId: "", amountVnd: "", method: "cash", provider: "payos", notes: "" };
+const emptyForm = { memberId: "", target: "", amountVnd: "", method: "cash", provider: "payos", notes: "" };
 const paymentStatus = {
   pending: "Chờ xác nhận",
   paid: "Đã thanh toán",
@@ -21,14 +21,18 @@ const paymentStatus = {
 };
 const methodLabel = { cash: "Tiền mặt", bank_transfer: "Chuyển khoản", online: "Trực tuyến" };
 
-function validatePaymentForm(form, memberships) {
+const targetKey = (item) => `${item.targetField}:${item.id}`;
+const targetLabels = { membershipId: "Gói tập", courseEnrollmentId: "Khóa học", ptPurchaseId: "PT", facilityReservationId: "Thuê sân/phòng" };
+
+function validatePaymentForm(form, targets) {
   const errors = {};
   if (!form.memberId) errors.memberId = "Vui lòng chọn hội viên.";
   const amount = Number(form.amountVnd);
   if (!String(form.amountVnd).trim()) errors.amountVnd = "Vui lòng nhập số tiền.";
   else if (!/^\d+$/.test(String(form.amountVnd)) || !Number.isSafeInteger(amount) || amount <= 0) errors.amountVnd = "Số tiền phải là số nguyên dương.";
-  const membership = memberships.find((item) => item.id === form.membershipId);
-  if (membership && amount !== Number(membership.priceVnd)) errors.amountVnd = `Số tiền phải khớp giá gói: ${Number(membership.priceVnd).toLocaleString("vi-VN")} ₫.`;
+  const target = targets.find((item) => targetKey(item) === form.target);
+  if (form.target && !target) errors.target = "Dịch vụ không còn chờ thanh toán. Vui lòng tải lại và chọn lại.";
+  if (target && amount !== Number(target.amountVnd)) errors.amountVnd = `Số tiền phải khớp giá dịch vụ: ${Number(target.amountVnd).toLocaleString("vi-VN")} ₫.`;
   return errors;
 }
 
@@ -48,8 +52,8 @@ export function PaymentsPage({ session }) {
   const [paymentSort, setPaymentSort] = useState({ key: "amountVnd", direction: "desc" });
   const isCashier = hasSessionPermission(session, "payment.record");
   const workspace = usePaymentsWorkspace({ isCashier, memberId: selectedMemberId || undefined });
-  const { members, memberships, payments: items } = workspace;
-  const formErrors = validatePaymentForm(form, memberships);
+  const { members, targets, payments: items } = workspace;
+  const formErrors = validatePaymentForm(form, targets);
   const submitting = workspace.createPayment.isPending || workspace.confirmPayment.isPending;
   const paymentPackages = useMemo(
     () =>
@@ -60,7 +64,7 @@ export function PaymentsPage({ session }) {
   const visiblePayments = useMemo(() => {
     const query = paymentSearch.trim().toLocaleLowerCase("vi");
     const filtered = items.filter((item) => {
-      const searchable = [item.transaction_code, item.member?.fullName, item.member?.memberCode, item.membership?.packageName]
+      const searchable = [item.transaction_code, item.member?.fullName, item.member?.memberCode, item.membership?.packageName, item.service?.name]
         .filter(Boolean)
         .some((value) => value.toLocaleLowerCase("vi").includes(query));
       const matchesStatus = !paymentStatusFilters.length || paymentStatusFilters.includes(item.status);
@@ -87,19 +91,19 @@ export function PaymentsPage({ session }) {
     setForm((value) => ({
       ...value,
       memberId,
-      membershipId: "",
+      target: "",
       amountVnd: "",
     }));
     setSelectedMemberId(memberId);
   }
 
-  function selectMembership(membershipId) {
+  function selectTarget(selectedKey) {
     setFormTouched((value) => ({ ...value, amountVnd: true }));
-    const membership = memberships.find((item) => item.id === membershipId);
+    const target = targets.find((item) => targetKey(item) === selectedKey);
     setForm((value) => ({
       ...value,
-      membershipId,
-      amountVnd: membership ? String(membership.priceVnd) : value.amountVnd,
+      target: selectedKey,
+      amountVnd: target ? String(target.amountVnd) : "",
     }));
   }
   function updateForm(event) {
@@ -108,12 +112,14 @@ export function PaymentsPage({ session }) {
   }
 
   async function create(event) {
-    event.preventDefault(); if (submitting) return;
+    event.preventDefault(); if (submitting || workspace.targetsUnavailable) return;
     setFormTouched({ memberId: true, amountVnd: true });
     if (Object.keys(formErrors).length) { workspace.setError(Object.values(formErrors).join(" ")); return; }
     setCheckoutUrl("");
     setQrCode("");
-    workspace.createPayment.mutate({ ...form, provider: form.method === "online" ? form.provider : undefined, membershipId: form.membershipId || undefined, amountVnd: Number(form.amountVnd) }, { onSuccess: (payment) => { setCheckoutUrl(payment.checkoutUrl ?? ""); setQrCode(payment.qrCode ?? ""); setForm(emptyForm); setFormTouched({}); setSelectedMemberId(""); } });
+    const selectedTarget = targets.find((item) => targetKey(item) === form.target);
+    const input = { memberId: form.memberId, method: form.method, notes: form.notes };
+    workspace.createPayment.mutate({ ...input, provider: form.method === "online" ? form.provider : undefined, ...(selectedTarget && { [selectedTarget.targetField]: selectedTarget.id }), amountVnd: Number(form.amountVnd) }, { onSuccess: (payment) => { setCheckoutUrl(payment.checkoutUrl ?? ""); setQrCode(payment.qrCode ?? ""); setForm(emptyForm); setFormTouched({}); setSelectedMemberId(""); } });
   }
 
   async function confirm(id, status, method) {
@@ -122,7 +128,7 @@ export function PaymentsPage({ session }) {
 
   return (
     <main className="members-page">
-      <PageHeader eyebrow={isCashier ? "Thu tiền mặt" : "Thanh toán"} title={isCashier ? "Phiếu thu và kích hoạt gói" : "Theo dõi phiếu thu"} />
+      <PageHeader eyebrow={isCashier ? "Thu tiền mặt" : "Thanh toán"} title={isCashier ? "Phiếu thu và kích hoạt dịch vụ" : "Theo dõi phiếu thu"} />
       {workspace.error && (
         <p className="auth-alert" role="alert">
           {workspace.error}
@@ -169,24 +175,23 @@ export function PaymentsPage({ session }) {
             {formTouched.memberId && formErrors.memberId && <span className="field-error">{formErrors.memberId}</span>}
           </label>
           <label>
-            Gói chờ thanh toán
+            Dịch vụ chờ thanh toán
             <select
-              disabled={!form.memberId}
-              onChange={(event) => selectMembership(event.target.value)}
-              value={form.membershipId}
+              aria-label="Dịch vụ chờ thanh toán"
+              disabled={!form.memberId || workspace.targetsUnavailable}
+              onChange={(event) => selectTarget(event.target.value)}
+              value={form.target}
             >
-              <option value="">
-                {form.memberId
-                  ? "Không gắn gói tập"
-                  : "Chọn hội viên để xem gói chờ thanh toán"}
-              </option>
-              {memberships.map((membership) => (
-                <option key={membership.id} value={membership.id}>
-                  {membership.package_name_snapshot} —{" "}
-                  {Number(membership.priceVnd).toLocaleString("vi-VN")} ₫
-                </option>
+              <option value="">{!form.memberId ? "Chọn hội viên để xem dịch vụ" : workspace.targetsUnavailable ? "Đang tải hoặc cần tải lại dịch vụ" : "Khoản thu khác (không gắn dịch vụ)"}</option>
+              {Object.entries(targetLabels).map(([field, label]) => (
+                <optgroup key={field} label={label}>
+                  {targets.filter((item) => item.targetField === field).map((item) => (
+                    <option key={item.id} value={targetKey(item)}>{item.name} — {Number(item.amountVnd).toLocaleString("vi-VN")} ₫</option>
+                  ))}
+                </optgroup>
               ))}
             </select>
+            {formErrors.target && <span className="field-error">{formErrors.target}</span>}
           </label>
           <label>
             Số tiền (VNĐ)
@@ -207,7 +212,7 @@ export function PaymentsPage({ session }) {
             Ghi chú
             <input type="text" name="notes" onChange={updateForm} value={form.notes} />
           </label>
-          <Button loading={submitting} type="submit">
+          <Button disabled={workspace.targetsUnavailable} loading={submitting} type="submit">
             Lập phiếu thu
           </Button>
         </form>}

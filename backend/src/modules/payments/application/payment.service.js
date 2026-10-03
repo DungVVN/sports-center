@@ -27,6 +27,11 @@ export function createPaymentService({ repository, auditService, payosGateway })
     return output(await repository.reconcile(id, note, actor));
   },
   async list(filters) { return (await repository.listWithDetails(filters)).map(output); },
+  async targets(memberId) {
+    const member = await repository.member(memberId);
+    if (!member) throw new AppError({ statusCode: 404, code: "MEMBER_NOT_FOUND", message: "Không tìm thấy hội viên." });
+    return repository.targets(member);
+  },
   async ownPayments(actor) { const member = await repository.memberByUser(actor.id); if (!member) throw new AppError({ statusCode: 404, code: "MEMBER_PROFILE_NOT_FOUND", message: "Tài khoản chưa có hồ sơ hội viên." }); return this.list({ member_id: member.id }); },
   async get(id) { const [payment] = await repository.listWithDetails({ id }); if (!payment) throw new AppError({ statusCode: 404, code: "PAYMENT_NOT_FOUND", message: "Không tìm thấy thanh toán." }); return { ...output(payment), events: await repository.paymentEvents(id) }; },
   async ownReceipt(id, actor) { const member = await repository.memberByUser(actor.id); if (!member) throw new AppError({ statusCode: 404, code: "MEMBER_PROFILE_NOT_FOUND", message: "Tài khoản chưa có hồ sơ hội viên." }); const [payment] = await repository.listWithDetails({ id, member_id: member.id }); if (!payment) throw new AppError({ statusCode: 404, code: "PAYMENT_NOT_FOUND", message: "Không tìm thấy phiếu thu của bạn." }); return { ...output(payment), events: await repository.paymentEvents(id) }; },

@@ -3,7 +3,9 @@ import { activateFacilityReservation } from "../../facilities/index.js";
 import { activateCourseEnrollment } from "../../courses/index.js";
 import { prisma } from "../../../database.js";
 import { serviceRefundRepository } from "./service-refund.repository.js";
+import { listPaymentTargets } from "./payment-target.repository.js";
 export const paymentRepository = {
+  targets: listPaymentTargets,
   ...serviceRefundRepository,
   list: (filters) => prisma.payments.findMany({ where: filters, orderBy: { created_at: "desc" } }), memberByUser: (userId) => prisma.members.findUnique({ where: { user_id: userId }, select: { id: true } }), payment: (id) => prisma.payments.findUnique({ where: { id } }), paymentEvents: (paymentId) => prisma.payment_events.findMany({ where: { payment_id: paymentId }, orderBy: { occurred_at: "asc" } }), membership: (id) => prisma.member_memberships.findUnique({ where: { id } }), member: (id) => prisma.members.findUnique({ where: { id } }),
   async listWithDetails(filters) {

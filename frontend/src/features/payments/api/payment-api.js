@@ -1,6 +1,7 @@
 import { apiClient } from "../../../shared/api/client.js";
 const optionalId = (value) => typeof value === "string" && value.trim() ? encodeURIComponent(value.trim()) : "";
 const reconciliationApi = {
+  targets: (memberId) => apiClient.get(`/payments/targets?memberId=${encodeURIComponent(memberId)}`),
   refunds: () => apiClient.get("/service-refunds"),
   requestRefund: (id, input) => apiClient.post(`/payments/${id}/refund-request`, input),
   reviewRefund: (id, input) => apiClient.post(`/service-refunds/${id}/review`, input),

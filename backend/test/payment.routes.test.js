@@ -6,9 +6,24 @@ const memberId = "11111111-1111-4111-8111-111111111111";
 const membershipId = "22222222-2222-4222-8222-222222222222";
 const paymentId = "33333333-3333-4333-8333-333333333333";
 function authService(permissions, role = "receptionist") { return { getAuthentication: vi.fn().mockResolvedValue({ user: { id: "receptionist-1", role }, permissions }) }; }
-function paymentService() { return { ownPayments: vi.fn().mockResolvedValue([]), ownReceipt: vi.fn().mockResolvedValue({ id: paymentId, events: [] }), list: vi.fn().mockResolvedValue([]), create: vi.fn().mockResolvedValue({ id: paymentId, status: "pending" }), get: vi.fn(), confirm: vi.fn().mockResolvedValue({ id: paymentId, status: "paid" }), providerCallback: vi.fn(), payosCallback: vi.fn().mockResolvedValue({ id: paymentId, status: "paid" }) }; }
+function paymentService() { return { targets: vi.fn().mockResolvedValue([]), ownPayments: vi.fn().mockResolvedValue([]), ownReceipt: vi.fn().mockResolvedValue({ id: paymentId, events: [] }), list: vi.fn().mockResolvedValue([]), create: vi.fn().mockResolvedValue({ id: paymentId, status: "pending" }), get: vi.fn(), confirm: vi.fn().mockResolvedValue({ id: paymentId, status: "paid" }), providerCallback: vi.fn(), payosCallback: vi.fn().mockResolvedValue({ id: paymentId, status: "paid" }) }; }
 
 describe("Payment routes", () => {
+  it("lets a cashier load service targets using payment.record alone", async () => {
+    const service = paymentService();
+    await request(createApp({ authService: authService(["payment.record"]), paymentService: service })).get(`/api/v1/payments/targets?memberId=${memberId}`).set("Authorization", "Bearer token").expect(200);
+    expect(service.targets).toHaveBeenCalledWith(memberId);
+  });
+  it("denies targets to receipt readers without collection permission", async () => {
+    const service = paymentService();
+    await request(createApp({ authService: authService(["payment.read"]), paymentService: service })).get(`/api/v1/payments/targets?memberId=${memberId}`).set("Authorization", "Bearer token").expect(403);
+    expect(service.targets).not.toHaveBeenCalled();
+  });
+  it.each(["", "?memberId=invalid"])("validates the target member query %s", async (query) => {
+    const service = paymentService();
+    await request(createApp({ authService: authService(["payment.record"]), paymentService: service })).get(`/api/v1/payments/targets${query}`).set("Authorization", "Bearer token").expect(422);
+    expect(service.targets).not.toHaveBeenCalled();
+  });
   it("lets a Member view their own payment statuses with payment.self.read", async () => {
     const service = paymentService();
     await request(createApp({ authService: authService(["payment.self.read"], "member"), paymentService: service })).get("/api/v1/members/me/payments").set("Authorization", "Bearer token").expect(200);
