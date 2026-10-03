@@ -27,7 +27,7 @@
 .facility-calendar__tabs a[aria-current="page"] {
   background: var(--color-primary);
   border-color: var(--color-primary);
-  color: white;
+  color: var(--color-text-inverse);
 }
 .facility-calendar__date-navigation { margin-top: var(--space-16); }
 
@@ -63,7 +63,7 @@
 .facility-calendar label {
   display: grid;
   gap: var(--space-8);
-  font-size: 12px;
+  font-size: var(--font-size-caption);
   font-weight: var(--font-weight-semibold);
 }
 
@@ -83,7 +83,7 @@
 .facility-calendar input:focus-visible,
 .facility-calendar select:focus-visible {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), .12);
   outline: none;
 }
 
@@ -98,7 +98,7 @@
   border: 1px solid var(--color-primary);
   border-radius: var(--radius-control);
   background: var(--color-primary);
-  color: white;
+  color: var(--color-text-inverse);
   cursor: pointer;
   font: inherit;
   font-weight: var(--font-weight-semibold);
@@ -131,14 +131,14 @@
   min-width: 760px;
   border-collapse: collapse;
   text-align: left;
-  font-size: 14px;
+  font-size: var(--font-size-body);
 }
 
 .facility-calendar__table caption {
   padding: 16px 20px;
   text-align: left;
-  font-size: 16px;
-  font-weight: 700;
+  font-size: var(--font-size-section);
+  font-weight: var(--font-weight-bold);
 }
 
 .facility-calendar__table th,
@@ -153,7 +153,7 @@
 }
 
 .facility-calendar__table thead th {
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   white-space: nowrap;
 }
 
@@ -199,20 +199,20 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
+  font-size: var(--font-size-body);
 }
 
 .facility-calendar__free,
 .facility-calendar__booked {
   padding: 6px 10px;
   border-radius: 8px;
-  font-weight: 600;
-  font-size: 13px;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-label);
 }
 
 .facility-calendar__free {
-  background: #CCFBF1;
-  color: #0F766E;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
 }
 
 .facility-calendar__booked {
@@ -225,7 +225,7 @@
 }
 
 .facility-calendar__panel h3 {
-  font-size: 18px;
+  font-size: var(--font-size-title);
   margin: 0 0 var(--space-8);
 }
 
@@ -275,8 +275,8 @@ form.facility-calendar__panel>button[type="submit"] {
 .facility-calendar__prompt {
   margin: 24px 0;
   padding: 16px 20px;
-  background: #EFF6FF;
-  border: 1px solid #BFDBFE;
+  background: var(--color-primary-soft);
+  border: 1px solid var(--color-primary-border);
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -284,7 +284,7 @@ form.facility-calendar__panel>button[type="submit"] {
   gap: 16px;
   flex-wrap: wrap;
   color: var(--color-text);
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
 }
 
 .facility-calendar__prompt button {

@@ -25,7 +25,7 @@
   justify-content: space-between;
 }
 .app-notification-panel__heading h2 {
-  font-size: 16px;
+  font-size: var(--font-size-section);
   margin: 0;
 }
 .app-notification-panel__heading button,
@@ -45,19 +45,19 @@
   background: var(--color-surface-muted);
 }
 .app-notification-panel article strong {
-  font-size: 14px;
+  font-size: var(--font-size-body);
 }
 
 .app-notification-panel__time {
   display: block;
   margin: var(--space-8) 0;
   color: var(--color-text-secondary);
-  font-size: 12px;
+  font-size: var(--font-size-caption);
   font-variant-numeric: tabular-nums;
 }
 .app-notification-panel article p {
   color: var(--color-text-secondary);
-  font-size: 13px;
+  font-size: var(--font-size-label);
   line-height: 1.45;
   margin: var(--space-4) 0 var(--space-8);
 }

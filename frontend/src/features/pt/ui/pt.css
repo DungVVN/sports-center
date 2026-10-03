@@ -62,7 +62,7 @@
 .pt-catalog__header > span { color: var(--color-text-secondary); font-size: .875rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .pt-catalog .pt-card h2 { margin: 0 0 var(--space-8); font-size: 1rem; }
 .pt-catalog .pt-card p { font-size: .875rem; line-height: 1.7; font-variant-numeric: tabular-nums; }
-.pt-package-status { display: inline-block; color: var(--color-text-secondary); font-size: .75rem; font-weight: 600; }
+.pt-package-status { display: inline-block; color: var(--color-text-secondary); font-size: .75rem; font-weight: var(--font-weight-semibold); }
 .pt-package-status--active { color: var(--color-success); }
 .pt-catalog__empty { margin: 0; padding: var(--space-32) var(--space-20); border: 1px dashed var(--color-border-strong); border-radius: var(--radius-card); color: var(--color-text-secondary); background: var(--color-surface-muted); }
 @media (min-width: 640px) {

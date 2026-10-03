@@ -16,8 +16,8 @@
 
 .audit-log-table__action {
   color: var(--color-text);
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
   line-height: 1.35;
 }
 
@@ -28,16 +28,16 @@
 
 .audit-log-table__entity span {
   color: var(--color-text-secondary);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: .04em;
-  text-transform: uppercase;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-regular);
+  letter-spacing: normal;
+  text-transform: none;
 }
 
 .audit-log-table__entity strong {
   color: var(--color-text);
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-semibold);
   line-height: 1.4;
 }
 

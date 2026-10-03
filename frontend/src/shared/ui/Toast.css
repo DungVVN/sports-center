@@ -41,7 +41,7 @@
 
 .toast__message {
   color: var(--color-text);
-  font-size: 14px;
+  font-size: var(--font-size-body);
   line-height: 1.5;
   margin: 0;
   flex: 1;

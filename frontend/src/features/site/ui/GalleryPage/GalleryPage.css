@@ -9,9 +9,9 @@
 }
 
 .public-gallery-header { margin-bottom: 32px; }
-.public-gallery-header h2 { font-size: 26px; line-height: 1.2; margin: 8px 0 12px; color: var(--color-text); }
+.public-gallery-header h2 { font-size: var(--font-size-page); line-height: 1.2; margin: 8px 0 12px; color: var(--color-text); }
 .public-gallery-header p:last-child { max-width: 720px; color: var(--color-text-secondary); }
-.public-gallery-eyebrow { color: var(--color-primary); font-size: 12px; font-weight: 700; letter-spacing: .12em; }
+.public-gallery-eyebrow { color: var(--color-primary); font-size: var(--font-size-caption); font-weight: var(--font-weight-bold); letter-spacing: .12em; }
 
 .gallery-grid {
   display: grid;
@@ -55,9 +55,9 @@
 }
 
 .gallery-overlay span {
-  color: white;
+  color: var(--color-text-inverse);
   font-size: 1.25rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   transform: translateY(20px);
   transition: transform 0.3s ease;
 }

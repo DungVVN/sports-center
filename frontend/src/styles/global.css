@@ -1,11 +1,11 @@
 *, *::before, *::after { box-sizing: border-box; }
 html { scroll-behavior: smooth; scroll-padding-bottom: 20vh; }
 html, body, #root { min-height: 100%; margin: 0; }
-body { background: var(--color-bg); color: var(--color-text); font-family: var(--font-sans); font-size: 14px; font-variant-numeric: tabular-nums; font-weight: var(--font-weight-regular); line-height: 1.5; -webkit-font-smoothing: antialiased; }
+body { background: var(--color-bg); color: var(--color-text); font-family: var(--font-sans); font-size: var(--font-size-body); font-variant-numeric: tabular-nums; font-weight: var(--font-weight-regular); line-height: 1.5; -webkit-font-smoothing: antialiased; }
 h1 { font-weight: var(--font-weight-bold); }
 h2, h3, h4 { font-weight: var(--font-weight-semibold); }
 strong, b { font-weight: var(--font-weight-semibold); }
-code { font-weight: var(--font-weight-medium); }
+code, pre, kbd, samp { font-family: var(--font-mono); font-weight: var(--font-weight-medium); }
 th { font-weight: var(--font-weight-semibold); }
 button, input, select, textarea { font: inherit; }
 button { font-weight: var(--font-weight-semibold); }
@@ -18,12 +18,12 @@ button { font-weight: var(--font-weight-semibold); }
 /* Form Validation UI */
 .input-error {
   border-color: var(--color-danger) !important;
-  background-color: rgba(220, 38, 38, 0.03) !important;
+  background-color: rgba(var(--color-danger-rgb), 0.03) !important;
 }
 .field-error {
   display: block;
   color: var(--color-danger);
-  font-size: 12px;
+  font-size: var(--font-size-caption);
   margin-top: 4px;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
 }

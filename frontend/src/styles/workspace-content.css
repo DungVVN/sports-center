@@ -127,8 +127,8 @@
 .attendance-class-picker {
   color: var(--color-text);
   display: grid;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
   gap: var(--space-8);
   margin: 0 0 var(--space-20);
   max-width: 26rem;
@@ -148,7 +148,7 @@
 
 .attendance-class-picker select:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), .12);
   outline: none;
 }
 
@@ -231,7 +231,7 @@
 }
 
 .membership-list-content h3 {
-  font-size: 14px;
+  font-size: var(--font-size-body);
   margin: 0 0 var(--space-12);
 }
 
@@ -286,13 +286,13 @@
 
 .support-empty-panel h3 {
   color: var(--color-text);
-  font-size: 16px;
+  font-size: var(--font-size-section);
   margin: 0 0 var(--space-4);
 }
 
 .support-empty-panel p {
   color: var(--color-text-secondary);
-  font-size: 13px;
+  font-size: var(--font-size-label);
   line-height: 1.5;
   margin: 0;
   max-width: 42ch;
@@ -332,8 +332,8 @@
 
 .membership-workspace .members-form label small {
   color: var(--color-text-secondary);
-  font-size: 11px;
-  font-weight: 400;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-regular);
   line-height: 1.45;
 }
 
@@ -410,18 +410,18 @@
 .selected-member-summary > div span,
 .selected-member-summary dt {
   color: var(--color-text-secondary);
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
 }
 
 .selected-member-summary strong {
   color: var(--color-text);
-  font-size: 14px;
+  font-size: var(--font-size-body);
 }
 
 .selected-member-summary p {
   color: var(--color-text-secondary);
-  font-size: 12px;
+  font-size: var(--font-size-caption);
   line-height: 1.5;
   margin: 0;
 }
@@ -455,7 +455,7 @@
   cursor: pointer;
   display: flex;
   font: inherit;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   height: var(--control-height);
   justify-content: space-between;
   padding: 0 var(--space-12);
@@ -466,7 +466,7 @@
 .class-session-select__trigger:focus-visible,
 .class-session-select__trigger[aria-expanded="true"] {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), .12);
   outline: none;
 }
 
@@ -488,7 +488,7 @@
 
 .class-session-select__menu p {
   color: var(--color-text-secondary);
-  font-size: 12px;
+  font-size: var(--font-size-caption);
   margin: 0;
   padding: var(--space-12);
 }
@@ -519,7 +519,7 @@
 }
 
 .class-session-select__option strong {
-  font-size: 13px;
+  font-size: var(--font-size-label);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -527,12 +527,12 @@
 
 .class-session-select__option small {
   color: var(--color-text-secondary);
-  font-size: 11px;
+  font-size: var(--font-size-caption);
 }
 
 .selected-member-summary dd {
   color: var(--color-text);
-  font-size: 12px;
+  font-size: var(--font-size-caption);
   margin-top: var(--space-4);
   overflow-wrap: anywhere;
 }
@@ -541,8 +541,8 @@
 .members-list .field-inline {
   color: var(--color-text);
   display: grid;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
   gap: var(--field-gap);
   margin-top: var(--space-16);
   max-width: 420px;
@@ -563,7 +563,7 @@
 
 .members-list .field-inline select:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), .12);
   outline: none;
 }
 
@@ -591,7 +591,7 @@
 
 .data-table-toolbar__search:focus-within {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), .12);
 }
 
 .data-table-toolbar__search input,
@@ -648,8 +648,8 @@
   cursor: pointer;
   display: inline-flex;
   font: inherit;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
   gap: var(--space-4);
   min-height: 30px;
   padding: 0 var(--space-8);
@@ -664,7 +664,7 @@
 
 .data-table-toolbar__count {
   color: var(--color-text-secondary);
-  font-size: 12px;
+  font-size: var(--font-size-caption);
   margin-left: auto;
 }
 
@@ -681,8 +681,8 @@
   cursor: pointer;
   display: inline-flex;
   font: inherit;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
   gap: var(--space-8);
   height: var(--control-height);
   padding: 0 var(--space-12);
@@ -713,8 +713,8 @@
 .filter-menu__panel label {
   color: var(--color-text-secondary);
   display: grid;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
   gap: var(--space-4);
 }
 
@@ -738,8 +738,8 @@
 
 .payment-filter-group legend {
   color: var(--color-text-secondary);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
   padding: 0;
   grid-column: 1 / -1;
 }
@@ -749,8 +749,8 @@
   color: var(--color-text);
   cursor: pointer;
   display: flex;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-medium);
   gap: var(--space-8);
 }
 
@@ -763,7 +763,7 @@
 
 .payment-filter-group p {
   color: var(--color-text-secondary);
-  font-size: 12px;
+  font-size: var(--font-size-caption);
   margin: 0;
 }
 
@@ -812,8 +812,8 @@
   align-items: center;
   border-radius: 999px;
   display: inline-flex;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
   line-height: 1;
   min-height: 28px;
   padding: 0 var(--space-12);
@@ -823,19 +823,19 @@
 .staff-role {
   background: transparent;
   color: var(--color-text-secondary);
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   min-height: auto;
   padding: 0;
 }
 
 .staff-status--active {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--color-success-soft);
+  color: var(--color-success-text);
 }
 
 .staff-status--suspended {
-  background: #fee2e2;
-  color: #b91c1c;
+  background: var(--color-danger-soft);
+  color: var(--color-danger-hover);
 }
 
 /* Package rights are business labels, kept compact so the catalogue stays scannable. */
@@ -857,8 +857,8 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-control);
   color: var(--color-text-secondary);
-  font-size: 12px;
-  font-weight: 500;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
   line-height: 1.2;
   padding: 6px var(--space-8);
   white-space: nowrap;

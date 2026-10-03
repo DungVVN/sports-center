@@ -37,7 +37,7 @@
   left: 50%;
   transform: translate(-50%, -50%);
   font-size: 25vw;
-  font-weight: 900;
+  font-weight: var(--font-weight-bold);
   color: rgba(0, 0, 0, 0.02);
   z-index: 0;
   pointer-events: none;
@@ -60,7 +60,7 @@
 }
 
 .landing-navbar.scrolled {
-  background-color: rgba(255, 255, 255, 0.95);
+  background-color: rgba(var(--color-surface-rgb), 0.95);
   backdrop-filter: blur(10px);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   padding: var(--space-12) 5%;
@@ -76,15 +76,15 @@
 }
 
 .logo-icon-wrapper {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-info));
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
   width: 40px;
   height: 40px;
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  color: var(--color-text-inverse);
+  box-shadow: 0 4px 12px rgba(var(--color-primary-rgb), 0.3);
 }
 
 .navbar-links {
@@ -165,19 +165,19 @@
   height: 8px;
   background-color: var(--color-accent);
   border-radius: 50%;
-  box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.2);
+  box-shadow: 0 0 0 4px rgba(var(--color-accent-rgb), 0.2);
 }
 
 .hero-title {
   font-size: clamp(3rem, 4vw, 4.5rem);
-  font-weight: 800;
+  font-weight: var(--font-weight-bold);
   line-height: 1.15;
   margin-bottom: var(--space-24);
   letter-spacing: -1px;
 }
 
 .text-gradient {
-  background: linear-gradient(to right, var(--color-primary), var(--color-info));
+  background: linear-gradient(to right, var(--color-primary), var(--color-primary-hover));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   display: inline-block;
@@ -235,7 +235,7 @@
   background-size: cover;
   background-position: center;
   border-radius: 30px;
-  box-shadow: 0 30px 60px rgba(16, 42, 67, 0.15);
+  box-shadow: 0 30px 60px rgba(var(--color-text-rgb), 0.15);
   position: relative;
   overflow: hidden;
 }
@@ -244,7 +244,7 @@
   content: '';
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: linear-gradient(to top right, rgba(37,99,235,0.2), transparent);
+  background: linear-gradient(to top right, rgba(var(--color-primary-rgb), 0.2), transparent);
 }
 
 .floating-card {
@@ -287,7 +287,7 @@
   justify-content: center;
 }
 
-.floating-card h4 { font-size: 1.1rem; font-weight: 700; color: var(--color-text); }
+.floating-card h4 { font-size: 1.1rem; font-weight: var(--font-weight-bold); color: var(--color-text); }
 .floating-card p { font-size: 0.85rem; color: var(--color-text-secondary); }
 
 /* Buttons */
@@ -326,14 +326,14 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-info));
-  color: white;
-  box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
+  color: var(--color-text-inverse);
+  box-shadow: 0 4px 15px rgba(var(--color-primary-rgb), 0.3);
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(37, 99, 235, 0.4);
+  box-shadow: 0 8px 25px rgba(var(--color-primary-rgb), 0.4);
 }
 
 .btn-secondary {
@@ -372,13 +372,13 @@
 }
 .stat-block h3 {
   font-size: 2.5rem;
-  font-weight: 800;
+  font-weight: var(--font-weight-bold);
   color: var(--color-primary);
   margin-bottom: 8px;
 }
 .stat-block p {
   color: var(--color-text-muted);
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   font-size: 0.95rem;
 }
 
@@ -407,7 +407,7 @@
   font-size: 2.8rem;
   color: var(--color-text);
   margin-bottom: var(--space-16);
-  font-weight: 800;
+  font-weight: var(--font-weight-bold);
   letter-spacing: -0.5px;
 }
 
@@ -464,14 +464,14 @@
   color: var(--color-primary);
   padding: 6px 14px;
   border-radius: 20px;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   font-size: 0.85rem;
   margin-bottom: 20px;
 }
 
 .zigzag-content h3 {
   font-size: 2.2rem;
-  font-weight: 800;
+  font-weight: var(--font-weight-bold);
   margin-bottom: 20px;
 }
 
@@ -531,7 +531,7 @@
 
 .price-card.featured {
   border: 2px solid var(--color-primary);
-  box-shadow: 0 10px 30px rgba(37, 99, 235, 0.12);
+  box-shadow: 0 10px 30px rgba(var(--color-primary-rgb), 0.12);
 }
 
 .pricing-state {
@@ -557,7 +557,7 @@
   display: block;
   color: var(--color-primary);
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   margin-bottom: 12px;
 }
 
@@ -569,7 +569,7 @@
 
 .price {
   font-size: clamp(1.7rem, 2.4vw, 2.2rem);
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   color: var(--color-text);
   font-variant-numeric: tabular-nums;
 }
@@ -577,7 +577,7 @@
 .price span {
   font-size: 0.85rem;
   color: var(--color-text-secondary);
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
 }
 
 .price-body {
@@ -587,7 +587,7 @@
 }
 
 .price-body p {
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   margin-bottom: 16px;
 }
 
@@ -624,7 +624,7 @@
 }
 
 .cta-banner-container {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-info));
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
   border-radius: 30px;
   padding: 60px;
   display: flex;
@@ -632,13 +632,13 @@
   align-items: center;
   max-width: 1200px;
   margin: 0 auto;
-  color: white;
-  box-shadow: 0 20px 40px rgba(37, 99, 235, 0.2);
+  color: var(--color-text-inverse);
+  box-shadow: 0 20px 40px rgba(var(--color-primary-rgb), 0.2);
 }
 
 .cta-banner-content h2 {
   font-size: 2.2rem;
-  font-weight: 800;
+  font-weight: var(--font-weight-bold);
   margin-bottom: 12px;
 }
 .cta-banner-content p {
@@ -680,7 +680,7 @@
   color: var(--color-text);
   font-size: 1.2rem;
   margin-bottom: var(--space-12);
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 
 .footer-links { list-style: none; padding: 0; margin: 0; }
@@ -771,7 +771,7 @@
   top: 20px;
   right: -10px;
   background: var(--color-primary);
-  color: white;
+  color: var(--color-text-inverse);
   width: 120px;
   height: 120px;
   border-radius: 50%;
@@ -780,19 +780,19 @@
   align-items: center;
   justify-content: center;
   z-index: 3;
-  box-shadow: 0 15px 30px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 15px 30px rgba(var(--color-primary-rgb), 0.3);
   border: 8px solid var(--color-bg);
 }
 
 .experience-badge .years {
   font-size: 2.2rem;
-  font-weight: 900;
+  font-weight: var(--font-weight-bold);
   line-height: 1;
 }
 
 .experience-badge .text {
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   text-align: center;
   margin-top: 4px;
   opacity: 0.9;
@@ -800,7 +800,7 @@
 
 .about-content h2 {
   font-size: 2.4rem;
-  font-weight: 800;
+  font-weight: var(--font-weight-bold);
   color: var(--color-text);
   margin-bottom: 20px;
   line-height: 1.2;
@@ -837,7 +837,7 @@
 }
 
 .about-features span {
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   font-size: 1.05rem;
   color: var(--color-text);
 }
@@ -1359,10 +1359,10 @@
 }
 
 .public-page-directory { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; max-width: 1200px; margin: 0 auto; }
-.public-page-directory__link { padding: 28px; border: 1px solid #e2e8f0; border-radius: 16px; color: inherit; background: #fff; text-decoration: none; }
+.public-page-directory__link { padding: 28px; border: 1px solid var(--color-border); border-radius: 16px; color: inherit; background: var(--color-surface); text-decoration: none; }
 .public-page-directory__link h3 { font-size: 1.25rem; margin: 0 0 12px; }
-.public-page-directory__link p { color: #64748b; line-height: 1.7; margin: 0 0 20px; }
-.public-page-directory__link span { color: var(--color-primary); font-weight: 600; }
+.public-page-directory__link p { color: var(--color-text-secondary); line-height: 1.7; margin: 0 0 20px; }
+.public-page-directory__link span { color: var(--color-primary); font-weight: var(--font-weight-semibold); }
 .public-page-directory__link:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 4px; }
 @media (max-width: 1024px) { .public-page-directory { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 600px) { .public-page-directory { grid-template-columns: 1fr; } }

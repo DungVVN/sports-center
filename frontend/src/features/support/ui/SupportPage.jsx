@@ -106,7 +106,7 @@ export function SupportPage({ session }) {
       >
         {detail && (
           <div style={{ display: "grid", gap: "16px", padding: "8px 0" }}>
-            <div style={{ display: "flex", gap: "12px", alignItems: "center", fontSize: "13px" }}>
+            <div style={{ display: "flex", gap: "12px", alignItems: "center", fontSize: "var(--font-size-label)" }}>
               <span>
                 Trạng thái: <strong>{statusLabels[detail.ticket.status] ?? detail.ticket.status}</strong>
               </span>
@@ -121,7 +121,7 @@ export function SupportPage({ session }) {
               <small style={{ color: "var(--color-text-secondary)" }}>{formatDate(detail.ticket.created_at)}</small>
             </article>
             <div>
-              <h3 style={{ margin: "0 0 10px", fontSize: "15px" }}>Phản hồi từ trung tâm</h3>
+              <h3 style={{ margin: "0 0 10px", fontSize: "var(--font-size-section)" }}>Phản hồi từ trung tâm</h3>
               {detail.responses.length === 0 ? (
                 <p style={{ color: "var(--color-text-secondary)", margin: 0 }}>Trung tâm chưa phản hồi. Yêu cầu vẫn được theo dõi.</p>
               ) : (

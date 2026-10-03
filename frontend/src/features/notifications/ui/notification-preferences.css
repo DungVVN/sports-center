@@ -19,7 +19,7 @@
 
 .notification-preferences__icon {
   align-items: center;
-  background: #eff6ff;
+  background: var(--color-primary-soft);
   border-radius: var(--radius-control);
   color: var(--color-primary);
   display: flex;
@@ -31,14 +31,14 @@
 
 .notification-preferences__heading h2,
 .notification-preferences__summary h2 {
-  font-size: 16px;
+  font-size: var(--font-size-section);
   letter-spacing: -.015em;
   margin: 0;
 }
 
 .notification-preferences__heading p {
   color: var(--color-text-secondary);
-  font-size: 13px;
+  font-size: var(--font-size-label);
   margin: var(--space-4) 0 0;
 }
 
@@ -70,7 +70,7 @@
   align-items: center;
   color: var(--color-text);
   display: flex;
-  font-size: 14px;
+  font-size: var(--font-size-body);
   font-weight: var(--font-weight-semibold);
   gap: var(--space-8);
 }
@@ -78,7 +78,7 @@
 .notification-preferences__choice small,
 .notification-preferences__note {
   color: var(--color-text-secondary);
-  font-size: 13px;
+  font-size: var(--font-size-label);
   font-weight: var(--font-weight-regular);
   line-height: 1.5;
 }

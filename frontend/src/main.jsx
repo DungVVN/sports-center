@@ -6,6 +6,7 @@ import "./styles/tokens.css";
 import "./styles/global.css";
 import "./styles/layout.css";
 import "./app/layouts/WorkspacePage.css";
+import "./styles/table-typography.css";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>

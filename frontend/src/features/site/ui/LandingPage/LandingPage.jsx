@@ -84,14 +84,14 @@ export function LandingPage({ onLoginClick, onRegisterClick }) {
                   <div className="hero-image-main"></div>
                   {/* Floating UI Elements */}
                   <div className="floating-card card-top-right">
-                     <div className="icon-box"><Trophy size={20} color="#F97316" /></div>
+                     <div className="icon-box"><Trophy size={20} color="var(--color-accent)" /></div>
                      <div>
                         <h4>Top 1</h4>
                         <p>Trung tâm năm 2026</p>
                      </div>
                   </div>
                   <div className="floating-card card-bottom-left">
-                     <div className="icon-box"><Activity size={20} color="#2563EB" /></div>
+                     <div className="icon-box"><Activity size={20} color="var(--color-primary)" /></div>
                      <div>
                         <h4>24/7</h4>
                         <p>Không giới hạn giờ</p>

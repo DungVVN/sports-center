@@ -1,24 +1,24 @@
-.button { align-items: center; border: 1px solid transparent; border-radius: var(--radius-control); cursor: pointer; display: inline-flex; font: inherit; font-weight: 600; gap: var(--space-8); justify-content: center; letter-spacing: -0.01em; line-height: 1; transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, color 150ms ease, opacity 150ms ease, transform 120ms ease; white-space: nowrap; }
+.button { align-items: center; border: 1px solid transparent; border-radius: var(--radius-control); cursor: pointer; display: inline-flex; font: inherit; font-weight: var(--font-weight-semibold); gap: var(--space-8); justify-content: center; letter-spacing: -0.01em; line-height: 1; transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, color 150ms ease, opacity 150ms ease, transform 120ms ease; white-space: nowrap; }
 .button:disabled { cursor: not-allowed; opacity: 0.5; }
 .button:not(:disabled):hover { transform: translateY(-1px); }
 .button:not(:disabled):active { transform: scale(0.98); }
 .button > span { align-items: center; display: inline-flex; gap: var(--space-8); }
-.button--sm { height: var(--control-height-sm); padding: 0 12px; font-size: 12px; }
-.button--md { height: 36px; padding: 0 16px; font-size: 13px; }
-.button--lg { height: var(--control-height-lg); padding: 0 20px; font-size: 14px; }
-.button--primary { background: var(--color-primary); border-color: rgba(0, 0, 0, 0.1); color: #fff; box-shadow: var(--shadow-button-primary); }
+.button--sm { height: var(--control-height-sm); padding: 0 12px; font-size: var(--font-size-caption); }
+.button--md { height: 36px; padding: 0 16px; font-size: var(--font-size-label); }
+.button--lg { height: var(--control-height-lg); padding: 0 20px; font-size: var(--font-size-body); }
+.button--primary { background: var(--color-primary); border-color: rgba(0, 0, 0, 0.1); color: var(--color-text-inverse); box-shadow: var(--shadow-button-primary); }
 .button--primary:not(:disabled):hover { background: var(--color-primary-hover); }
-.button--accent { background: var(--color-accent); border-color: rgba(0, 0, 0, 0.08); color: #fff; box-shadow: var(--shadow-button-accent); }
+.button--accent { background: var(--color-accent); border-color: rgba(0, 0, 0, 0.08); color: var(--color-text-inverse); box-shadow: var(--shadow-button-accent); }
 .button--accent:not(:disabled):hover { background: var(--color-accent-hover); }
 .button--secondary { background: var(--color-surface); border-color: var(--color-border); color: var(--color-text); box-shadow: var(--shadow-control); }
 .button--secondary:not(:disabled):hover { background: var(--color-surface-muted); }
 .button--ghost { background: transparent; color: var(--color-text-secondary); }
 .button--ghost:not(:disabled):hover { background: var(--color-surface-muted); color: var(--color-text); }
-.button--danger { background: var(--color-danger); border-color: rgba(0, 0, 0, 0.08); color: #fff; }
+.button--danger { background: var(--color-danger); border-color: rgba(0, 0, 0, 0.08); color: var(--color-text-inverse); }
 .button--danger:not(:disabled):hover { background: var(--color-danger-hover); }
-.button--outline { background: transparent; border-color: #BFDBFE; color: var(--color-primary); }
-.button--outline:not(:disabled):hover { background: #EFF6FF; }
+.button--outline { background: transparent; border-color: var(--color-primary-border); color: var(--color-primary); }
+.button--outline:not(:disabled):hover { background: var(--color-primary-soft); }
 .button__spinner { animation: button-spin 700ms linear infinite; border: 2px solid currentColor; border-radius: 999px; border-top-color: transparent; height: 13px; width: 13px; }
 @keyframes button-spin { to { transform: rotate(360deg); } }
 @media (max-width: 767px) { .button { min-height: 44px; } }
-.button--primary > span { color: #fff !important; }
+.button--primary > span { color: var(--color-text-inverse) !important; }

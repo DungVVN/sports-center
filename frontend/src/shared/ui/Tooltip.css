@@ -1,4 +1,4 @@
 .tooltip { display: inline-flex; position: relative; }
-.tooltip__content { background: var(--color-sidebar); border-radius: var(--radius-small); bottom: calc(100% + 8px); color: #fff; font-size: 12px; left: 50%; line-height: 1.35; max-width: 220px; padding: 6px 8px; pointer-events: none; position: absolute; transform: translateX(-50%); white-space: nowrap; z-index: 20; }
+.tooltip__content { background: var(--color-sidebar); border-radius: var(--radius-small); bottom: calc(100% + 8px); color: var(--color-text-inverse); font-size: var(--font-size-caption); left: 50%; line-height: 1.35; max-width: 220px; padding: 6px 8px; pointer-events: none; position: absolute; transform: translateX(-50%); white-space: nowrap; z-index: 20; }
 .tooltip__content::after { border: 5px solid transparent; border-top-color: var(--color-sidebar); content: ""; left: 50%; position: absolute; top: 100%; transform: translateX(-50%); }
 @media (hover: none) { .tooltip__content { display: none; } }

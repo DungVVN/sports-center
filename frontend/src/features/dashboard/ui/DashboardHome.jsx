@@ -136,20 +136,20 @@ function ManagerDashboard({ onNavigate, summary }) {
                 <AreaChart data={chartData} margin={{ top: 12, right: 8, bottom: 0, left: 0 }}>
                   <defs>
                     <linearGradient id="revenue-gradient" x1="0" x2="0" y1="0" y2="1">
-                      <stop offset="5%" stopColor="#2563EB" stopOpacity={0.2} />
-                      <stop offset="95%" stopColor="#2563EB" stopOpacity={0} />
+                      <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.2} />
+                      <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <XAxis axisLine={false} dataKey="label" tick={{ fill: "#64748B", fontSize: 11 }} tickLine={false} />
+                  <XAxis axisLine={false} dataKey="label" tick={{ fill: "var(--color-text-secondary)", fontSize: "var(--font-size-caption)" }} tickLine={false} />
                   <YAxis
                     axisLine={false}
-                    tick={{ fill: "#64748B", fontSize: 11 }}
+                    tick={{ fill: "var(--color-text-secondary)", fontSize: "var(--font-size-caption)" }}
                     tickFormatter={(value) => `${Math.round(value / 1000000)}tr`}
                     tickLine={false}
                     width={42}
                   />
-                  <Tooltip formatter={(value) => formatMoney(value)} labelStyle={{ color: "#102A43" }} />
-                  <Area dataKey="revenue" fill="url(#revenue-gradient)" stroke="#2563EB" strokeWidth={2.5} type="monotone" />
+                  <Tooltip formatter={(value) => formatMoney(value)} labelStyle={{ color: "var(--color-text)" }} />
+                  <Area dataKey="revenue" fill="url(#revenue-gradient)" stroke="var(--color-primary)" strokeWidth={2.5} type="monotone" />
                 </AreaChart>
               </ResponsiveContainer>
             ) : (

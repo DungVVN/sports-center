@@ -136,7 +136,7 @@ export function MemberPaymentsPage({ session }) {
               </p>
             </div>
             <div>
-              <h3 style={{ margin: "0 0 10px", fontSize: "15px" }}>Lịch sử trạng thái</h3>
+              <h3 style={{ margin: "0 0 10px", fontSize: "var(--font-size-section)" }}>Lịch sử trạng thái</h3>
               {receipt.events.length === 0 ? (
                 <p style={{ color: "var(--color-text-secondary)", margin: 0 }}>Chưa có sự kiện trạng thái.</p>
               ) : (
