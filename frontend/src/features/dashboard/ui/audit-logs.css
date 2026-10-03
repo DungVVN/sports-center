@@ -42,7 +42,7 @@
 }
 
 .audit-log-table__identifier code {
-  color: var(--color-text-muted);
+  color: var(--color-text);
   display: block;
   overflow-wrap: anywhere;
   white-space: normal;

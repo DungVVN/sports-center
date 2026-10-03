@@ -30,7 +30,7 @@
 }
 
 :root table td code {
-  color: var(--color-text-secondary);
+  color: var(--color-text);
   font-family: var(--font-sans);
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-regular);
