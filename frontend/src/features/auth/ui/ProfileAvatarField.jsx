@@ -39,6 +39,7 @@ export function ProfileAvatarField({ value, uploading, onChange, onUpload }) {
           <Button variant="outline" loading={uploading} onClick={() => input.current?.click()}>
             {uploading ? "Đang tải ảnh" : "Chọn ảnh"}
           </Button>
+          <span className="profile-page__avatar-filename" title={name} aria-live="polite">{name}</span>
           <input
             ref={input}
             accept="image/*"
@@ -50,7 +51,6 @@ export function ProfileAvatarField({ value, uploading, onChange, onUpload }) {
           />
         </div>
       </div>
-      <span className="profile-page__avatar-filename" title={name} aria-live="polite">{name}</span>
     </div>
   );
 }

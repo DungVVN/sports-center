@@ -90,8 +90,8 @@
   color: var(--color-text-secondary);
   cursor: not-allowed;
 }
-.profile-page__avatar-field { display: grid; gap: var(--field-gap); min-width: 0; }
-.profile-page__avatar-controls { align-items: center; display: grid; gap: var(--space-12); grid-template-columns: minmax(0, 1fr) auto; }
+.profile-page__avatar-field { display: grid; gap: var(--field-gap); grid-column: 1 / -1; min-width: 0; }
+.profile-page__avatar-controls { align-items: center; display: grid; gap: var(--space-12); grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .profile-page__avatar-picker { align-items: center; display: flex; gap: var(--space-12); min-width: 0; }
 .profile-page__avatar-picker .button { flex-shrink: 0; }
 .profile-page__avatar-filename { color: var(--color-text-secondary); font-size: var(--font-size-caption); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
