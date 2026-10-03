@@ -51,7 +51,7 @@ export function NotificationPreferencesPanel({ className = "" }) {
                   <Mail size={16} /> Nhận email quan trọng
                 </span>
                 <small>
-                  Email cho thanh toán, hoàn tiền, lịch tập, quyền sử dụng gói và phản hồi hỗ trợ. Các thao tác cập nhật thường chỉ hiển thị ở chuông thông báo.
+                  Email cho thanh toán, hoàn tiền, lịch tập, quyền sử dụng gói và phản hồi hỗ trợ.
                 </small>
               </label>
             </div>
