@@ -103,7 +103,6 @@ export function ProfileDetailsForm({
         <Button loading={workspace.saveProfile.isPending} type="submit">
           Lưu thay đổi
         </Button>
-        <span>Email, vai trò và trạng thái chỉ có thể xem.</span>
       </div>
     </form>
   );
