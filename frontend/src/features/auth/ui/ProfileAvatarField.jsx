@@ -27,28 +27,30 @@ export function ProfileAvatarField({ value, uploading, onChange, onUpload }) {
   return (
     <div className="profile-page__avatar-field">
       <label htmlFor={id}>Ảnh đại diện</label>
-      <input
-        id={id}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder="https://example.com/avatar.jpg"
-        type="url"
-        value={value}
-      />
-      <div className="profile-page__avatar-picker">
-        <Button variant="outline" loading={uploading} onClick={() => input.current?.click()}>
-          {uploading ? "Đang tải ảnh" : "Chọn ảnh"}
-        </Button>
-        <span title={name} aria-live="polite">{name}</span>
+      <div className="profile-page__avatar-controls">
         <input
-          ref={input}
-          accept="image/*"
-          aria-label="Chọn file ảnh đại diện"
-          disabled={uploading}
-          hidden
-          onChange={chooseFile}
-          type="file"
+          id={id}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder="https://example.com/avatar.jpg"
+          type="url"
+          value={value}
         />
+        <div className="profile-page__avatar-picker">
+          <Button variant="outline" loading={uploading} onClick={() => input.current?.click()}>
+            {uploading ? "Đang tải ảnh" : "Chọn ảnh"}
+          </Button>
+          <input
+            ref={input}
+            accept="image/*"
+            aria-label="Chọn file ảnh đại diện"
+            disabled={uploading}
+            hidden
+            onChange={chooseFile}
+            type="file"
+          />
+        </div>
       </div>
+      <span className="profile-page__avatar-filename" title={name} aria-live="polite">{name}</span>
     </div>
   );
 }
