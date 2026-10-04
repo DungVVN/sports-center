@@ -1,5 +1,6 @@
 import request from "supertest";
 import { readFileSync } from "node:fs";
+import { personalizationOperations } from "../src/modules/training/index.js";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
 import { createApp } from "../src/app.js";
@@ -40,7 +41,7 @@ describe("role permission configuration", () => {
   });
   it("lists exactly the permission codes enforced by mounted routes", () => {
     const modules = fileURLToPath(new URL("../src/modules/", import.meta.url));
-    const enforced = new Set();
+    const enforced = new Set(personalizationOperations.map((operation) => operation[2]));
     for (const path of routeSourceFiles(modules)) {
       const source = readFileSync(path, "utf8");
       for (const match of source.matchAll(/requirePermission\("([^"]+)"\)/g)) enforced.add(match[1]);

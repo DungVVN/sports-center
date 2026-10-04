@@ -23,6 +23,7 @@ import { notificationPreferenceRepository, notificationPublisher, createNotifica
 import { aiAssistRepository, createAiAssistService } from "../modules/ai-assist/index.js";
 import { trainingRepository } from "../modules/training/index.js";
 import { createTrainingService } from "../modules/training/index.js";
+import { createPersonalizationService, personalizationRepository } from "../modules/training/index.js";
 import { insightRepository, createInsightService } from "../modules/insights/index.js";
 import { auditRepository, createAuditLogService } from "../modules/audit/index.js";
 import { assignmentRepository } from "../modules/assignments/index.js";
@@ -54,6 +55,7 @@ export function createServices({
   notificationPreferenceService = createNotificationPreferenceService({ repository: notificationPreferenceRepository }),
   aiAssistService = createAiAssistService({ repository: aiAssistRepository, auditService }),
   trainingService = createTrainingService({ repository: trainingRepository, auditService }),
+  personalizationService = createPersonalizationService({ repository: personalizationRepository, directory: trainingRepository, auditService }),
   insightService = createInsightService({ repository: insightRepository }),
   assignmentService = createAssignmentService({ repository: assignmentRepository, auditService }),
   auditLogService = createAuditLogService({ repository: auditRepository }),
@@ -61,5 +63,5 @@ export function createServices({
   siteService = createSiteService({ repository: siteRepository }),
   cloudinaryMediaService = createCloudinaryMediaService({ repository: siteRepository }),
 } = {}) {
-  return { operationNotificationService, ptService, courseService, authService, staffService, memberService, membershipService, classService, bookingService, facilityService, attendanceService, paymentService, supportService, notificationPreferenceService, aiAssistService, trainingService, insightService, assignmentService, auditLogService, rolePermissionService, siteService, cloudinaryMediaService };
+  return { operationNotificationService, ptService, courseService, authService, staffService, memberService, membershipService, classService, bookingService, facilityService, attendanceService, paymentService, supportService, notificationPreferenceService, aiAssistService, trainingService, personalizationService, insightService, assignmentService, auditLogService, rolePermissionService, siteService, cloudinaryMediaService };
 }

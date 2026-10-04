@@ -11,6 +11,7 @@ import { createSupportRouter } from "../modules/support/index.js";
 import { createNotificationPreferenceRouter } from "../modules/notifications/index.js";
 import { createAiAssistRouter } from "../modules/ai-assist/index.js";
 import { createTrainingRouter } from "../modules/training/index.js";
+import { createPersonalizationRouter } from "../modules/training/index.js";
 import { createInsightRouter } from "../modules/insights/index.js";
 import { createAuditRouter } from "../modules/audit/index.js";
 import { createAssignmentRouter } from "../modules/assignments/index.js";
@@ -24,7 +25,7 @@ import { createPtRouter } from "../modules/pt/index.js";
 export function registerRoutes(app, apiBasePath, {
   ptService, courseService, authService, staffService, memberService, membershipService, classService, bookingService,
   facilityService, attendanceService, paymentService, supportService, notificationPreferenceService,
-  aiAssistService, trainingService, insightService, auditLogService, assignmentService, rolePermissionService, siteService, cloudinaryMediaService,
+  aiAssistService, trainingService, personalizationService, insightService, auditLogService, assignmentService, rolePermissionService, siteService, cloudinaryMediaService,
 }) {
   app.use(`${apiBasePath}/auth`, createAuthRouter(authService, cloudinaryMediaService));
   app.use(`${apiBasePath}/staff`, createStaffRouter(staffService, authService));
@@ -41,6 +42,7 @@ export function registerRoutes(app, apiBasePath, {
   app.use(apiBasePath, createNotificationPreferenceRouter(notificationPreferenceService, authService));
   app.use(apiBasePath, createAiAssistRouter(aiAssistService, authService));
   app.use(apiBasePath, createTrainingRouter(trainingService, authService));
+  app.use(apiBasePath, createPersonalizationRouter(personalizationService, authService));
   app.use(apiBasePath, createInsightRouter(insightService, authService));
   app.use(apiBasePath, createAuditRouter(auditLogService, authService));
   app.use(apiBasePath, createAssignmentRouter(assignmentService, authService));

@@ -5,6 +5,7 @@ import request from "supertest";
 import { createApp } from "../src/app.js";
 import { describe, expect, it, vi } from "vitest";
 import { openApiSpec } from "../src/openapi/spec.js";
+import { personalizationOperations } from "../src/modules/training/index.js";
 import { routeSourceFiles } from "./helpers/route-source-files.js";
 import { pageCreateSchema, pageDraftSchema, menuDraftSchema } from "../src/modules/site/domain/site-content.js";
 
@@ -14,6 +15,7 @@ const methods = ["get", "post", "patch", "put", "delete"];
 
 function backendOperations() {
   const operations = ["GET /health"];
+  operations.push(...personalizationOperations.map(([method, path]) => `${method.toUpperCase()} ${path.replace(":id", "{id}")}`));
   for (const path of routeSourceFiles(modulesDirectory)) {
     const source = readFileSync(path, "utf8");
     for (const match of source.matchAll(/router\.(get|post|patch|put|delete)\(\s*"([^"]+)"/g)) {

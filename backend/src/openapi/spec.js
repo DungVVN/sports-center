@@ -1,6 +1,7 @@
 import { env } from "../config/env.js";
 import { applyServiceContract } from "./service-contract.js";
 import { applySiteContract } from "./site-contract.js";
+import { applyTrainingPersonalizationContract } from "./training-personalization-contract.js";
 
 const uuid = { type: "string", format: "uuid" };
 const jsonBody = (schema) => ({ required: true, content: { "application/json": { schema } } });
@@ -356,6 +357,7 @@ for (const [path, method, schema] of bodyContracts) {
 }
 
 applySiteContract(openApiSpec);
+applyTrainingPersonalizationContract(openApiSpec);
 
 
 applyServiceContract(openApiSpec, { uuid, jsonBody, facilityAuth, facilityResponse, facilityRecord, facilityReservation, facilityReservationRecord });

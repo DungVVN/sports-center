@@ -15,6 +15,7 @@ import { useMemo, useState } from "react";
 import { hasSessionPermission } from "../../auth/index.js";
 import { trainingApi } from "../api/training-api.js";
 import { useTrainingWorkspace } from "../api/useTrainingWorkspace.js";
+import { TrainingPersonalizationWorkspace } from "./TrainingPersonalizationWorkspace.jsx";
 export function TrainingPage({ session }) {
   const [plan, setPlan] = useState(newPlan);
   const [template, setTemplate] = useState(newTemplate);
@@ -102,6 +103,7 @@ export function TrainingPage({ session }) {
   return (
     <main className="members-page">
       <PageHeader eyebrow="Giáo án" title="Mẫu và kế hoạch tập luyện" />
+      {hasSessionPermission(session, "training.assessment.read") && <TrainingPersonalizationWorkspace members={members} session={session} />}
       {workspace.error && (
         <p className="auth-alert" role="alert">
           {workspace.error}

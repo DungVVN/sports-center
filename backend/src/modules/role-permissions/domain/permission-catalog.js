@@ -1,5 +1,6 @@
 // Only permissions enforced by a mounted API appear as configurable functions.
 export const assignablePermissionCodes = Object.freeze([
+  "training.assessment.read", "training.assessment.write", "training.protocol.manage", "training.review.authorize", "training.self.manage",
   "payment.refund.read", "payment.refund.request", "payment.refund.review", "payment.refund.execute", "payment.reconcile",
   "pt.read", "pt.manage", "pt.purchase", "pt.complete",
   "course.read", "course.manage", "course.enroll", "course.enrollment.read",
@@ -15,6 +16,9 @@ export const assignablePermissionCodes = Object.freeze([
 ]);
 
 export const permissionDependencies = Object.freeze({
+  "training.assessment.write": ["training.assessment.read", "training.write"],
+  "training.protocol.manage": ["training.assessment.read"],
+  "training.self.manage": ["training.self.read"],
   "payment.refund.request": ["payment.refund.read", "payment.self.read"],
   "payment.refund.review": ["payment.refund.read", "payment.read"],
   "payment.refund.execute": ["payment.refund.read", "payment.read"],
@@ -49,6 +53,11 @@ export const permissionDependencies = Object.freeze({
 
 // Limit permissions to roles supported by their API workflows.
 export const permissionRoleScopes = Object.freeze({
+  "training.assessment.read": ["coach"],
+  "training.assessment.write": ["coach"],
+  "training.protocol.manage": ["coach"],
+  "training.review.authorize": [],
+  "training.self.manage": ["member"],
   "payment.refund.read": ["member", "manager", "receptionist"],
   "payment.refund.request": ["member"],
   "payment.refund.review": ["manager"],

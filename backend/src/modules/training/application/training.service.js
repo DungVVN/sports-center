@@ -17,6 +17,9 @@ export function createTrainingService({ repository, auditService }) {
     return plan;
   };
   const sessionsWithExercises = async (planId) => Promise.all((await repository.sessions(planId)).map(async (item) => ({ ...item, exercises: await repository.sessionExercises(item.id) })));
+  const ensureLegacyMutation = async (planId) => {
+    if (repository.personalizationForPlan && await repository.personalizationForPlan(planId)) throw new AppError({ statusCode: 409, code: "TRAINING_PERSONALIZATION_WORKFLOW_REQUIRED", message: "Giáo án theo bằng chứng phải được xử lý qua quy trình duyệt cá nhân; không sửa bằng biểu mẫu giáo án cũ." });
+  };
   const sameIds = (actual, requested) => actual.length === requested.length && actual.every((item) => requested.includes(item.id));
   const withCreatorMetadata = async (plans) => {
     if (!plans.length) return plans;
@@ -39,7 +42,10 @@ export function createTrainingService({ repository, auditService }) {
     },
     async ownProgress(actor) {
       const memberId = await ownMemberId(actor);
-      const [plans, results] = await Promise.all([repository.plans(memberId), repository.results(memberId)]);
+      const [allPlans, allResults] = await Promise.all([repository.plans(memberId), repository.results(memberId)]);
+      const plans = allPlans.filter((plan) => plan.status !== "draft");
+      const visibleIds = new Set(plans.map((plan) => plan.id));
+      const results = allResults.filter((result) => visibleIds.has(result.plan_id));
       const sessions = (await Promise.all(plans.map((plan) => sessionsWithExercises(plan.id)))).flat();
       return { plans, results, sessions };
     },
@@ -61,6 +67,7 @@ export function createTrainingService({ repository, auditService }) {
     async sessions(planId, actor) { await planForActor(planId, actor); return sessionsWithExercises(planId); },
     async createSession(planId, input, actor) {
       await planForActor(planId, actor);
+      await ensureLegacyMutation(planId);
       let result;
       try {
         result = await repository.createSession({ plan_id: planId, position: input.position, title: input.title, scheduled_on: input.scheduledOn ? new Date(input.scheduledOn) : null });
@@ -74,18 +81,20 @@ export function createTrainingService({ repository, auditService }) {
       await auditService.record({ actorUserId: actor.id, action: "training_session.created", entityType: "training_session", entityId: result.id, summary: "Đã thêm buổi tập vào lộ trình." });
       return result;
     },
-    async reorderSessions(planId, ids, actor) { await planForActor(planId, actor); const existing = await repository.sessions(planId); if (!sameIds(existing, ids)) throw new AppError({ statusCode: 422, code: "TRAINING_SESSION_ORDER_INVALID", message: "Danh sách sắp xếp buổi tập không hợp lệ." }); return repository.reorderSessions(planId, ids); },
-    async reorderSessionExercises(sessionId, ids, actor) { const session = await repository.session(sessionId); if (!session) throw new AppError({ statusCode: 404, code: "TRAINING_SESSION_NOT_FOUND", message: "Không tìm thấy buổi tập." }); await planForActor(session.plan_id, actor); const existing = await repository.sessionExercises(sessionId); if (!sameIds(existing, ids)) throw new AppError({ statusCode: 422, code: "TRAINING_EXERCISE_ORDER_INVALID", message: "Danh sách sắp xếp bài tập không hợp lệ." }); return repository.reorderSessionExercises(sessionId, ids); },
+    async reorderSessions(planId, ids, actor) { await planForActor(planId, actor); await ensureLegacyMutation(planId); const existing = await repository.sessions(planId); if (!sameIds(existing, ids)) throw new AppError({ statusCode: 422, code: "TRAINING_SESSION_ORDER_INVALID", message: "Danh sách sắp xếp buổi tập không hợp lệ." }); return repository.reorderSessions(planId, ids); },
+    async reorderSessionExercises(sessionId, ids, actor) { const session = await repository.session(sessionId); if (!session) throw new AppError({ statusCode: 404, code: "TRAINING_SESSION_NOT_FOUND", message: "Không tìm thấy buổi tập." }); await planForActor(session.plan_id, actor); await ensureLegacyMutation(session.plan_id); const existing = await repository.sessionExercises(sessionId); if (!sameIds(existing, ids)) throw new AppError({ statusCode: 422, code: "TRAINING_EXERCISE_ORDER_INVALID", message: "Danh sách sắp xếp bài tập không hợp lệ." }); return repository.reorderSessionExercises(sessionId, ids); },
     async updateSession(id, input, actor) {
       const existing = await repository.session(id);
       if (!existing) throw new AppError({ statusCode: 404, code: "TRAINING_SESSION_NOT_FOUND", message: "Không tìm thấy buổi tập." });
       await planForActor(existing.plan_id, actor);
+      await ensureLegacyMutation(existing.plan_id);
       const result = await repository.updateSession(id, { status: input.status, completed_at: ["completed", "skipped"].includes(input.status) ? new Date() : null, coach_comment: input.coachComment ?? null });
       await auditService.record({ actorUserId: actor.id, action: "training_session.updated", entityType: "training_session", entityId: result.id, summary: "Đã cập nhật trạng thái buổi tập." });
       return result;
     },
     async updatePlan(id, input, actor) {
       const plan = await planForActor(id, actor);
+      await ensureLegacyMutation(id);
       const result = await repository.updatePlan(id, { ...(input.name && { name: input.name }), ...(input.goal && { goal: input.goal }), ...(input.status && { status: input.status }) });
       if (input.exercises) await repository.replaceExercises(id, input.exercises);
       await auditService.record({ actorUserId: actor.id, action: "training_plan.updated", entityType: "training_plan", entityId: plan.id, summary: "Đã cập nhật giáo án." });
@@ -93,6 +102,7 @@ export function createTrainingService({ repository, auditService }) {
     },
     async createResult(input, actor) {
       const plan = await planForActor(input.planId, actor);
+      await ensureLegacyMutation(input.planId);
       const result = await repository.createResult({ plan_id: input.planId, exercise_id: input.exerciseId ?? null, member_id: plan.member_id, recorded_by: actor.id, recorded_on: new Date(input.recordedOn), value_numeric: input.valueNumeric ?? null, value_text: input.valueText ?? null, metric: input.metric, coach_comment: input.coachComment ?? null });
       await auditService.record({ actorUserId: actor.id, action: "training_result.recorded", entityType: "training_result", entityId: result.id, summary: "Đã ghi nhận kết quả tập luyện." });
       return result;

@@ -1,0 +1,22 @@
+import { apiClient } from "../../../shared/api/client.js";
+export const personalizationApi = {
+  reference: () => apiClient.get("/training-personalization/reference"),
+  profile: (id) => apiClient.get(`/members/${id}/training-profile`),
+  mine: () => apiClient.get("/members/me/training-personalization"),
+  consent: (purpose) => apiClient.post("/members/me/training-consents", { purpose, policyVersion: "training-privacy-v1", acknowledged: true }),
+  withdraw: (id) => apiClient.post(`/members/me/training-consents/${id}/withdraw`, {}),
+  assessment: (id, input) => apiClient.post(`/members/${id}/training-assessments`, input),
+  reviewAssessment: (id, authorizationId) => apiClient.post(`/training-assessments/${id}/review`, { authorizationId }),
+  authorize: (input) => apiClient.post("/training-review-authorizations", input),
+  revoke: (id) => apiClient.post(`/training-review-authorizations/${id}/revoke`, {}),
+  protocol: (input) => apiClient.post("/training-protocols", input),
+  approveProtocol: (id, authorizationId) => apiClient.post(`/training-protocols/${id}/approve`, { authorizationId }),
+  retire: (id) => apiClient.post(`/training-protocols/${id}/retire`, {}),
+  decision: (input) => apiClient.post("/training-personalization/decisions", input),
+  approveDecision: (id, authorizationId) => apiClient.post(`/training-personalization/decisions/${id}/approve`, { authorizationId }),
+  checkin: (id, input) => apiClient.post(`/members/me/training-sessions/${id}/check-in`, input),
+  reviewCheckin: (id, status) => apiClient.post(`/training-checkins/${id}/review`, { status }),
+  observe: (id, input) => apiClient.post(`/training-sessions/${id}/observations`, input),
+  outcome: (id, input) => apiClient.post(`/training-sessions/${id}/personalization-outcome`, input),
+  energy: (input) => apiClient.post("/members/me/training-energy", input),
+};

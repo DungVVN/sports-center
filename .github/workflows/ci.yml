@@ -44,7 +44,7 @@ jobs:
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
       - run: npm run db:migrate
-      - run: npm test -- test/training-foundation.database.test.js
+      - run: npm test -- test/training-foundation.database.test.js test/personalization.database.test.js
 
   backend:
     name: Backend quality gates

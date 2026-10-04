@@ -15,6 +15,7 @@ async function memberIdsInCoachScope(coachId) {
 }
 
 export const trainingRepository = {
+  personalizationForPlan: (planId) => prisma.training_personalization_decisions.findFirst({ where: { plan_id: planId }, select: { id: true } }),
   templates: () => prisma.training_plan_templates.findMany({ where: { is_active: true }, orderBy: { name: "asc" } }),
   template: (id) => prisma.training_plan_templates.findUnique({ where: { id } }),
   templateExercises: (id) => prisma.training_template_exercises.findMany({ where: { template_id: id }, orderBy: { position: "asc" } }),
