@@ -890,3 +890,291 @@ model service_refunds {
   transfer_reference String?
   @@index([member_id, requested_at])
 }
+
+// Evidence-based personalization: source, assessment, approval and actual outcomes.
+// SQL migration owns checks, triggers and partial indexes.
+
+model training_decision_inputs {
+  decision_id String @db.Uuid
+  input_key String
+  kind String
+  assessment_field String?
+  measurement_id String? @db.Uuid
+  finding_id String? @db.Uuid
+  value Json
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  @@id([decision_id, input_key])
+}
+
+model training_evidence_sources {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code String
+  version String
+  title String
+  publisher String
+  url String
+  source_type String
+  population_scope Json
+  limitations String
+  published_on DateTime? @db.Date
+  verified_at DateTime @db.Timestamptz(6)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  @@unique([code, version])
+}
+
+model training_review_authorizations {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id String @db.Uuid
+  discipline String
+  credential_reference String
+  verified_by String @db.Uuid
+  verified_at DateTime @db.Timestamptz(6)
+  expires_at DateTime @db.Timestamptz(6)
+  revoked_at DateTime? @db.Timestamptz(6)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  @@index([user_id, discipline])
+}
+
+model training_protocol_versions {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code String
+  version Int
+  name String
+  discipline String
+  population_scope Json
+  limitations String
+  status String @default("draft")
+  created_by String @db.Uuid
+  review_authorization_id String? @db.Uuid
+  approved_at DateTime? @db.Timestamptz(6)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  @@unique([code, version])
+  @@index([discipline, status])
+}
+
+model training_protocol_evidence {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  protocol_id String @db.Uuid
+  source_id String @db.Uuid
+  section_reference String
+  interpretation String
+  applicability String
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  @@unique([protocol_id, source_id, section_reference])
+}
+
+model training_protocol_rules {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  protocol_id String @db.Uuid
+  evidence_id String @db.Uuid
+  code String
+  required_inputs Json
+  conditions Json
+  recommendation Json
+  rationale String
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  @@unique([protocol_id, code])
+}
+
+model member_training_consents {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  member_id String @db.Uuid
+  purpose String
+  policy_version String
+  recorded_by String @db.Uuid
+  granted_at DateTime @db.Timestamptz(6)
+  withdrawn_at DateTime? @db.Timestamptz(6)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  @@index([member_id, purpose])
+}
+
+model member_training_assessments {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  member_id String @db.Uuid
+  consent_id String @db.Uuid
+  version Int
+  discipline String
+  goal String
+  available_days Json
+  minutes_per_session Int
+  experience String
+  equipment Json
+  other_activity String
+  screening_status String @default("unknown")
+  screening_tool String?
+  screening_version String?
+  population Json
+  assessed_by String @db.Uuid
+  status String @default("draft")
+  review_authorization_id String? @db.Uuid
+  assessed_at DateTime @db.Timestamptz(6)
+  reviewed_at DateTime? @db.Timestamptz(6)
+  review_due_at DateTime @db.Timestamptz(6)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  @@unique([member_id, discipline, version])
+  @@index([member_id, assessed_at])
+}
+
+model training_metric_definitions {
+  code String @id
+  name String
+  unit String
+  discipline String
+  value_type String
+  minimum Decimal? @db.Decimal(12, 3)
+  maximum Decimal? @db.Decimal(12, 3)
+  interpretation String
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+}
+
+model member_training_measurements {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  assessment_id String @db.Uuid
+  metric_code String
+  unit String
+  value_numeric Decimal? @db.Decimal(12, 3)
+  value_text String?
+  data_kind String
+  method String
+  device String?
+  conditions String
+  recorded_by String @db.Uuid
+  measured_at DateTime @db.Timestamptz(6)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  @@index([assessment_id, metric_code, measured_at])
+}
+
+model member_training_findings {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  assessment_id String @db.Uuid
+  code String
+  category String
+  description String
+  outcome String
+  recorded_by String @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  @@index([assessment_id, category])
+}
+
+model member_training_goals {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  assessment_id String @db.Uuid
+  metric_code String
+  unit String
+  baseline_measurement_id String? @db.Uuid
+  target_numeric Decimal? @db.Decimal(12, 3)
+  target_text String?
+  evaluation_method String
+  due_on DateTime @db.Date
+  set_by String @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  @@index([assessment_id])
+}
+
+model training_personalization_decisions {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  member_id String @db.Uuid
+  assessment_id String @db.Uuid
+  protocol_id String @db.Uuid
+  plan_id String? @db.Uuid
+  course_enrollment_id String? @db.Uuid
+  idempotency_key String
+  revision Int
+  origin String
+  inputs_snapshot Json
+  explanation String
+  status String @default("draft")
+  created_by String @db.Uuid
+  review_authorization_id String? @db.Uuid
+  approved_at DateTime? @db.Timestamptz(6)
+  previous_decision_id String? @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  @@unique([idempotency_key])
+  @@index([member_id, created_at])
+}
+
+model training_decision_rules {
+  decision_id String @db.Uuid
+  rule_id String @db.Uuid
+  evaluation Json
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  @@id([decision_id, rule_id])
+}
+
+model training_session_prescriptions {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  decision_id String @db.Uuid
+  training_session_id String? @db.Uuid
+  class_session_id String? @db.Uuid
+  position Int
+  discipline String
+  name String
+  variant String
+  instructions String
+  duration_seconds Int?
+  sets Int?
+  reps Int?
+  load_kg Decimal? @db.Decimal(12, 3)
+  rest_seconds Int?
+  target_rpe Decimal? @db.Decimal(12, 3)
+  target_rir Int?
+  hold_seconds Int?
+  breath_cycles Int?
+  props Json?
+  progression_criteria String
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  @@unique([decision_id, position])
+}
+
+model training_session_checkins {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  member_id String @db.Uuid
+  training_session_id String @db.Uuid
+  session_date DateTime @db.Date
+  available_minutes Int
+  sleep_hours Decimal? @db.Decimal(12, 3)
+  fatigue_score Int?
+  discomfort_score Int?
+  new_symptoms Boolean
+  notes String
+  other_activity String
+  review_status String @default("pending")
+  reviewed_by String? @db.Uuid
+  reviewed_at DateTime? @db.Timestamptz(6)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  @@unique([member_id, training_session_id, session_date])
+}
+
+model training_session_observations {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  member_id String @db.Uuid
+  training_session_id String @db.Uuid
+  prescription_id String? @db.Uuid
+  metric_code String
+  unit String
+  value_numeric Decimal? @db.Decimal(12, 3)
+  value_text String?
+  data_kind String
+  method String
+  recorded_by String @db.Uuid
+  recorded_at DateTime @db.Timestamptz(6)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  @@index([member_id, recorded_at])
+}
+
+model member_training_energy_records {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  member_id String @db.Uuid
+  consent_id String @db.Uuid
+  recorded_on DateTime @db.Date
+  energy_type String
+  value_kcal Decimal @db.Decimal(12, 3)
+  data_kind String
+  method String
+  model_version String?
+  includes_exercise Boolean
+  inputs Json
+  recorded_by String @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  @@index([member_id, recorded_on])
+}
