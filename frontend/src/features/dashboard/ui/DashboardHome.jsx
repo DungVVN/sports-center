@@ -24,12 +24,12 @@ const roleKpis = {
   ],
   coach: [
     { key: "todayClasses", label: "Lớp phụ trách hôm nay", target: "attendance" },
-    { key: "pendingPayments", label: "Lịch lớp học", target: "classes" },
-    { key: "expiringMemberships", label: "Kế hoạch tập luyện", target: "training" },
+    { key: "assignedClasses", label: "Lớp tôi phụ trách", target: "classes" },
+    { key: "trainingPlans", label: "Giáo án trong phạm vi", target: "training" },
   ],
   member: [
     { key: "todayClasses", label: "Lớp học & Lịch tập", target: "bookings" },
-    { key: "pendingPayments", label: "Phiếu thu của tôi", target: "my-payments" },
+    { key: "pendingPayments", label: "Phiếu thu chờ xác nhận", target: "my-payments" },
     { key: "expiringMemberships", label: "Gói tập của tôi", target: "packages" },
   ],
 };

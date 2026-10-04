@@ -1,4 +1,5 @@
 import { prisma } from "../../../database.js";
+import { trainingRepository } from "../../training/index.js";
 
 const activeBookingStatuses = ["confirmed", "attended", "absent"];
 
@@ -12,13 +13,16 @@ export const insightRepository = {
   expiring: (from, to) => prisma.member_memberships.findMany({ where: { status: "active", expires_on: { gte: from, lte: to } } }),
   todayClasses: (from, to) => prisma.class_sessions.count({ where: { starts_at: { gte: from, lte: to }, status: "published" } }),
   pendingPayments: () => prisma.payments.count({ where: { status: "pending" } }),
+  pendingCashPayments: () => prisma.payments.count({ where: { status: "pending", method: "cash" } }),
+  coachClasses: (coachUserId) => prisma.class_sessions.count({ where: { coach_user_id: coachUserId, pt_purchase_id: null } }),
+  coachTrainingPlans: (coachUserId) => trainingRepository.planCountForCoach(coachUserId),
   coachTodayClasses: (coachUserId, from, to) => prisma.class_sessions.count({ where: { coach_user_id: coachUserId, starts_at: { gte: from, lte: to }, status: "published" } }),
   memberByUser: (userId) => prisma.members.findUnique({ where: { user_id: userId }, select: { id: true } }),
   memberTodayClasses: async (memberId, from, to) => {
     const bookings = await prisma.bookings.findMany({ where: { member_id: memberId, status: "confirmed" }, select: { class_session_id: true } });
     return prisma.class_sessions.count({ where: { id: { in: bookings.map((item) => item.class_session_id) }, starts_at: { gte: from, lte: to }, status: "published" } });
   },
-  memberPendingMemberships: (memberId) => prisma.member_memberships.count({ where: { member_id: memberId, status: "pending_payment" } }),
+  memberPendingPayments: (memberId) => prisma.payments.count({ where: { member_id: memberId, status: "pending" } }),
   memberExpiringMemberships: (memberId, from, to) => prisma.member_memberships.count({ where: { member_id: memberId, status: { in: ["active", "expiring_soon"] }, expires_on: { gte: from, lte: to } } }),
   async managerMetrics(from, to) {
     const classes = await prisma.class_sessions.findMany({ where: { status: "published", starts_at: { gte: from, lte: to } }, select: { id: true, capacity: true } });

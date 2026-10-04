@@ -31,6 +31,7 @@ export const trainingRepository = {
   plan: (id) => prisma.training_plans.findUnique({ where: { id } }),
   plans: (memberId) => prisma.training_plans.findMany({ where: memberId ? { member_id: memberId } : undefined, orderBy: { starts_on: "desc" } }),
   plansForMembers: (memberIds) => prisma.training_plans.findMany({ where: { member_id: { in: memberIds } }, orderBy: { starts_on: "desc" } }),
+  planCountForCoach: async (coachId) => prisma.training_plans.count({ where: { member_id: { in: await memberIdsInCoachScope(coachId) } } }),
   usersByIds: (ids) => prisma.users.findMany({ where: { id: { in: ids } }, select: { id: true, display_name: true } }),
   createPlanWithExercises: (data, exercises) => prisma.$transaction(async (tx) => {
     const plan = await tx.training_plans.create({ data });

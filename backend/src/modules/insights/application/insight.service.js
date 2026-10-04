@@ -112,9 +112,9 @@ export function createInsightService({ repository }) {
       if (role !== actor.role) throw new AppError({ statusCode: 403, code: "DASHBOARD_ROLE_FORBIDDEN", message: "Bạn chỉ có thể xem dashboard của vai trò hiện tại." });
       const current = range(query); const sevenDays = new Date(Date.now() + 7 * 86400000);
       if (["admin", "manager"].includes(actor.role)) return { role, ...(await managerDashboard(repository, current, previousRange(current.from, current.to))) };
-      if (actor.role === "coach") return { role, todayClasses: await repository.coachTodayClasses(actor.id, current.from, current.to), pendingPayments: 0, expiringMemberships: 0 };
-      if (actor.role === "member") { const member = await repository.memberByUser(actor.id); if (!member) throw new AppError({ statusCode: 404, code: "MEMBER_PROFILE_NOT_FOUND", message: "Tài khoản chưa có hồ sơ hội viên." }); return { role, todayClasses: await repository.memberTodayClasses(member.id, current.from, current.to), pendingPayments: await repository.memberPendingMemberships(member.id), expiringMemberships: await repository.memberExpiringMemberships(member.id, current.from, sevenDays) }; }
-      return { role, todayClasses: await repository.todayClasses(current.from, current.to), pendingPayments: await repository.pendingPayments(), expiringMemberships: (await repository.expiring(current.from, sevenDays)).length };
+      if (actor.role === "coach") return { role, todayClasses: await repository.coachTodayClasses(actor.id, current.from, current.to), assignedClasses: await repository.coachClasses(actor.id), trainingPlans: await repository.coachTrainingPlans(actor.id), pendingPayments: 0, expiringMemberships: 0 };
+      if (actor.role === "member") { const member = await repository.memberByUser(actor.id); if (!member) throw new AppError({ statusCode: 404, code: "MEMBER_PROFILE_NOT_FOUND", message: "Tài khoản chưa có hồ sơ hội viên." }); return { role, todayClasses: await repository.memberTodayClasses(member.id, current.from, current.to), pendingPayments: await repository.memberPendingPayments(member.id), expiringMemberships: await repository.memberExpiringMemberships(member.id, current.from, sevenDays) }; }
+      return { role, todayClasses: await repository.todayClasses(current.from, current.to), pendingPayments: await repository.pendingCashPayments(), expiringMemberships: (await repository.expiring(current.from, sevenDays)).length };
     },
   };
 }
