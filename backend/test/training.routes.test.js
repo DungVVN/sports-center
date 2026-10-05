@@ -8,6 +8,19 @@ function authService(permissions, role = "coach") { return { getAuthentication: 
 function trainingService() { return { ownProgress: vi.fn().mockResolvedValue({ plans: [], results: [], sessions: [] }), members: vi.fn().mockResolvedValue([]), templates: vi.fn().mockResolvedValue([]), plans: vi.fn().mockResolvedValue([]), createPlan: vi.fn().mockResolvedValue({ id: "plan-1" }), sessions: vi.fn().mockResolvedValue([]), createSession: vi.fn().mockResolvedValue({ id: "session-1" }), updateSession: vi.fn().mockResolvedValue({ id: "session-1" }) }; }
 
 describe("Training routes", () => {
+  it.each(["invalid", "", `${memberId}&memberId=${templateId}`])("rejects invalid or repeated plan member filters before the repository: %s", async (filter) => {
+    const service = trainingService();
+    await request(createApp({ authService: authService(["training.write"]), trainingService: service })).get(`/api/v1/training-plans?memberId=${filter}`).set("Authorization", "Bearer token").expect(422);
+    expect(service.plans).not.toHaveBeenCalled();
+  });
+  it("preserves scoped plan queries with and without a valid member filter", async () => {
+    const service = trainingService();
+    const app = createApp({ authService: authService(["training.write"]), trainingService: service });
+    await request(app).get(`/api/v1/training-plans?memberId=${memberId}`).set("Authorization", "Bearer token").expect(200);
+    expect(service.plans).toHaveBeenLastCalledWith(memberId, { id: "coach-1", role: "coach" });
+    await request(app).get("/api/v1/training-plans").set("Authorization", "Bearer token").expect(200);
+    expect(service.plans).toHaveBeenLastCalledWith(undefined, { id: "coach-1", role: "coach" });
+  });
   it("lets a Member read their own plans and results with training.self.read", async () => {
     const service = trainingService();
     await request(createApp({ authService: authService(["training.self.read"], "member"), trainingService: service })).get("/api/v1/members/me/training").set("Authorization", "Bearer token").expect(200);

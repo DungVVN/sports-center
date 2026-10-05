@@ -19,6 +19,14 @@ function renderPage(session = cashier) {
 }
 
 describe("PaymentsPage", () => {
+  it("keeps the original collection time visible after a receipt is refunded", async () => {
+    const paidAt = "2026-10-03T02:00:00Z";
+    paymentApi.list.mockResolvedValue([{ id: "refunded-1", transaction_code: "PAY-REFUNDED-QA", member, amountVnd: "500000", method: "cash", status: "refunded", paid_at: paidAt, updated_at: "2026-10-05T02:00:00Z" }]);
+    renderPage();
+    const row = (await screen.findByText("PAY-REFUNDED-QA")).closest("tr");
+    expect(row).toHaveTextContent(new Date(paidAt).toLocaleString("vi-VN"));
+    expect(row).not.toHaveTextContent(new Date("2026-10-05T02:00:00Z").toLocaleString("vi-VN"));
+  });
   it.each(["courseEnrollmentId", "ptPurchaseId", "facilityReservationId"])("links a cash receipt exclusively to %s", async (targetField) => {
     paymentApi.targets.mockResolvedValue([{ id: "service-1", targetField, name: "Dịch vụ QA", amountVnd: "250000" }]);
     paymentApi.create.mockResolvedValue({ id: "payment-1" });

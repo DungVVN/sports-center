@@ -28,9 +28,9 @@ const roleKpis = {
     { key: "trainingPlans", label: "Giáo án trong phạm vi", target: "training" },
   ],
   member: [
-    { key: "todayClasses", label: "Lớp học & Lịch tập", target: "bookings" },
+    { key: "todayClasses", label: "Lớp học hôm nay", target: "bookings" },
     { key: "pendingPayments", label: "Phiếu thu chờ xác nhận", target: "my-payments" },
-    { key: "expiringMemberships", label: "Gói tập của tôi", target: "packages" },
+    { key: "expiringMemberships", label: "Gói hết hạn trong 7 ngày", target: "packages" },
   ],
 };
 

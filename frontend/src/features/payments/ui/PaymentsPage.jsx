@@ -300,7 +300,7 @@ export function PaymentsPage({ session }) {
                       <td>
                         <code>{item.transaction_code}</code>
                       </td>
-                      <td>{["paid", "failed"].includes(item.status) ? new Date(item.paid_at ?? item.updated_at).toLocaleString("vi-VN") : "—"}</td>
+                      <td>{["paid", "refunded", "failed"].includes(item.status) ? new Date(item.paid_at ?? item.updated_at).toLocaleString("vi-VN") : "—"}</td>
                       <td>
                         {item.member ? (
                           <>

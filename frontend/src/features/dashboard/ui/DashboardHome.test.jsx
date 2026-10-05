@@ -15,6 +15,13 @@ function show(role, summary) {
 }
 
 describe("role dashboard counters", () => {
+  it("makes the member class and membership counters explicit about their date window", async () => {
+    show("member", { todayClasses: 2, pendingPayments: 0, expiringMemberships: 1 });
+    const classes = (await screen.findByText("Lớp học hôm nay")).closest('[role="button"]');
+    const expiring = screen.getByText("Gói hết hạn trong 7 ngày").closest('[role="button"]');
+    expect(within(classes).getByText("2")).toBeInTheDocument();
+    expect(within(expiring).getByText("1")).toBeInTheDocument();
+  });
   afterEach(cleanup);
   beforeEach(() => vi.clearAllMocks());
 

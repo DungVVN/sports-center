@@ -34,6 +34,7 @@ jobs:
       DATABASE_URL: postgresql://ci:ci@localhost:5432/sports_center_training_test
       MIGRATE_DATABASE_URL: postgresql://ci:ci@localhost:5432/sports_center_training_test
       TRAINING_FOUNDATION_TEST_DATABASE_URL: postgresql://ci:ci@localhost:5432/sports_center_training_test
+      ASSIGNMENT_TEST_DATABASE_URL: postgresql://ci:ci@localhost:5432/sports_center_training_test
       JOBS_ENABLED: "false"
     steps:
       - uses: actions/checkout@v4
@@ -44,7 +45,7 @@ jobs:
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
       - run: npm run db:migrate
-      - run: npm test -- test/training-foundation.database.test.js test/personalization.database.test.js
+      - run: npm test -- test/training-foundation.database.test.js test/personalization.database.test.js test/assignment.database.test.js
 
   backend:
     name: Backend quality gates

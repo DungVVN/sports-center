@@ -9,7 +9,7 @@ export function createAssignmentService({ repository, auditService }) {
     async assign(memberId, input, actorId) {
       if (!await repository.member(memberId)) throw new AppError({ statusCode: 404, code: "MEMBER_NOT_FOUND", message: "Không tìm thấy hội viên." });
       const effectiveFrom = new Date(input.effectiveFrom);
-      const today = new Date(); today.setUTCHours(0, 0, 0, 0);
+      const today = new Date(Date.now() + 7 * 3600000); today.setUTCHours(0, 0, 0, 0);
       if (effectiveFrom < today) throw new AppError({ statusCode: 422, code: "COACH_ASSIGNMENT_DATE_INVALID", message: "Ngày hiệu lực không được nằm trong quá khứ." });
       const coach = await repository.coach(input.coachUserId);
       if (!coach || coach.role !== "coach" || coach.status !== "active") throw new AppError({ statusCode: 422, code: "COACH_NOT_AVAILABLE", message: "Huấn luyện viên không khả dụng." });
