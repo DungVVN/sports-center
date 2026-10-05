@@ -3,6 +3,7 @@ import { Button } from "../../../shared/ui/Button.jsx";
 import { usePersonalizationWorkspace } from "../api/usePersonalizationWorkspace.js";
 import { personalizationApi } from "../api/personalization-api.js";
 import { PrescriptionDetails } from "./PrescriptionDetails.jsx";
+import "./training-personalization.css";
 
 function MemberCheckin({ sessions, run, pending }) {
   return <form className="members-form training-action-form" onSubmit={(event) => { event.preventDefault(); const data = Object.fromEntries(new FormData(event.currentTarget)); void run(() => personalizationApi.checkin(data.session, { sessionDate: data.date, availableMinutes: Number(data.minutes), ...(data.sleep ? { sleepHours: Number(data.sleep) } : {}), ...(data.fatigue ? { fatigueScore: Number(data.fatigue) } : {}), ...(data.discomfort ? { discomfortScore: Number(data.discomfort) } : {}), newSymptoms: data.symptoms === "yes", notes: data.notes, otherActivity: data.activity })); }}>
@@ -22,8 +23,8 @@ export function MemberPersonalization() {
   const assessmentConsent = profile?.consents.find((item) => item.purpose === "assessment" && !item.withdrawn_at);
   const nutritionConsent = profile?.consents.find((item) => item.purpose === "nutrition_tracking" && !item.withdrawn_at);
   const sessions = [...new Set((profile?.decisions ?? []).flatMap((item) => item.prescriptions.map((p) => p.training_session_id)))];
-  return <section className="members-list training-personalization"><h2>Hồ sơ tập luyện cá nhân</h2><p>HLV được phân công sử dụng thông tin thể trạng, số đo và lịch của bạn để đánh giá và lập giáo án. Bạn có thể rút đồng ý; việc tạo/duyệt giáo án mới sẽ dừng. Hồ sơ đã ghi được giữ để đối chiếu lịch sử và truy vết. Nhật ký dinh dưỡng có đồng ý riêng.</p>
-    {workspace.error && <p role="alert" className="auth-alert">{workspace.error}</p>}{workspace.notice && <p role="status">{workspace.notice}</p>}<Button variant="ghost" onClick={() => void workspace.profile.refetch()}>Tải lại hồ sơ cá nhân</Button>
+  return <section className="members-list training-personalization"><div className="list-heading"><h2>Hồ sơ tập luyện cá nhân</h2><Button size="sm" variant="outline" onClick={() => void workspace.profile.refetch()}>Tải lại hồ sơ cá nhân</Button></div><p className="training-personalization__intro">HLV được phân công sử dụng thông tin thể trạng, số đo và lịch của bạn để đánh giá và lập giáo án. Bạn có thể rút đồng ý; việc tạo/duyệt giáo án mới sẽ dừng. Hồ sơ đã ghi được giữ để đối chiếu lịch sử và truy vết. Nhật ký dinh dưỡng có đồng ý riêng.</p>
+    {workspace.error && <p role="alert" className="auth-alert">{workspace.error}</p>}{workspace.notice && <p role="status">{workspace.notice}</p>}
     {workspace.profile.isLoading && <p>Đang tải hồ sơ cá nhân…</p>}
     {profile && <>
       {assessmentConsent ? <p>Đã đồng ý đánh giá. <Button loading={pending} onClick={() => void run(() => personalizationApi.withdraw(assessmentConsent.id))}>Rút đồng ý đánh giá</Button></p> : <div><label><input type="checkbox" checked={assessmentAcknowledged} onChange={(e) => setAssessmentAcknowledged(e.target.checked)} />Tôi đã đọc và đồng ý sử dụng thông tin để đánh giá tập luyện (training-privacy-v1).</label><Button disabled={!assessmentAcknowledged} loading={pending} onClick={() => void run(() => personalizationApi.consent("assessment"))}>Đồng ý đánh giá</Button></div>}

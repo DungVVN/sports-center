@@ -5,6 +5,7 @@ import { usePersonalizationWorkspace } from "../api/usePersonalizationWorkspace.
 import { personalizationApi } from "../api/personalization-api.js";
 import { AssessmentForm, AuthorizationForm, ProtocolForm } from "./PersonalizationForms.jsx";
 import { PrescriptionDetails } from "./PrescriptionDetails.jsx";
+import "./training-personalization.css";
 
 function DecisionForm({ assessments, protocols, run, pending }) {
   const [dates, setDates] = useState([]);
@@ -45,14 +46,15 @@ export function TrainingPersonalizationWorkspace({ members, session }) {
   const run = async (task) => { try { return await workspace.mutation.mutateAsync(task); } catch { return null; } };
   const canWrite = hasSessionPermission(session, "training.assessment.write");
   const canProtocol = hasSessionPermission(session, "training.protocol.manage");
-  return <section className="members-list training-personalization"><h2>Giáo án cá nhân theo bằng chứng</h2><p>Mỗi hồ sơ được đánh giá riêng. Nguồn khoa học, giới hạn áp dụng và người duyệt được lưu cùng giáo án.</p>
+  return <section className="members-list training-personalization"><div className="list-heading"><h2>Giáo án cá nhân theo bằng chứng</h2><Button size="sm" variant="outline" onClick={() => { void workspace.reference.refetch(); if (memberId) void workspace.profile.refetch(); }}>Tải lại hồ sơ</Button></div><p className="training-personalization__intro">Mỗi hồ sơ được đánh giá riêng. Nguồn khoa học, giới hạn áp dụng và người duyệt được lưu cùng giáo án.</p>
     {workspace.notice && <p role="status">{workspace.notice}</p>}{workspace.error && <p role="alert" className="auth-alert">{workspace.error}</p>}
-    <Button variant="ghost" onClick={() => { void workspace.reference.refetch(); if (memberId) void workspace.profile.refetch(); }}>Tải lại hồ sơ</Button>
-    <label>Hội viên<select value={memberId} onChange={(e) => setMemberId(e.target.value)}><option value="">Chọn hội viên được phân công</option>{members.map((item) => <option key={item.id} value={item.id}>{item.full_name ?? item.display_name ?? item.member_code ?? item.id}</option>)}</select></label>
+    <div className="members-form training-personalization__selectors">
+    <label>Hội viên<select aria-label="Hội viên" value={memberId} onChange={(e) => setMemberId(e.target.value)}><option value="">Chọn hội viên được phân công</option>{members.map((item) => <option key={item.id} value={item.id}>{item.full_name ?? item.display_name ?? item.member_code ?? item.id}</option>)}</select></label>
+    {reference && <label>Xác minh chuyên môn dùng để duyệt<select aria-label="Xác minh chuyên môn dùng để duyệt" value={authorizationId} onChange={(e) => setAuthorizationId(e.target.value)}><option value="">Chọn xác minh của chính bạn</option>{reference.authorizations.filter((item) => item.user_id === session.user.id && !item.revoked_at && new Date(item.expires_at) > new Date()).map((item) => <option key={item.id} value={item.id}>{item.discipline} · {item.credential_reference}</option>)}</select></label>}
+    </div>
     {workspace.reference.isLoading && <p>Đang tải danh mục chuyên môn…</p>}
     {reference && <>
-      <label>Xác minh chuyên môn dùng để duyệt<select value={authorizationId} onChange={(e) => setAuthorizationId(e.target.value)}><option value="">Chọn xác minh của chính bạn</option>{reference.authorizations.filter((item) => item.user_id === session.user.id && !item.revoked_at && new Date(item.expires_at) > new Date()).map((item) => <option key={item.id} value={item.id}>{item.discipline} · {item.credential_reference}</option>)}</select></label>
-      {!reference.authorizations.length && <p>Chưa có người được xác minh chuyên môn. Có thể soạn nháp; chưa thể duyệt hoặc áp dụng.</p>}
+      {!reference.authorizations.length && <p className="training-personalization__notice">Chưa có người được xác minh chuyên môn. Có thể soạn nháp; chưa thể duyệt hoặc áp dụng.</p>}
       {hasSessionPermission(session, "training.review.authorize") && <details><summary>Xác minh người duyệt</summary><AuthorizationForm users={reference.users} run={run} pending={pending} /></details>}
       {hasSessionPermission(session, "training.review.authorize") && <details><summary>Thu hồi xác minh chuyên môn</summary>{reference.authorizations.filter((item) => !item.revoked_at).map((item) => <p key={item.id}>{item.discipline} · {item.credential_reference} <Button loading={pending} onClick={() => void run(() => personalizationApi.revoke(item.id))}>Thu hồi xác minh</Button></p>)}</details>}
       <details><summary>Nguồn bằng chứng và giới hạn</summary>{reference.sources.map((item) => <article key={item.id}><a href={item.url} target="_blank" rel="noreferrer">{item.publisher} · {item.version}</a><p>{item.limitations}</p></article>)}</details>

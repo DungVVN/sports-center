@@ -1,0 +1,121 @@
+/* Extend the existing workspace controls and rhythm within the new workflow. */
+.training-personalization {
+  display: grid;
+  gap: var(--space-16);
+  min-width: 0;
+  margin-bottom: var(--section-gap);
+}
+
+.training-personalization .list-heading { margin: 0; }
+.training-personalization p { line-height: var(--line-height-body); margin: 0; overflow-wrap: anywhere; }
+.training-personalization__intro { color: var(--color-text-secondary); max-width: 90ch; }
+.training-personalization h3 { font-size: var(--font-size-section); font-weight: var(--font-weight-semibold); margin: 0; }
+.training-personalization > :is(div, article, details),
+.training-personalization label { min-width: 0; }
+
+.training-personalization .members-form {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  margin: 0;
+  padding: 0;
+}
+
+.training-personalization__selectors { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.training-personalization .members-form :is(input, select, textarea) { min-width: 0; font: inherit; }
+.training-personalization .members-form > :is(h3, p, fieldset),
+.training-personalization .members-form > label:has(textarea),
+.training-personalization label:has(input[type="checkbox"]) { grid-column: 1 / -1; }
+
+.training-personalization label:has(input[type="checkbox"]) {
+  align-items: start;
+  color: var(--color-text);
+  display: grid;
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-medium);
+  gap: var(--space-8);
+  grid-template-columns: 18px minmax(0, 1fr);
+  line-height: var(--line-height-body);
+}
+
+.training-personalization input[type="checkbox"] {
+  accent-color: var(--color-primary);
+  height: 16px;
+  margin: 2px 0 0;
+  min-height: 16px;
+  padding: 0;
+  width: 16px;
+}
+
+.training-personalization fieldset {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  display: grid;
+  gap: var(--space-12);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+  min-inline-size: 0;
+  padding: var(--space-16);
+}
+
+.training-personalization fieldset legend { font-size: var(--font-size-label); font-weight: var(--font-weight-semibold); padding: 0 var(--space-4); }
+.training-personalization fieldset label:has(input[type="checkbox"]) { grid-column: auto; }
+.training-personalization__notice { background: var(--color-warning-soft); border: 1px solid var(--color-warning-border); border-radius: var(--radius-control); color: var(--color-warning-text); font-size: var(--font-size-label); padding: var(--space-12) var(--space-16); }
+
+.training-personalization details {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  min-width: 0;
+  padding: 0 var(--space-16);
+}
+
+.training-personalization summary {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  gap: var(--space-12);
+  line-height: var(--line-height-body);
+  list-style: none;
+  margin-inline: calc(-1 * var(--space-16));
+  min-height: var(--control-height-lg);
+  padding: var(--space-12) var(--space-16);
+}
+
+.training-personalization summary::-webkit-details-marker { display: none; }
+.training-personalization summary::after { border-bottom: 2px solid var(--color-text-secondary); border-right: 2px solid var(--color-text-secondary); content: ""; flex: 0 0 7px; height: 7px; margin-left: auto; margin-right: 2px; transform: rotate(45deg); }
+.training-personalization details[open] > summary::after { transform: rotate(225deg); }
+.training-personalization summary:hover { background: var(--color-surface-hover); }
+.training-personalization summary:focus-visible { border-radius: var(--radius-control); outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.training-personalization details[open] { padding-bottom: var(--space-16); }
+.training-personalization details[open] > summary { border-bottom: 1px solid var(--color-border); margin-bottom: var(--space-16); }
+.training-personalization details > :not(summary) + :not(summary) { margin-top: var(--space-16); }
+
+.training-personalization article {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  display: grid;
+  gap: var(--space-12);
+  padding: var(--space-16);
+}
+
+.training-personalization article > .button { justify-self: start; }
+.training-personalization article a { color: var(--color-primary); font-size: var(--font-size-body); font-weight: var(--font-weight-semibold); overflow-wrap: anywhere; }
+.training-prescription-details { display: grid; gap: var(--space-12); min-width: 0; }
+.training-personalization .training-personalization-dose { background: var(--color-surface-muted); }
+.training-personalization > div:has(> label > input[type="checkbox"]),
+.training-personalization details > div:has(> label > input[type="checkbox"]) { display: grid; gap: var(--space-12); }
+.training-personalization > div:has(> label > input[type="checkbox"]) > .button,
+.training-personalization details > div:has(> label > input[type="checkbox"]) > .button { justify-self: start; }
+
+@media (max-width: 640px) {
+  .training-personalization .list-heading { align-items: flex-start; flex-direction: column; }
+  .training-personalization .training-personalization__selectors,
+  .training-personalization .training-action-form { grid-template-columns: minmax(0, 1fr); }
+  .training-personalization fieldset { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .training-personalization .button { max-width: 100%; min-width: 0; white-space: normal; }
+  .training-personalization article,
+  .training-personalization details { padding-inline: var(--space-12); }
+  .training-personalization summary { margin-inline: calc(-1 * var(--space-12)); padding-inline: var(--space-12); }
+}
