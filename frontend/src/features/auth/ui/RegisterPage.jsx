@@ -31,7 +31,10 @@ export function RegisterPage({ onLogin, onRegistered }) {
     setError("");
     setTouched({ fullName: true, email: true, phone: true, password: true, confirmPassword: true });
     const localErrors = validateRegistration(input);
-    if (Object.keys(localErrors).length) { showToast?.(Object.values(localErrors).join(" "), "error"); return; }
+    if (Object.keys(localErrors).length) {
+      showToast?.(Object.values(localErrors).join(" "), "error");
+      return;
+    }
     setLoading(true);
     try {
       const payload = {
@@ -47,7 +50,9 @@ export function RegisterPage({ onLogin, onRegistered }) {
         userId: registration.user.id,
         channels: registration.verifications.map(({ channel }) => channel),
         developmentCodes: Object.fromEntries(
-          registration.verifications.filter((item) => item.developmentCode).map((item) => [item.channel, item.developmentCode]),
+          registration.verifications
+            .filter((item) => item.developmentCode)
+            .map((item) => [item.channel, item.developmentCode]),
         ),
       });
     } catch (caught) {
@@ -68,17 +73,49 @@ export function RegisterPage({ onLogin, onRegistered }) {
         <form className="auth-form" onSubmit={submit} noValidate>
           <div className="field">
             <label htmlFor="register-name">Họ và tên</label>
-            <input aria-invalid={Boolean(touched.fullName && fieldErrors.fullName)} className={touched.fullName && fieldErrors.fullName ? "input-error" : ""} id="register-name" name="fullName" value={input.fullName} onChange={update} autoComplete="name" required minLength="2" />
+            <input
+              aria-invalid={Boolean(touched.fullName && fieldErrors.fullName)}
+              className={touched.fullName && fieldErrors.fullName ? "input-error" : ""}
+              id="register-name"
+              name="fullName"
+              value={input.fullName}
+              onChange={update}
+              autoComplete="name"
+              required
+              minLength="2"
+            />
             {touched.fullName && fieldErrors.fullName && <span className="field-error">{fieldErrors.fullName}</span>}
           </div>
           <div className="field">
             <label htmlFor="register-email">Email</label>
-            <input aria-invalid={Boolean(touched.email && fieldErrors.email)} className={touched.email && fieldErrors.email ? "input-error" : ""} id="register-email" name="email" value={input.email} onChange={update} type="email" autoComplete="email" required />
+            <input
+              aria-invalid={Boolean(touched.email && fieldErrors.email)}
+              className={touched.email && fieldErrors.email ? "input-error" : ""}
+              id="register-email"
+              name="email"
+              value={input.email}
+              onChange={update}
+              type="email"
+              autoComplete="email"
+              required
+            />
             {touched.email && fieldErrors.email && <span className="field-error">{fieldErrors.email}</span>}
           </div>
           <div className="field">
             <label htmlFor="register-phone">Số điện thoại</label>
-            <input aria-invalid={Boolean(touched.phone && fieldErrors.phone)} className={touched.phone && fieldErrors.phone ? "input-error" : ""} id="register-phone" name="phone" value={input.phone} onChange={update} type="tel" inputMode="tel" autoComplete="tel" placeholder="0901234567" required />
+            <input
+              aria-invalid={Boolean(touched.phone && fieldErrors.phone)}
+              className={touched.phone && fieldErrors.phone ? "input-error" : ""}
+              id="register-phone"
+              name="phone"
+              value={input.phone}
+              onChange={update}
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              placeholder="0901234567"
+              required
+            />
             {touched.phone && fieldErrors.phone && <span className="field-error">{fieldErrors.phone}</span>}
           </div>
           <div className="field">
@@ -132,7 +169,9 @@ export function RegisterPage({ onLogin, onRegistered }) {
                 {showConfirmPassword ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
               </button>
             </div>
-            {touched.confirmPassword && fieldErrors.confirmPassword && <span className="field-error">{fieldErrors.confirmPassword}</span>}
+            {touched.confirmPassword && fieldErrors.confirmPassword && (
+              <span className="field-error">{fieldErrors.confirmPassword}</span>
+            )}
           </div>
           <CaptchaField
             onTokenChange={(captchaToken) =>
@@ -144,7 +183,11 @@ export function RegisterPage({ onLogin, onRegistered }) {
               })
             }
           />
-          {error && <p className="auth-alert" role="alert">{error}</p>}
+          {error && (
+            <p className="auth-alert" role="alert">
+              {error}
+            </p>
+          )}
           <Button type="submit" size="lg" loading={loading}>
             <UserPlus size={17} aria-hidden="true" />
             Đăng ký

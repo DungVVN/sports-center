@@ -11,14 +11,25 @@ import { SitePageCatalog } from "./SitePageCatalog.jsx";
 import { blockDescriptions, blockNames, newBlock } from "./editor-model.js";
 import "./site-admin.css";
 
-const toForm = (revision) => ({ title: revision.title, seoTitle: revision.seo_title, seoDescription: revision.seo_description, blocks: revision.blocks, editRevision: revision.edit_revision });
+const toForm = (revision) => ({
+  title: revision.title,
+  seoTitle: revision.seo_title,
+  seoDescription: revision.seo_description,
+  blocks: revision.blocks,
+  editRevision: revision.edit_revision,
+});
 
 export function SitePagesPage() {
   const client = useQueryClient();
   const pagesQuery = useQuery({ queryKey: ["site-admin-pages"], queryFn: siteAdminApi.pages });
   const pages = pagesQuery.data ?? [];
   const [selected, setSelected] = useState(null);
-  const detailQuery = useQuery({ queryKey: ["site-admin-page", selected], queryFn: () => siteAdminApi.page(selected), enabled: Boolean(selected) && pages.some((page) => page.route_key === selected), retry: false });
+  const detailQuery = useQuery({
+    queryKey: ["site-admin-page", selected],
+    queryFn: () => siteAdminApi.page(selected),
+    enabled: Boolean(selected) && pages.some((page) => page.route_key === selected),
+    retry: false,
+  });
   const detail = detailQuery.data;
   const [formState, setFormState] = useState(null);
   const detailKey = detail ? `${selected}:${detail.draft?.id ?? "none"}:${detail.draft?.edit_revision ?? 0}` : "";
@@ -39,13 +50,20 @@ export function SitePagesPage() {
   useEffect(() => {
     if (!libraryOpen) return undefined;
     librarySearchRef.current?.focus();
-    const closeOnEscape = (event) => { if (event.key === "Escape") setLibraryOpen(false); };
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setLibraryOpen(false);
+    };
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [libraryOpen]);
 
-  function change(patch) { setFormState({ key: detailKey, form: { ...form, ...patch }, dirty: true }); setNotice(""); }
-  function updateBlock(id, patch) { change({ blocks: form.blocks.map((block) => block.id === id ? { ...block, ...patch } : block) }); }
+  function change(patch) {
+    setFormState({ key: detailKey, form: { ...form, ...patch }, dirty: true });
+    setNotice("");
+  }
+  function updateBlock(id, patch) {
+    change({ blocks: form.blocks.map((block) => (block.id === id ? { ...block, ...patch } : block)) });
+  }
   function moveBlock(index, delta) {
     const target = index + delta;
     if (target < 0 || target >= form.blocks.length) return;
@@ -67,17 +85,38 @@ export function SitePagesPage() {
     if (selectedBlockId === id) setSelectedBlockId(null);
   }
   async function action(work, success) {
-    setWorking(true); setError(""); setNotice("");
-    try { const result = await work(); await Promise.all([client.invalidateQueries({ queryKey: ["site-admin-pages"] }), client.invalidateQueries({ queryKey: ["site-admin-page", selected] })]); setNotice(success); return result; }
-    catch (cause) { setError(errorMessageFor(cause, "Không thể hoàn tất thao tác.")); return null; }
-    finally { setWorking(false); }
+    setWorking(true);
+    setError("");
+    setNotice("");
+    try {
+      const result = await work();
+      await Promise.all([
+        client.invalidateQueries({ queryKey: ["site-admin-pages"] }),
+        client.invalidateQueries({ queryKey: ["site-admin-page", selected] }),
+      ]);
+      setNotice(success);
+      return result;
+    } catch (cause) {
+      setError(errorMessageFor(cause, "Không thể hoàn tất thao tác."));
+      return null;
+    } finally {
+      setWorking(false);
+    }
   }
   async function create(input) {
     const result = await action(() => siteAdminApi.createPage(input), "Đã tạo trang và bản nháp đầu tiên.");
-    if (result) { setSelected(input.routeKey); setShowCreate(false); setCreateForm({ routeKey: "", path: "", title: "" }); setFormState(null); }
+    if (result) {
+      setSelected(input.routeKey);
+      setShowCreate(false);
+      setCreateForm({ routeKey: "", path: "", title: "" });
+      setFormState(null);
+    }
   }
   async function deletePage(page) {
-    const result = await action(() => siteAdminApi.deletePage(page.route_key), "Đã xóa trang khỏi danh mục và website.");
+    const result = await action(
+      () => siteAdminApi.deletePage(page.route_key),
+      "Đã xóa trang khỏi danh mục và website.",
+    );
     if (result) {
       client.removeQueries({ queryKey: ["site-admin-page", page.route_key] });
       await client.invalidateQueries({ queryKey: ["public-site-path", page.path] });
@@ -85,14 +124,27 @@ export function SitePagesPage() {
     return result;
   }
   function openPage(routeKey, showPreview = false) {
-    setSelected(routeKey); setFormState(null); setSelectedBlockId(null); setPreview(showPreview); setError(""); setNotice("");
+    setSelected(routeKey);
+    setFormState(null);
+    setSelectedBlockId(null);
+    setPreview(showPreview);
+    setError("");
+    setNotice("");
   }
   function backToCatalog() {
     if (dirty && !window.confirm("Bỏ thay đổi chưa lưu?")) return;
-    setSelected(null); setFormState(null); setPreview(false); setLibraryOpen(false); setError(""); setNotice("");
+    setSelected(null);
+    setFormState(null);
+    setPreview(false);
+    setLibraryOpen(false);
+    setError("");
+    setNotice("");
   }
   async function startDraft() {
-    const result = await action(() => siteAdminApi.startPageDraft(selected), "Đã tạo bản nháp. Website công khai chưa thay đổi.");
+    const result = await action(
+      () => siteAdminApi.startPageDraft(selected),
+      "Đã tạo bản nháp. Website công khai chưa thay đổi.",
+    );
     if (result) setFormState(null);
   }
   async function save() {
@@ -103,7 +155,10 @@ export function SitePagesPage() {
   async function publish() {
     if (!publishConfirmationOpen || !form || dirty || working || !form.blocks.some((block) => block.active)) return;
     const result = await action(() => siteAdminApi.publishPage(selected, form.editRevision), "Đã xuất bản trang.");
-    if (result) { setFormState(null); setPublishConfirmationOpen(false); }
+    if (result) {
+      setFormState(null);
+      setPublishConfirmationOpen(false);
+    }
   }
   async function restore(revisionId) {
     if (!window.confirm("Chọn lại phiên bản này làm nội dung công khai?")) return;
@@ -112,35 +167,347 @@ export function SitePagesPage() {
 
   const selectedBlock = form?.blocks.find((block) => block.id === selectedBlockId) ?? form?.blocks[0];
   const selectedIndex = form?.blocks.findIndex((block) => block.id === selectedBlock?.id) ?? -1;
-  const libraryEntries = Object.entries(blockNames).filter(([type, name]) => `${name} ${blockDescriptions[type]}`.toLocaleLowerCase("vi").includes(librarySearch.toLocaleLowerCase("vi")));
+  const libraryEntries = Object.entries(blockNames).filter(([type, name]) =>
+    `${name} ${blockDescriptions[type]}`.toLocaleLowerCase("vi").includes(librarySearch.toLocaleLowerCase("vi")),
+  );
 
   if (pagesQuery.isPending) return <p role="status">Đang tải danh sách trang...</p>;
-  if (pagesQuery.isError) return <p role="alert">{errorMessageFor(pagesQuery.error, "Không tải được danh sách trang.")}</p>;
-  if (!selected) return <SitePageCatalog pages={pages} onOpen={openPage} onDelete={deletePage} onCreate={create} showCreate={showCreate} setShowCreate={setShowCreate} createForm={createForm} setCreateForm={setCreateForm} working={working} notice={notice} error={error} />;
-  return <section className="site-admin site-admin--page-editor">
-    <PageHeader eyebrow="CMS · Trang" title={form?.title ?? detail?.published?.title ?? (selected === "home" ? "Trang chủ" : selected)} description="Chỉnh sửa nội dung trang; website chỉ thay đổi sau khi xuất bản." back={<button className="site-admin__back" type="button" onClick={backToCatalog}>← Danh mục trang</button>} />
-    {notice && <p className="site-admin__notice" role="status">{notice}</p>}
-    {error && <p className="site-admin__error" role="alert">{error}</p>}
-    <Dialog isOpen={publishConfirmationOpen} onClose={() => { if (!working) setPublishConfirmationOpen(false); }} title="Xuất bản trang">
-      <p>Xuất bản nội dung đã lưu của trang <strong>{form?.title}</strong> ({detail?.page.path}) lên website công khai?</p>
-      <p>Bản nháp sẽ trở thành nội dung khách truy cập nhìn thấy. Bạn có thể chọn lại phiên bản trước trong lịch sử.</p>
-      {error && <p role="alert" className="site-admin__error">{error}</p>}
-      <div className="site-admin__actions">
-        <Button variant="outline" disabled={working} onClick={() => setPublishConfirmationOpen(false)}>Hủy</Button>
-        <Button disabled={working || dirty || !form} onClick={publish}>{working ? "Đang xuất bản..." : "Xác nhận xuất bản"}</Button>
+  if (pagesQuery.isError)
+    return <p role="alert">{errorMessageFor(pagesQuery.error, "Không tải được danh sách trang.")}</p>;
+  if (!selected)
+    return (
+      <SitePageCatalog
+        pages={pages}
+        onOpen={openPage}
+        onDelete={deletePage}
+        onCreate={create}
+        showCreate={showCreate}
+        setShowCreate={setShowCreate}
+        createForm={createForm}
+        setCreateForm={setCreateForm}
+        working={working}
+        notice={notice}
+        error={error}
+      />
+    );
+  return (
+    <section className="site-admin site-admin--page-editor">
+      <PageHeader
+        eyebrow="CMS · Trang"
+        title={form?.title ?? detail?.published?.title ?? (selected === "home" ? "Trang chủ" : selected)}
+        description="Chỉnh sửa nội dung trang; website chỉ thay đổi sau khi xuất bản."
+        back={
+          <button className="site-admin__back" type="button" onClick={backToCatalog}>
+            ← Danh mục trang
+          </button>
+        }
+      />
+      {notice && (
+        <p className="site-admin__notice" role="status">
+          {notice}
+        </p>
+      )}
+      {error && (
+        <p className="site-admin__error" role="alert">
+          {error}
+        </p>
+      )}
+      <Dialog
+        isOpen={publishConfirmationOpen}
+        onClose={() => {
+          if (!working) setPublishConfirmationOpen(false);
+        }}
+        title="Xuất bản trang"
+      >
+        <p>
+          Xuất bản nội dung đã lưu của trang <strong>{form?.title}</strong> ({detail?.page.path}) lên website công khai?
+        </p>
+        <p>
+          Bản nháp sẽ trở thành nội dung khách truy cập nhìn thấy. Bạn có thể chọn lại phiên bản trước trong lịch sử.
+        </p>
+        {error && (
+          <p role="alert" className="site-admin__error">
+            {error}
+          </p>
+        )}
+        <div className="site-admin__actions">
+          <Button variant="outline" disabled={working} onClick={() => setPublishConfirmationOpen(false)}>
+            Hủy
+          </Button>
+          <Button disabled={working || dirty || !form} onClick={publish}>
+            {working ? "Đang xuất bản..." : "Xác nhận xuất bản"}
+          </Button>
+        </div>
+      </Dialog>
+      <div className="site-admin__main">
+        {detailQuery.isPending ? (
+          <p role="status">Đang tải trang...</p>
+        ) : detailQuery.isError ? (
+          <p role="alert">{errorMessageFor(detailQuery.error, "Không tải được trang.")}</p>
+        ) : (
+          detail && (
+            <>
+              <div className="site-admin__panel site-admin__toolbar">
+                <div>
+                  <p className="site-admin__eyebrow">BỐ CỤC TRANG</p>
+                  <h2>
+                    {selected === "home" ? "Trang chủ" : (form?.title ?? detail.published?.title ?? detail.page.path)}
+                  </h2>
+                  <p>
+                    {detail.page.path} · {detail.published ? "Đã có bản công khai" : "Chưa xuất bản"} ·{" "}
+                    {detail.draft ? "Có bản nháp" : "Không có bản nháp"}
+                    {dirty ? " · Chưa lưu" : ""}
+                  </p>
+                </div>
+                <div className="site-admin__actions">
+                  {form && (
+                    <Button disabled={form.blocks.length >= 30} onClick={() => setLibraryOpen(true)} variant="outline">
+                      + Thêm phần
+                    </Button>
+                  )}
+                  <Button onClick={() => setPreview((value) => !value)} variant="outline">
+                    {preview ? "Đóng xem trước" : "Xem trước"}
+                  </Button>
+                  {!detail.draft && (
+                    <Button disabled={working} onClick={startDraft}>
+                      Tạo bản nháp
+                    </Button>
+                  )}
+                  {form && (
+                    <>
+                      <Button disabled={!dirty || working} onClick={save} variant="secondary">
+                        Lưu nháp
+                      </Button>
+                      <Button
+                        disabled={dirty || working || !form.blocks.some((block) => block.active)}
+                        onClick={() => setPublishConfirmationOpen(true)}
+                      >
+                        Xuất bản
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+              <p className="site-admin__workflow-note">
+                Bản đang sửa chỉ nằm trong CMS. Lưu nháp không thay đổi website; bạn chủ động bấm Xuất bản sau khi kiểm
+                tra.
+              </p>
+              {preview && (
+                <div className="site-admin__panel site-admin__full-preview">
+                  <div className="site-admin__subhead">
+                    <div>
+                      <p className="site-admin__eyebrow">XEM TRƯỚC</p>
+                      <h3>Bản đang sửa</h3>
+                    </div>
+                    <Button onClick={() => setPreview(false)} variant="outline">
+                      Đóng
+                    </Button>
+                  </div>
+                  <SiteBlockView blocks={form?.blocks ?? detail.published?.blocks ?? []} />
+                </div>
+              )}
+              {form && (
+                <>
+                  <div className="site-admin__builder">
+                    <div className="site-admin__panel site-admin__canvas">
+                      <div className="site-admin__subhead">
+                        <div>
+                          <p className="site-admin__eyebrow">BẢN XEM BỐ CỤC</p>
+                          <h3>{form.blocks.length} phần trên trang</h3>
+                        </div>
+                        <span className="site-admin__status">Bản đang sửa</span>
+                      </div>
+                      <p className="site-admin__canvas-help">
+                        Chọn một phần để sửa nội dung bên cạnh. Bản xem này dùng kiểu hiển thị CMS của Sports Center,
+                        chưa thay thế giao diện cũ.
+                      </p>
+                      {form.blocks.length === 0 ? (
+                        <div className="site-admin__empty">
+                          <strong>Trang chưa có phần nội dung</strong>
+                          <p>Thêm phần mở đầu, ảnh, nội dung hoặc lời kêu gọi hành động để bắt đầu.</p>
+                          <Button onClick={() => setLibraryOpen(true)} variant="outline">
+                            + Thêm phần
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="site-admin__canvas-list">
+                          {form.blocks.map((block, index) => (
+                            <article
+                              className={`site-admin__canvas-block${selectedBlock?.id === block.id ? " is-selected" : ""}${block.active ? "" : " is-hidden"}`}
+                              key={block.id}
+                            >
+                              <div className="site-admin__canvas-blockbar">
+                                <button
+                                  type="button"
+                                  className="site-admin__canvas-select"
+                                  onClick={() => setSelectedBlockId(block.id)}
+                                  aria-pressed={selectedBlock?.id === block.id}
+                                >
+                                  <span>
+                                    {index + 1}. {blockNames[block.type]}
+                                  </span>
+                                  <small>{block.title}</small>
+                                </button>
+                                <div className="site-admin__canvas-controls">
+                                  <button
+                                    type="button"
+                                    disabled={index === 0}
+                                    onClick={() => moveBlock(index, -1)}
+                                    aria-label={`Đưa khối ${index + 1} lên`}
+                                  >
+                                    ↑
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={index === form.blocks.length - 1}
+                                    onClick={() => moveBlock(index, 1)}
+                                    aria-label={`Đưa khối ${index + 1} xuống`}
+                                  >
+                                    ↓
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => updateBlock(block.id, { active: !block.active })}
+                                  >
+                                    {block.active ? "Ẩn" : "Hiện"}
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="site-admin__canvas-render" onClick={() => setSelectedBlockId(block.id)}>
+                                <SiteBlockView blocks={[{ ...block, active: true }]} />
+                              </div>
+                              {!block.active && (
+                                <span className="site-admin__hidden-label">Đang ẩn khỏi bản công khai</span>
+                              )}
+                            </article>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <aside className="site-admin__panel site-admin__inspector" aria-label="Bảng chỉnh sửa phần">
+                      <div className="site-admin__subhead">
+                        <div>
+                          <p className="site-admin__eyebrow">BẢNG CHỈNH SỬA</p>
+                          <h3>{selectedBlock ? blockNames[selectedBlock.type] : "Chọn một phần"}</h3>
+                        </div>
+                      </div>
+                      {selectedBlock ? (
+                        <BlockEditor
+                          block={selectedBlock}
+                          index={selectedIndex}
+                          total={form.blocks.length}
+                          onChange={(patch) => updateBlock(selectedBlock.id, patch)}
+                          onMove={(delta) => moveBlock(selectedIndex, delta)}
+                          onRemove={() => removeBlock(selectedBlock.id)}
+                        />
+                      ) : (
+                        <p className="site-admin__muted">Chọn một phần trong bản xem bố cục để chỉnh nội dung.</p>
+                      )}
+                    </aside>
+                  </div>
+                  <div className="site-admin__panel site-admin__page-settings">
+                    <div className="site-admin__subhead">
+                      <div>
+                        <p className="site-admin__eyebrow">THÔNG TIN TRANG</p>
+                        <h3>Tiêu đề và tìm kiếm</h3>
+                      </div>
+                      <span>Chỉnh thông tin trang trước khi xuất bản</span>
+                    </div>
+                    <label>
+                      Tiêu đề trang
+                      <input
+                        maxLength={240}
+                        value={form.title}
+                        onChange={(event) => change({ title: event.target.value })}
+                      />
+                    </label>
+                    <div className="site-admin__cols">
+                      <label>
+                        SEO title
+                        <input
+                          maxLength={240}
+                          value={form.seoTitle}
+                          onChange={(event) => change({ seoTitle: event.target.value })}
+                        />
+                      </label>
+                      <label>
+                        SEO description
+                        <input
+                          maxLength={500}
+                          value={form.seoDescription}
+                          onChange={(event) => change({ seoDescription: event.target.value })}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                </>
+              )}
+              {libraryOpen && (
+                <div className="site-admin__sheet-backdrop" role="presentation" onClick={() => setLibraryOpen(false)}>
+                  <section
+                    className="site-admin__sheet"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="site-block-library-title"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <div className="site-admin__subhead">
+                      <div>
+                        <p className="site-admin__eyebrow">THƯ VIỆN KHỐI</p>
+                        <h2 id="site-block-library-title">Thêm phần vào trang</h2>
+                        <p>Chọn theo mục đích sử dụng. Phần mới sẽ xuất hiện ngay trong bản xem bố cục.</p>
+                      </div>
+                      <button
+                        type="button"
+                        className="site-admin__sheet-close"
+                        onClick={() => setLibraryOpen(false)}
+                        aria-label="Đóng thư viện khối"
+                      >
+                        ×
+                      </button>
+                    </div>
+                    <label>
+                      Tìm loại phần
+                      <input
+                        ref={librarySearchRef}
+                        value={librarySearch}
+                        onChange={(event) => setLibrarySearch(event.target.value)}
+                        placeholder="Tiêu đề, ảnh, câu hỏi..."
+                      />
+                    </label>
+                    <div className="site-admin__library-list">
+                      {libraryEntries.map(([type, name]) => (
+                        <button type="button" key={type} onClick={() => addBlock(type)}>
+                          <strong>{name}</strong>
+                          <span>{blockDescriptions[type]}</span>
+                        </button>
+                      ))}
+                      {libraryEntries.length === 0 && <p>Không có loại phần phù hợp.</p>}
+                    </div>
+                  </section>
+                </div>
+              )}
+              {detail.revisions.length > 0 && (
+                <div className="site-admin__panel">
+                  <h3>Lịch sử phiên bản</h3>
+                  <ul className="site-admin__history">
+                    {detail.revisions.map((revision) => (
+                      <li key={revision.id}>
+                        Bản {revision.versionNumber} · {revision.status === "draft" ? "Nháp" : "Đã xuất bản"}
+                        {revision.status === "published" && revision.id !== detail.published?.id && (
+                          <Button disabled={working} onClick={() => restore(revision.id)} size="sm" variant="outline">
+                            Chọn lại bản này
+                          </Button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
+          )
+        )}
       </div>
-    </Dialog>
-    <div className="site-admin__main">{detailQuery.isPending ? <p role="status">Đang tải trang...</p> : detailQuery.isError ? <p role="alert">{errorMessageFor(detailQuery.error, "Không tải được trang.")}</p> : detail && <>
-        <div className="site-admin__panel site-admin__toolbar"><div><p className="site-admin__eyebrow">BỐ CỤC TRANG</p><h2>{selected === "home" ? "Trang chủ" : form?.title ?? detail.published?.title ?? detail.page.path}</h2><p>{detail.page.path} · {detail.published ? "Đã có bản công khai" : "Chưa xuất bản"} · {detail.draft ? "Có bản nháp" : "Không có bản nháp"}{dirty ? " · Chưa lưu" : ""}</p></div><div className="site-admin__actions">{form && <Button disabled={form.blocks.length >= 30} onClick={() => setLibraryOpen(true)} variant="outline">+ Thêm phần</Button>}<Button onClick={() => setPreview((value) => !value)} variant="outline">{preview ? "Đóng xem trước" : "Xem trước"}</Button>{!detail.draft && <Button disabled={working} onClick={startDraft}>Tạo bản nháp</Button>}{form && <><Button disabled={!dirty || working} onClick={save} variant="secondary">Lưu nháp</Button><Button disabled={dirty || working || !form.blocks.some((block) => block.active)} onClick={() => setPublishConfirmationOpen(true)}>Xuất bản</Button></>}</div></div>
-        <p className="site-admin__workflow-note">Bản đang sửa chỉ nằm trong CMS. Lưu nháp không thay đổi website; bạn chủ động bấm Xuất bản sau khi kiểm tra.</p>
-        {preview && <div className="site-admin__panel site-admin__full-preview"><div className="site-admin__subhead"><div><p className="site-admin__eyebrow">XEM TRƯỚC</p><h3>Bản đang sửa</h3></div><Button onClick={() => setPreview(false)} variant="outline">Đóng</Button></div><SiteBlockView blocks={form?.blocks ?? detail.published?.blocks ?? []} /></div>}
-        {form && <>
-          <div className="site-admin__builder"><div className="site-admin__panel site-admin__canvas"><div className="site-admin__subhead"><div><p className="site-admin__eyebrow">BẢN XEM BỐ CỤC</p><h3>{form.blocks.length} phần trên trang</h3></div><span className="site-admin__status">Bản đang sửa</span></div><p className="site-admin__canvas-help">Chọn một phần để sửa nội dung bên cạnh. Bản xem này dùng kiểu hiển thị CMS của Sports Center, chưa thay thế giao diện cũ.</p>{form.blocks.length === 0 ? <div className="site-admin__empty"><strong>Trang chưa có phần nội dung</strong><p>Thêm phần mở đầu, ảnh, nội dung hoặc lời kêu gọi hành động để bắt đầu.</p><Button onClick={() => setLibraryOpen(true)} variant="outline">+ Thêm phần</Button></div> : <div className="site-admin__canvas-list">{form.blocks.map((block, index) => <article className={`site-admin__canvas-block${selectedBlock?.id === block.id ? " is-selected" : ""}${block.active ? "" : " is-hidden"}`} key={block.id}><div className="site-admin__canvas-blockbar"><button type="button" className="site-admin__canvas-select" onClick={() => setSelectedBlockId(block.id)} aria-pressed={selectedBlock?.id === block.id}><span>{index + 1}. {blockNames[block.type]}</span><small>{block.title}</small></button><div className="site-admin__canvas-controls"><button type="button" disabled={index === 0} onClick={() => moveBlock(index, -1)} aria-label={`Đưa khối ${index + 1} lên`}>↑</button><button type="button" disabled={index === form.blocks.length - 1} onClick={() => moveBlock(index, 1)} aria-label={`Đưa khối ${index + 1} xuống`}>↓</button><button type="button" onClick={() => updateBlock(block.id, { active: !block.active })}>{block.active ? "Ẩn" : "Hiện"}</button></div></div><div className="site-admin__canvas-render" onClick={() => setSelectedBlockId(block.id)}><SiteBlockView blocks={[{ ...block, active: true }]} /></div>{!block.active && <span className="site-admin__hidden-label">Đang ẩn khỏi bản công khai</span>}</article>)}</div>}</div>
-            <aside className="site-admin__panel site-admin__inspector" aria-label="Bảng chỉnh sửa phần"><div className="site-admin__subhead"><div><p className="site-admin__eyebrow">BẢNG CHỈNH SỬA</p><h3>{selectedBlock ? blockNames[selectedBlock.type] : "Chọn một phần"}</h3></div></div>{selectedBlock ? <BlockEditor block={selectedBlock} index={selectedIndex} total={form.blocks.length} onChange={(patch) => updateBlock(selectedBlock.id, patch)} onMove={(delta) => moveBlock(selectedIndex, delta)} onRemove={() => removeBlock(selectedBlock.id)} /> : <p className="site-admin__muted">Chọn một phần trong bản xem bố cục để chỉnh nội dung.</p>}</aside></div>
-          <div className="site-admin__panel site-admin__page-settings"><div className="site-admin__subhead"><div><p className="site-admin__eyebrow">THÔNG TIN TRANG</p><h3>Tiêu đề và tìm kiếm</h3></div><span>Chỉnh thông tin trang trước khi xuất bản</span></div><label>Tiêu đề trang<input maxLength={240} value={form.title} onChange={(event) => change({ title: event.target.value })} /></label><div className="site-admin__cols"><label>SEO title<input maxLength={240} value={form.seoTitle} onChange={(event) => change({ seoTitle: event.target.value })} /></label><label>SEO description<input maxLength={500} value={form.seoDescription} onChange={(event) => change({ seoDescription: event.target.value })} /></label></div></div>
-        </>}
-        {libraryOpen && <div className="site-admin__sheet-backdrop" role="presentation" onClick={() => setLibraryOpen(false)}><section className="site-admin__sheet" role="dialog" aria-modal="true" aria-labelledby="site-block-library-title" onClick={(event) => event.stopPropagation()}><div className="site-admin__subhead"><div><p className="site-admin__eyebrow">THƯ VIỆN KHỐI</p><h2 id="site-block-library-title">Thêm phần vào trang</h2><p>Chọn theo mục đích sử dụng. Phần mới sẽ xuất hiện ngay trong bản xem bố cục.</p></div><button type="button" className="site-admin__sheet-close" onClick={() => setLibraryOpen(false)} aria-label="Đóng thư viện khối">×</button></div><label>Tìm loại phần<input ref={librarySearchRef} value={librarySearch} onChange={(event) => setLibrarySearch(event.target.value)} placeholder="Tiêu đề, ảnh, câu hỏi..." /></label><div className="site-admin__library-list">{libraryEntries.map(([type, name]) => <button type="button" key={type} onClick={() => addBlock(type)}><strong>{name}</strong><span>{blockDescriptions[type]}</span></button>)}{libraryEntries.length === 0 && <p>Không có loại phần phù hợp.</p>}</div></section></div>}
-        {detail.revisions.length > 0 && <div className="site-admin__panel"><h3>Lịch sử phiên bản</h3><ul className="site-admin__history">{detail.revisions.map((revision) => <li key={revision.id}>Bản {revision.versionNumber} · {revision.status === "draft" ? "Nháp" : "Đã xuất bản"}{revision.status === "published" && revision.id !== detail.published?.id && <Button disabled={working} onClick={() => restore(revision.id)} size="sm" variant="outline">Chọn lại bản này</Button>}</li>)}</ul></div>}
-      </>}</div>
-  </section>;
+    </section>
+  );
 }

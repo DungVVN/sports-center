@@ -54,24 +54,29 @@ export function StaffPage({ session }) {
   const [staffSort, setStaffSort] = useState({ key: "fullName", direction: "asc" });
   const workspace = useStaffWorkspace({ editingId });
   const { staff } = workspace;
-  const submitting = workspace.createStaff.isPending || workspace.updateStaff.isPending || workspace.updateStatus.isPending || workspace.resetPassword.isPending || workspace.detailLoading;
+  const submitting =
+    workspace.createStaff.isPending ||
+    workspace.updateStaff.isPending ||
+    workspace.updateStatus.isPending ||
+    workspace.resetPassword.isPending ||
+    workspace.detailLoading;
   const visibleStaff = useMemo(() => {
     const query = staffSearch.trim().toLocaleLowerCase("vi");
-    const filtered = staff.filter((item) =>
-      (!staffRoleFilters.length || staffRoleFilters.includes(item.role)) &&
-      (!staffStatusFilters.length || staffStatusFilters.includes(item.status)) &&
-      (!query || [item.employeeCode, item.fullName, item.email, item.phone].some((value) => value?.toLocaleLowerCase("vi").includes(query))),
+    const filtered = staff.filter(
+      (item) =>
+        (!staffRoleFilters.length || staffRoleFilters.includes(item.role)) &&
+        (!staffStatusFilters.length || staffStatusFilters.includes(item.status)) &&
+        (!query ||
+          [item.employeeCode, item.fullName, item.email, item.phone].some((value) =>
+            value?.toLocaleLowerCase("vi").includes(query),
+          )),
     );
     return sortTable(filtered, staffSort.key, staffSort.direction, (item, key) => item[key]);
   }, [staff, staffRoleFilters, staffSearch, staffSort, staffStatusFilters]);
   const staffPagination = usePagination(visibleStaff);
 
   function toggleFilterValue(setter, value) {
-    setter((current) =>
-      current.includes(value)
-        ? current.filter((item) => item !== value)
-        : [...current, value],
-    );
+    setter((current) => (current.includes(value) ? current.filter((item) => item !== value) : [...current, value]));
   }
   function toggleStaffSort(key) {
     setStaffSort((value) => ({ key, direction: value.key === key && value.direction === "asc" ? "desc" : "asc" }));
@@ -90,11 +95,13 @@ export function StaffPage({ session }) {
       return;
     }
     setCredentialEmailDelivered(null);
-    workspace.createStaff.mutate(form, { onSuccess: (result) => {
-      setPassword(result.temporaryPassword ?? null);
-      setCredentialEmailDelivered(result.credentialEmailDelivered === true);
-      setForm(empty);
-    } });
+    workspace.createStaff.mutate(form, {
+      onSuccess: (result) => {
+        setPassword(result.temporaryPassword ?? null);
+        setCredentialEmailDelivered(result.credentialEmailDelivered === true);
+        setForm(empty);
+      },
+    });
   }
   async function copyPassword() {
     if (!password) return;
@@ -111,13 +118,16 @@ export function StaffPage({ session }) {
     workspace.updateStatus.mutate({ id, status: value });
   }
   function resetPassword(item) {
-    if (!window.confirm(`Cấp lại mật khẩu tạm cho ${item.fullName}? Các phiên đăng nhập hiện tại sẽ bị thu hồi.`)) return;
+    if (!window.confirm(`Cấp lại mật khẩu tạm cho ${item.fullName}? Các phiên đăng nhập hiện tại sẽ bị thu hồi.`))
+      return;
     setPassword(null);
     setCredentialEmailDelivered(null);
-    workspace.resetPassword.mutate(item.id, { onSuccess: (result) => {
-      setPassword(result.temporaryPassword ?? null);
-      setCredentialEmailDelivered(result.credentialEmailDelivered === true);
-    } });
+    workspace.resetPassword.mutate(item.id, {
+      onSuccess: (result) => {
+        setPassword(result.temporaryPassword ?? null);
+        setCredentialEmailDelivered(result.credentialEmailDelivered === true);
+      },
+    });
   }
   function openEdit(item) {
     workspace.clearFeedback();
@@ -125,7 +135,10 @@ export function StaffPage({ session }) {
   }
   function save(input) {
     if (!editingId) return;
-    workspace.updateStaff.mutate({ id: editingId, input: { ...input, specialties: input.specialties.filter(Boolean) } }, { onSuccess: () => setEditingId(null) });
+    workspace.updateStaff.mutate(
+      { id: editingId, input: { ...input, specialties: input.specialties.filter(Boolean) } },
+      { onSuccess: () => setEditingId(null) },
+    );
   }
   return (
     <main className="staff-page">
@@ -165,30 +178,31 @@ export function StaffPage({ session }) {
           <h2>Thêm nhân viên</h2>
           <label>
             Họ tên
-            <input
-              maxLength={120}
-              minLength={2}
-              name="fullName"
-              onChange={update}
-              required
-              value={form.fullName}
-            />
+            <input maxLength={120} minLength={2} name="fullName" onChange={update} required value={form.fullName} />
           </label>
           <label>
             Email
-            <input
-              name="email"
-              onChange={update}
-              required
-              type="email"
-              value={form.email}
-            />
+            <input name="email" onChange={update} required type="email" value={form.email} />
           </label>
           <label>
             Số điện thoại
-            <input aria-describedby={validationError ? "staff-create-phone-error" : undefined} aria-invalid={Boolean(validationError)} maxLength={20} minLength={9} name="phone" onChange={update} ref={phoneInputRef} required value={form.phone} />
+            <input
+              aria-describedby={validationError ? "staff-create-phone-error" : undefined}
+              aria-invalid={Boolean(validationError)}
+              maxLength={20}
+              minLength={9}
+              name="phone"
+              onChange={update}
+              ref={phoneInputRef}
+              required
+              value={form.phone}
+            />
           </label>
-          {validationError && <p className="field-error" id="staff-create-phone-error" role="alert">{validationError}</p>}
+          {validationError && (
+            <p className="field-error" id="staff-create-phone-error" role="alert">
+              {validationError}
+            </p>
+          )}
           <label>
             Vai trò
             <select name="role" onChange={update} value={form.role}>
@@ -202,112 +216,215 @@ export function StaffPage({ session }) {
           </Button>
         </form>
         <section className="staff-list">
-          <div className="list-heading"><h2>Danh sách nhân viên</h2><Button onClick={workspace.reload} size="sm" variant="ghost">Tải lại</Button></div>
+          <div className="list-heading">
+            <h2>Danh sách nhân viên</h2>
+            <Button onClick={workspace.reload} size="sm" variant="ghost">
+              Tải lại
+            </Button>
+          </div>
           {workspace.loading ? (
             <TableSkeleton columns={6} />
           ) : staff.length === 0 ? (
             <p>Chưa có nhân viên.</p>
           ) : (
-            <><DataTableToolbar onClear={() => { setStaffSearch(""); setStaffRoleFilters([]); setStaffStatusFilters([]); }} resultCount={visibleStaff.length} search={staffSearch} searchPlaceholder="Tìm mã, tên, email, số điện thoại..." setSearch={setStaffSearch}>
-              <FilterMenu activeCount={staffRoleFilters.length + staffStatusFilters.length} isOpen={isStaffFilterOpen} onToggle={() => setIsStaffFilterOpen((value) => !value)}>
-                <fieldset className="payment-filter-group">
-                  <legend>Vai trò</legend>
-                  {staffRoleOptions.map(([value, label]) => (
-                    <label key={value}>
-                      <input checked={staffRoleFilters.includes(value)} onChange={() => toggleFilterValue(setStaffRoleFilters, value)} type="checkbox" />
-                      {label}
-                    </label>
-                  ))}
-                </fieldset>
-                <fieldset className="payment-filter-group">
-                  <legend>Trạng thái</legend>
-                  {staffStatusOptions.map(([value, label]) => (
-                    <label key={value}>
-                      <input checked={staffStatusFilters.includes(value)} onChange={() => toggleFilterValue(setStaffStatusFilters, value)} type="checkbox" />
-                      {label}
-                    </label>
-                  ))}
-                </fieldset>
-              </FilterMenu>
-            </DataTableToolbar>{visibleStaff.length === 0 ? <p>Không có nhân viên phù hợp với bộ lọc.</p> : <div className="table-scroll"><table>
-              <thead>
-                <tr>
-                  <SortableHeader activeSort={staffSort.key} column="employeeCode" direction={staffSort.direction} onSort={toggleStaffSort}>Mã nhân viên</SortableHeader>
-                  <SortableHeader activeSort={staffSort.key} column="fullName" direction={staffSort.direction} onSort={toggleStaffSort}>Nhân viên</SortableHeader>
-                  <SortableHeader activeSort={staffSort.key} column="email" direction={staffSort.direction} onSort={toggleStaffSort}>Email</SortableHeader>
-                  <SortableHeader activeSort={staffSort.key} column="phone" direction={staffSort.direction} onSort={toggleStaffSort}>Số điện thoại</SortableHeader>
-                  <SortableHeader activeSort={staffSort.key} column="role" direction={staffSort.direction} onSort={toggleStaffSort}>Vai trò</SortableHeader>
-                  <th>Trạng thái</th>
-                  <th>Thao tác</th>
-                </tr>
-              </thead>
-              <tbody>
-                {staffPagination.pageItems.map((item) => (
-                  <tr key={item.id}>
-                    <td><code>{item.employeeCode ?? "—"}</code></td>
-                    <td>
-                      <strong>{item.fullName}</strong>
-                    </td>
-                    <td>{item.email}</td>
-                    <td>{item.phone ?? "—"}</td>
-                    <td>
-                      <span className={`staff-role staff-role--${item.role}`}>
-                        {staffRoleLabels[item.role] ?? item.role}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={`staff-status staff-status--${item.status}`}>
-                        {staffStatusLabels[item.status] ?? item.status}
-                      </span>
-                    </td>
-                    <td>
-                      <Button
-                        disabled={submitting}
-                        onClick={() => openEdit(item)}
-                        size="sm"
-                        variant="primary"
-                      >
-                        Sửa
-                      </Button>{" "}
-                      <Button
-                        disabled={submitting}
-                        onClick={() =>
-                          status(
-                            item.id,
-                            item.status === "active" ? "suspended" : "active",
-                          )
-                        }
-                        size="sm"
-                        variant={
-                          item.status === "active" ? "danger" : "secondary"
-                        }
-                      >
-                        {item.status === "active" ? "Đình chỉ" : "Kích hoạt"}
-                      </Button>
-                      {session?.user?.role === "admin" && <>{" "}<Button disabled={submitting} onClick={() => resetPassword(item)} size="sm" variant="outline">Cấp lại MK</Button></>}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table></div>}
-            <Pagination {...staffPagination} />
+            <>
+              <DataTableToolbar
+                onClear={() => {
+                  setStaffSearch("");
+                  setStaffRoleFilters([]);
+                  setStaffStatusFilters([]);
+                }}
+                resultCount={visibleStaff.length}
+                search={staffSearch}
+                searchPlaceholder="Tìm mã, tên, email, số điện thoại..."
+                setSearch={setStaffSearch}
+              >
+                <FilterMenu
+                  activeCount={staffRoleFilters.length + staffStatusFilters.length}
+                  isOpen={isStaffFilterOpen}
+                  onToggle={() => setIsStaffFilterOpen((value) => !value)}
+                >
+                  <fieldset className="payment-filter-group">
+                    <legend>Vai trò</legend>
+                    {staffRoleOptions.map(([value, label]) => (
+                      <label key={value}>
+                        <input
+                          checked={staffRoleFilters.includes(value)}
+                          onChange={() => toggleFilterValue(setStaffRoleFilters, value)}
+                          type="checkbox"
+                        />
+                        {label}
+                      </label>
+                    ))}
+                  </fieldset>
+                  <fieldset className="payment-filter-group">
+                    <legend>Trạng thái</legend>
+                    {staffStatusOptions.map(([value, label]) => (
+                      <label key={value}>
+                        <input
+                          checked={staffStatusFilters.includes(value)}
+                          onChange={() => toggleFilterValue(setStaffStatusFilters, value)}
+                          type="checkbox"
+                        />
+                        {label}
+                      </label>
+                    ))}
+                  </fieldset>
+                </FilterMenu>
+              </DataTableToolbar>
+              {visibleStaff.length === 0 ? (
+                <p>Không có nhân viên phù hợp với bộ lọc.</p>
+              ) : (
+                <div className="table-scroll">
+                  <table>
+                    <thead>
+                      <tr>
+                        <SortableHeader
+                          activeSort={staffSort.key}
+                          column="employeeCode"
+                          direction={staffSort.direction}
+                          onSort={toggleStaffSort}
+                        >
+                          Mã nhân viên
+                        </SortableHeader>
+                        <SortableHeader
+                          activeSort={staffSort.key}
+                          column="fullName"
+                          direction={staffSort.direction}
+                          onSort={toggleStaffSort}
+                        >
+                          Nhân viên
+                        </SortableHeader>
+                        <SortableHeader
+                          activeSort={staffSort.key}
+                          column="email"
+                          direction={staffSort.direction}
+                          onSort={toggleStaffSort}
+                        >
+                          Email
+                        </SortableHeader>
+                        <SortableHeader
+                          activeSort={staffSort.key}
+                          column="phone"
+                          direction={staffSort.direction}
+                          onSort={toggleStaffSort}
+                        >
+                          Số điện thoại
+                        </SortableHeader>
+                        <SortableHeader
+                          activeSort={staffSort.key}
+                          column="role"
+                          direction={staffSort.direction}
+                          onSort={toggleStaffSort}
+                        >
+                          Vai trò
+                        </SortableHeader>
+                        <th>Trạng thái</th>
+                        <th>Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {staffPagination.pageItems.map((item) => (
+                        <tr key={item.id}>
+                          <td>
+                            <code>{item.employeeCode ?? "—"}</code>
+                          </td>
+                          <td>
+                            <strong>{item.fullName}</strong>
+                          </td>
+                          <td>{item.email}</td>
+                          <td>{item.phone ?? "—"}</td>
+                          <td>
+                            <span className={`staff-role staff-role--${item.role}`}>
+                              {staffRoleLabels[item.role] ?? item.role}
+                            </span>
+                          </td>
+                          <td>
+                            <span className={`staff-status staff-status--${item.status}`}>
+                              {staffStatusLabels[item.status] ?? item.status}
+                            </span>
+                          </td>
+                          <td>
+                            <Button disabled={submitting} onClick={() => openEdit(item)} size="sm" variant="primary">
+                              Sửa
+                            </Button>{" "}
+                            <Button
+                              disabled={submitting}
+                              onClick={() => status(item.id, item.status === "active" ? "suspended" : "active")}
+                              size="sm"
+                              variant={item.status === "active" ? "danger" : "secondary"}
+                            >
+                              {item.status === "active" ? "Đình chỉ" : "Kích hoạt"}
+                            </Button>
+                            {session?.user?.role === "admin" && (
+                              <>
+                                {" "}
+                                <Button
+                                  disabled={submitting}
+                                  onClick={() => resetPassword(item)}
+                                  size="sm"
+                                  variant="outline"
+                                >
+                                  Cấp lại MK
+                                </Button>
+                              </>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              <Pagination {...staffPagination} />
             </>
           )}
         </section>
       </section>
-      <StaffEditDialog clearFeedback={workspace.clearFeedback} detail={workspace.detail} editingId={editingId} loading={workspace.detailLoading} onClose={() => setEditingId(null)} onSubmit={save} />
+      <StaffEditDialog
+        clearFeedback={workspace.clearFeedback}
+        detail={workspace.detail}
+        editingId={editingId}
+        loading={workspace.detailLoading}
+        onClose={() => setEditingId(null)}
+        onSubmit={save}
+      />
     </main>
   );
 }
 
 function StaffEditDialog({ clearFeedback, detail, editingId, loading, onClose, onSubmit }) {
   if (!editingId) return null;
-  const close = () => { if (!loading) onClose(); };
-  return <Dialog isOpen onClose={close} title="Cập nhật nhân viên">{loading && !detail ? <p className="dialog__body">Đang tải hồ sơ…</p> : detail && <StaffEditForm clearFeedback={clearFeedback} detail={detail} loading={loading} onClose={close} onSubmit={onSubmit} />}</Dialog>;
+  const close = () => {
+    if (!loading) onClose();
+  };
+  return (
+    <Dialog isOpen onClose={close} title="Cập nhật nhân viên">
+      {loading && !detail ? (
+        <p className="dialog__body">Đang tải hồ sơ…</p>
+      ) : (
+        detail && (
+          <StaffEditForm
+            clearFeedback={clearFeedback}
+            detail={detail}
+            loading={loading}
+            onClose={close}
+            onSubmit={onSubmit}
+          />
+        )
+      )}
+    </Dialog>
+  );
 }
 
 function StaffEditForm({ clearFeedback, detail, loading, onClose, onSubmit }) {
-  const [form, setForm] = useState({ fullName: detail.fullName, email: detail.email, phone: detail.phone ?? "", role: detail.role, specialties: detail.specialties ?? [] });
+  const [form, setForm] = useState({
+    fullName: detail.fullName,
+    email: detail.email,
+    phone: detail.phone ?? "",
+    role: detail.role,
+    specialties: detail.specialties ?? [],
+  });
   const [validationError, setValidationError] = useState("");
   const phoneInputRef = useRef(null);
   function submit(event) {
@@ -323,14 +440,78 @@ function StaffEditForm({ clearFeedback, detail, loading, onClose, onSubmit }) {
   return (
     <form onSubmit={submit}>
       <div className="dialog__body">
-        <label>Họ tên<input disabled={loading} maxLength={120} minLength={2} onChange={(event) => setForm((current) => ({ ...current, fullName: event.target.value }))} required value={form.fullName} /></label>
-        <label>Email<input disabled type="email" value={form.email} /></label>
-        <label>Số điện thoại<input aria-describedby={validationError ? "staff-edit-phone-error" : undefined} aria-invalid={Boolean(validationError)} disabled={loading} maxLength={20} minLength={9} onChange={(event) => { clearFeedback(); setValidationError(""); setForm((current) => ({ ...current, phone: event.target.value })); }} ref={phoneInputRef} required value={form.phone} /></label>
-        {validationError && <p className="field-error" id="staff-edit-phone-error" role="alert">{validationError}</p>}
-        <label>Vai trò<select disabled={loading} onChange={(event) => setForm((current) => ({ ...current, role: event.target.value }))} value={form.role}><option value="receptionist">Lễ tân</option><option value="coach">Huấn luyện viên</option><option value="manager">Quản lý</option></select></label>
-        <label>Chuyên môn (cách nhau bởi dấu phẩy)<input disabled={loading} onChange={(event) => setForm((current) => ({ ...current, specialties: event.target.value.split(",").map((value) => value.trim()) }))} value={form.specialties.join(", ")} /></label>
+        <label>
+          Họ tên
+          <input
+            disabled={loading}
+            maxLength={120}
+            minLength={2}
+            onChange={(event) => setForm((current) => ({ ...current, fullName: event.target.value }))}
+            required
+            value={form.fullName}
+          />
+        </label>
+        <label>
+          Email
+          <input disabled type="email" value={form.email} />
+        </label>
+        <label>
+          Số điện thoại
+          <input
+            aria-describedby={validationError ? "staff-edit-phone-error" : undefined}
+            aria-invalid={Boolean(validationError)}
+            disabled={loading}
+            maxLength={20}
+            minLength={9}
+            onChange={(event) => {
+              clearFeedback();
+              setValidationError("");
+              setForm((current) => ({ ...current, phone: event.target.value }));
+            }}
+            ref={phoneInputRef}
+            required
+            value={form.phone}
+          />
+        </label>
+        {validationError && (
+          <p className="field-error" id="staff-edit-phone-error" role="alert">
+            {validationError}
+          </p>
+        )}
+        <label>
+          Vai trò
+          <select
+            disabled={loading}
+            onChange={(event) => setForm((current) => ({ ...current, role: event.target.value }))}
+            value={form.role}
+          >
+            <option value="receptionist">Lễ tân</option>
+            <option value="coach">Huấn luyện viên</option>
+            <option value="manager">Quản lý</option>
+          </select>
+        </label>
+        <label>
+          Chuyên môn (cách nhau bởi dấu phẩy)
+          <input
+            disabled={loading}
+            onChange={(event) =>
+              setForm((current) => ({
+                ...current,
+                specialties: event.target.value.split(",").map((value) => value.trim()),
+              }))
+            }
+            value={form.specialties.join(", ")}
+          />
+        </label>
       </div>
-      <div className="dialog__actions"><Button disabled={loading} onClick={onClose} type="button" variant="secondary">Hủy</Button><Button loading={loading} type="submit">Lưu thay đổi</Button></div>
+      <div className="dialog__actions">
+        <Button disabled={loading} onClick={onClose} type="button" variant="secondary">
+          Hủy
+        </Button>
+        <Button loading={loading} type="submit">
+          Lưu thay đổi
+        </Button>
+      </div>
     </form>
   );
 }

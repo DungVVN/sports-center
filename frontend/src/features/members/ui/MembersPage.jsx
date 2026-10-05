@@ -27,11 +27,28 @@ export function MembersPage({ readOnly = false, canResetCredentials = !readOnly 
   const workspace = useMembersWorkspace({ assignmentMemberId: assignmentMember?.id, editingMemberId });
   const visibleMembers = useMemo(() => {
     const query = search.trim().toLocaleLowerCase("vi-VN");
-    return workspace.members.filter((member) => (!coachFilters.length || coachFilters.includes(member.coachName ?? "__unassigned")) && (!packageFilters.length || packageFilters.includes(member.registeredPackageName ?? "__unregistered")) && (!statusFilters.length || statusFilters.includes(member.membershipStatus ?? "__no_membership")) && (!query || [member.fullName, member.email, member.phone, member.memberCode].filter(Boolean).some((value) => value.toLocaleLowerCase("vi-VN").includes(query))));
+    return workspace.members.filter(
+      (member) =>
+        (!coachFilters.length || coachFilters.includes(member.coachName ?? "__unassigned")) &&
+        (!packageFilters.length || packageFilters.includes(member.registeredPackageName ?? "__unregistered")) &&
+        (!statusFilters.length || statusFilters.includes(member.membershipStatus ?? "__no_membership")) &&
+        (!query ||
+          [member.fullName, member.email, member.phone, member.memberCode]
+            .filter(Boolean)
+            .some((value) => value.toLocaleLowerCase("vi-VN").includes(query))),
+    );
   }, [coachFilters, packageFilters, search, statusFilters, workspace.members]);
   const pagination = usePagination(visibleMembers);
-  const toggleFilterValue = (kind, value) => ({ coach: setCoachFilters, package: setPackageFilters, status: setStatusFilters }[kind])((current) => current.includes(value) ? current.filter((item) => item !== value) : [...current, value]);
-  const clearFilters = () => { setSearch(""); setCoachFilters([]); setPackageFilters([]); setStatusFilters([]); };
+  const toggleFilterValue = (kind, value) =>
+    ({ coach: setCoachFilters, package: setPackageFilters, status: setStatusFilters })[kind]((current) =>
+      current.includes(value) ? current.filter((item) => item !== value) : [...current, value],
+    );
+  const clearFilters = () => {
+    setSearch("");
+    setCoachFilters([]);
+    setPackageFilters([]);
+    setStatusFilters([]);
+  };
   const updateMemberForm = (event) => {
     const { checked, name, type, value } = event.target;
     setMemberForm((current) => ({ ...current, [name]: type === "checkbox" ? checked : value }));
@@ -39,10 +56,12 @@ export function MembersPage({ readOnly = false, canResetCredentials = !readOnly 
   const create = (event) => {
     event.preventDefault();
     setCredentials(null);
-    workspace.createMember.mutate(memberForm, { onSuccess: (result) => {
-      setCredentials(result.temporaryPassword ? { email: result.email, password: result.temporaryPassword } : null);
-      setMemberForm(emptyMember);
-    } });
+    workspace.createMember.mutate(memberForm, {
+      onSuccess: (result) => {
+        setCredentials(result.temporaryPassword ? { email: result.email, password: result.temporaryPassword } : null);
+        setMemberForm(emptyMember);
+      },
+    });
   };
   const copyPassword = async () => {
     if (!credentials?.password) return;
@@ -59,9 +78,11 @@ export function MembersPage({ readOnly = false, canResetCredentials = !readOnly 
     const action = member.hasAccount ? "gửi mật khẩu tạm mới" : "tạo tài khoản và gửi mật khẩu tạm";
     if (!window.confirm(`Bạn có chắc muốn ${action} cho ${member.fullName}?`)) return;
     setCredentials(null);
-    workspace.issueAccountCredentials.mutate(member.id, { onSuccess: (result) => {
-      setCredentials(result.temporaryPassword ? { email: member.email, password: result.temporaryPassword } : null);
-    } });
+    workspace.issueAccountCredentials.mutate(member.id, {
+      onSuccess: (result) => {
+        setCredentials(result.temporaryPassword ? { email: member.email, password: result.temporaryPassword } : null);
+      },
+    });
   };
   const assign = async (input) => {
     if (!assignmentMember) return;
@@ -75,17 +96,96 @@ export function MembersPage({ readOnly = false, canResetCredentials = !readOnly 
   const save = async (form) => {
     if (!editingMemberId) return;
     try {
-      await workspace.saveMember.mutateAsync({ memberId: editingMemberId, input: { fullName: form.fullName, email: form.email || null, phone: form.phone }, contacts: form.contacts });
+      await workspace.saveMember.mutateAsync({
+        memberId: editingMemberId,
+        input: { fullName: form.fullName, email: form.email || null, phone: form.phone },
+        contacts: form.contacts,
+      });
       setEditingMemberId(null);
     } catch {
       // Feedback is rendered from the shared mutation hook; keep the dialog open for correction.
     }
   };
-  return <main className="members-page"><PageHeader eyebrow="Hội viên" title="Quản lý hội viên" />
-    {workspace.error && <p className="auth-alert" role="alert">{workspace.error}</p>}{workspace.notice && <p className="auth-success" role="status">{workspace.notice}</p>}
-    {credentials && <section className="member-credentials"><strong>Mật khẩu tạm thời — chỉ hiển thị lần này</strong><div><code>{credentials.password}</code><Button onClick={copyPassword} size="sm" type="button" variant="outline">{copiedPassword ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}{copiedPassword ? "Đã sao chép!" : "Sao chép"}</Button></div><p>Email chưa gửi được. Hãy gửi riêng thông tin đăng nhập đến {credentials.email}; mật khẩu này không được lưu hoặc hiển thị lại.</p><Button onClick={() => setCredentials(null)} type="button" variant="secondary">Đã lưu an toàn</Button></section>}
-    <section className="members-workspace-stacked">{!readOnly && <MemberCreateForm form={memberForm} onChange={updateMemberForm} onSubmit={create} submitting={workspace.createMember.isPending} />}<MembersTable canResetCredentials={canResetCredentials} filters={{ coach: coachFilters, isOpen: isFilterOpen, package: packageFilters, search, status: statusFilters }} loading={workspace.loading} members={workspace.members} onEdit={(member) => setEditingMemberId(member.id)} onFilterToggle={() => setIsFilterOpen((value) => !value)} onIssueAccountCredentials={issueAccountCredentials} onOpenAssignment={setAssignmentMember} onReload={workspace.reload} onSearchChange={setSearch} onToggleFilterValue={toggleFilterValue} onClearFilters={clearFilters} pagination={pagination} readOnly={readOnly} visibleMembers={visibleMembers} /></section>
-    <CoachAssignmentDialog coaches={workspace.coaches} history={workspace.assignmentHistory} loading={workspace.assignmentLoading} member={assignmentMember} onClose={() => setAssignmentMember(null)} onSubmit={assign} />
-    <MemberEditorDialog detail={workspace.detail} loading={workspace.detailLoading} memberId={editingMemberId} onClose={() => setEditingMemberId(null)} onSubmit={save} />
-  </main>;
+  return (
+    <main className="members-page">
+      <PageHeader eyebrow="Hội viên" title="Quản lý hội viên" />
+      {workspace.error && (
+        <p className="auth-alert" role="alert">
+          {workspace.error}
+        </p>
+      )}
+      {workspace.notice && (
+        <p className="auth-success" role="status">
+          {workspace.notice}
+        </p>
+      )}
+      {credentials && (
+        <section className="member-credentials">
+          <strong>Mật khẩu tạm thời — chỉ hiển thị lần này</strong>
+          <div>
+            <code>{credentials.password}</code>
+            <Button onClick={copyPassword} size="sm" type="button" variant="outline">
+              {copiedPassword ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}
+              {copiedPassword ? "Đã sao chép!" : "Sao chép"}
+            </Button>
+          </div>
+          <p>
+            Email chưa gửi được. Hãy gửi riêng thông tin đăng nhập đến {credentials.email}; mật khẩu này không được lưu
+            hoặc hiển thị lại.
+          </p>
+          <Button onClick={() => setCredentials(null)} type="button" variant="secondary">
+            Đã lưu an toàn
+          </Button>
+        </section>
+      )}
+      <section className="members-workspace-stacked">
+        {!readOnly && (
+          <MemberCreateForm
+            form={memberForm}
+            onChange={updateMemberForm}
+            onSubmit={create}
+            submitting={workspace.createMember.isPending}
+          />
+        )}
+        <MembersTable
+          canResetCredentials={canResetCredentials}
+          filters={{
+            coach: coachFilters,
+            isOpen: isFilterOpen,
+            package: packageFilters,
+            search,
+            status: statusFilters,
+          }}
+          loading={workspace.loading}
+          members={workspace.members}
+          onEdit={(member) => setEditingMemberId(member.id)}
+          onFilterToggle={() => setIsFilterOpen((value) => !value)}
+          onIssueAccountCredentials={issueAccountCredentials}
+          onOpenAssignment={setAssignmentMember}
+          onReload={workspace.reload}
+          onSearchChange={setSearch}
+          onToggleFilterValue={toggleFilterValue}
+          onClearFilters={clearFilters}
+          pagination={pagination}
+          readOnly={readOnly}
+          visibleMembers={visibleMembers}
+        />
+      </section>
+      <CoachAssignmentDialog
+        coaches={workspace.coaches}
+        history={workspace.assignmentHistory}
+        loading={workspace.assignmentLoading}
+        member={assignmentMember}
+        onClose={() => setAssignmentMember(null)}
+        onSubmit={assign}
+      />
+      <MemberEditorDialog
+        detail={workspace.detail}
+        loading={workspace.detailLoading}
+        memberId={editingMemberId}
+        onClose={() => setEditingMemberId(null)}
+        onSubmit={save}
+      />
+    </main>
+  );
 }
