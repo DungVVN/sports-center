@@ -17,6 +17,12 @@ Use the workflow in [`database/README.md`](database/README.md) to set up a new d
 
 Do not commit a real Neon connection string. Copy `.env.example` to `.env` only on a trusted local machine or configure the variables in Render.
 
+## Public site CMS
+
+`src/modules/site` owns the public page/menu CMS. Only the existing admin role can create and save drafts, publish, or restore a published version. Public `/api/v1/site/*` endpoints read publication pointers, never drafts. Save and publish are separate calls guarded by `editRevision`; the database keeps published snapshots immutable. A published menu must contain a visible link, and internal links to CMS pages must target an already-published page.
+
+Deploy the additive CMS migration before deploying API code that queries these tables. CMS blocks accept validated internal or HTTPS image URLs; an admin can now upload JPG, PNG, WebP, GIF, or AVIF (up to 10 MB) directly to Cloudinary through a short-lived server signature. Configure `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and the server-only `CLOUDINARY_API_SECRET` in the deployment environment. Uploaded asset metadata is recorded in `site_media_assets`. Do not enable the frontend's public CMS flag until the API and browser acceptance are complete.
+
 ## Confirmed business decisions
 
 - A paid membership is required for class booking and facility check-in. A Member may still sign in while payment is pending.

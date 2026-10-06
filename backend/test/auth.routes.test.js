@@ -156,4 +156,13 @@ describe("Auth routes", () => {
     expect(service.getOwnProfile).toHaveBeenCalledWith("staff-1");
     expect(service.updateOwnProfile).toHaveBeenCalledWith({ userId: "staff-1", input: { fullName: "Lễ tân Hương", phone: "0901000011", dateOfBirth: null } });
   });
+
+  it("issues a Cloudinary avatar signature only to the signed-in user", async () => {
+    const service = makeService();
+    const cloudinary = { createProfileUploadSignature: vi.fn().mockReturnValue({ folder: "kinetic-sports/avatars" }) };
+    const app = createApp({ authService: service, cloudinaryMediaService: cloudinary });
+    await request(app).post("/api/v1/auth/profile/avatar/cloudinary/signature").expect(401);
+    await request(app).post("/api/v1/auth/profile/avatar/cloudinary/signature").set("Authorization", "Bearer session-token").expect(200);
+    expect(cloudinary.createProfileUploadSignature).toHaveBeenCalledTimes(1);
+  });
 });

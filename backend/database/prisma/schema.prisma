@@ -702,3 +702,85 @@ model audit_logs {
   reason        String?
   occurred_at   DateTime @default(now()) @db.Timestamptz(6)
 }
+
+// Public-website content is separate from memberships, facilities, and bookings.
+// Only a published revision referenced by site_page_publications is public.
+model site_pages {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  route_key  String   @unique @db.VarChar(80)
+  path       String   @unique @db.VarChar(240)
+  kind       String   @db.VarChar(16)
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @updatedAt @db.Timestamptz(6)
+}
+
+model site_page_revisions {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  page_id         String   @db.Uuid
+  version_number  Int
+  edit_revision   Int      @default(1)
+  status          String   @default("draft") @db.VarChar(16)
+  title           String   @db.VarChar(240)
+  seo_title       String   @default("") @db.VarChar(240)
+  seo_description String   @default("") @db.VarChar(500)
+  blocks          Json     @default("[]") @db.JsonB
+  created_by      String?  @db.Uuid
+  updated_by      String?  @db.Uuid
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime @updatedAt @db.Timestamptz(6)
+
+  @@unique([page_id, version_number])
+  @@unique([page_id, id])
+  @@index([page_id, status])
+}
+
+model site_page_publications {
+  page_id      String   @id @db.Uuid
+  revision_id  String   @unique @db.Uuid
+  published_by String?  @db.Uuid
+  published_at DateTime @default(now()) @db.Timestamptz(6)
+}
+
+// Each menu revision is a complete ordered tree for one public location.
+// Admin/sidebar navigation remains permission-driven and is not stored here.
+model site_menu_revisions {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  location       String   @db.VarChar(16)
+  version_number Int
+  edit_revision  Int      @default(1)
+  status         String   @default("draft") @db.VarChar(16)
+  items          Json     @default("[]") @db.JsonB
+  created_by     String?  @db.Uuid
+  updated_by     String?  @db.Uuid
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime @updatedAt @db.Timestamptz(6)
+
+  @@unique([location, version_number])
+  @@unique([location, id])
+  @@index([location, status])
+}
+
+model site_menu_publications {
+  location     String   @id @db.VarChar(16)
+  revision_id  String   @unique @db.Uuid
+  published_by String?  @db.Uuid
+  published_at DateTime @default(now()) @db.Timestamptz(6)
+}
+
+// Metadata only; storage provider and upload delivery are chosen by the media module.
+model site_media_assets {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  storage_key   String    @unique @db.VarChar(255)
+  original_name String    @db.VarChar(255)
+  mime_type     String    @db.VarChar(64)
+  byte_size     Int
+  width         Int?
+  height        Int?
+  alt_text      String    @default("") @db.VarChar(500)
+  uploaded_by   String?   @db.Uuid
+  created_at    DateTime  @default(now()) @db.Timestamptz(6)
+  deleted_at    DateTime? @db.Timestamptz(6)
+
+  @@index([deleted_at, created_at])
+}

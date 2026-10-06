@@ -15,6 +15,7 @@ export const authApi = Object.freeze({
   me: (options) => apiClient.get("/auth/me", options),
   profile: () => apiClient.get("/auth/profile"),
   updateProfile: (input) => apiClient.patch("/auth/profile", input),
+  cloudinaryProfileAvatarSignature: () => apiClient.post("/auth/profile/avatar/cloudinary/signature"),
   changePassword: (input) => apiClient.post("/auth/password/change", input),
   pendingRegistrations: () => apiClient.get("/auth/registrations/pending"),
   approveRegistration: (userId) => apiClient.post(`/auth/registrations/${userId}/approve`),

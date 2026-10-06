@@ -34,7 +34,7 @@ function sessionCookie(response, token, surface = "main") {
   response.cookie(sessionCookieNames[surface], token, sessionCookieOptions());
 }
 
-export function createAuthRouter(authService) {
+export function createAuthRouter(authService, cloudinaryMediaService) {
   const router = Router();
   const authRequired = authenticate(authService);
 
@@ -105,6 +105,9 @@ export function createAuthRouter(authService) {
   router.get("/me", authRequired, (request, response) => sendSuccess(response, { data: { user: request.auth.user, permissions: request.auth.permissions } }));
   router.get("/profile", authRequired, async (request, response, next) => {
     try { sendSuccess(response, { data: await authService.getOwnProfile(request.auth.user.id) }); } catch (error) { next(error); }
+  });
+  router.post("/profile/avatar/cloudinary/signature", authRequired, async (_request, response, next) => {
+    try { sendSuccess(response, { data: cloudinaryMediaService.createProfileUploadSignature() }); } catch (error) { next(error); }
   });
   router.patch("/profile", authRequired, validateRequest(ownProfileSchema), async (request, response, next) => {
     try { sendSuccess(response, { data: await authService.updateOwnProfile({ userId: request.auth.user.id, input: request.validated.body }) }); } catch (error) { next(error); }

@@ -1,9 +1,11 @@
-import { useEffect } from "react";
-import { Activity, ArrowLeft } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Activity, ArrowLeft, Menu, X } from "lucide-react";
 import { PublicFooter } from "../PublicFooter/PublicFooter.jsx";
+import { PublicMenuLinks } from "../PublicNavigation/PublicMenuLinks.jsx";
 import "./PublicPageLayout.css";
 
-export function PublicPageLayout({ children, onHomeClick, onLoginClick }) {
+export function PublicPageLayout({ children, onHomeClick, onLoginClick, showBack = true }) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -19,17 +21,20 @@ export function PublicPageLayout({ children, onHomeClick, onLoginClick }) {
           <span className="logo-icon-wrapper"><Activity size={24} className="logo-icon" /></span>
           <span className="logo-text">Kinetic</span>
         </a>
+        <div className="navbar-links"><PublicMenuLinks /></div>
         <div className="navbar-actions">
           <button className="btn-primary btn-sm" type="button" onClick={onLoginClick}>Đăng Nhập</button>
+          <button className="mobile-menu-toggle" type="button" aria-label={mobileMenuOpen ? "Đóng menu" : "Mở menu"} aria-expanded={mobileMenuOpen} aria-controls="mobile-public-navigation" onClick={() => setMobileMenuOpen((open) => !open)}>{mobileMenuOpen ? <X size={20} aria-hidden="true" /> : <Menu size={20} aria-hidden="true" />}</button>
         </div>
+        <div className={`mobile-nav-menu${mobileMenuOpen ? " open" : ""}`} id="mobile-public-navigation"><PublicMenuLinks onNavigate={() => setMobileMenuOpen(false)} /></div>
       </nav>
 
       <main className="public-page-body" id="main-content">
-        <div className="public-page-back-row">
+        {showBack && <div className="public-page-back-row">
           <button className="public-page-back" type="button" onClick={onHomeClick}>
             <ArrowLeft size={18} aria-hidden="true" /> Quay lại
           </button>
-        </div>
+        </div>}
         {children}
       </main>
 
