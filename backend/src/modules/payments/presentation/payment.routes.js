@@ -3,6 +3,7 @@ import { z } from "zod";
 import { authenticate, requirePermission } from "../../../shared/auth/authentication.middleware.js";
 import { sendSuccess } from "../../../shared/http/response.js";
 import { validateRequest } from "../../../shared/validation/validate-request.js";
+import { listPageQuery, listValues } from "../../../shared/validation/list-query.js";
 const id = z.string().uuid();
 const reason = z.string().trim().min(10).max(500);
 const run = (action) => async (req, res, next) => {
@@ -86,9 +87,11 @@ export function createPaymentRouter(service, authService) {
     "/members/me/payments",
     authenticate(authService),
     requirePermission("payment.self.read"),
+    validateRequest(z.object({ query: listPageQuery.strict() })),
     async (req, res, next) => {
       try {
-        sendSuccess(res, { data: await service.ownPayments(req.auth.user) });
+        const { items, meta } = await service.ownPayments(req.auth.user, req.validated.query);
+        sendSuccess(res, { data: items, meta });
       } catch (error) {
         next(error);
       }
@@ -110,14 +113,15 @@ export function createPaymentRouter(service, authService) {
   router.get(
     "/payments",
     ...read,
-    validateRequest(z.object({ query: z.object({ memberId: id.optional() }) })),
+    validateRequest(z.object({ query: listPageQuery.extend({
+      memberId: id.optional(), status: listValues(z.enum(["pending", "paid", "failed", "refunded"])),
+      method: listValues(z.enum(["cash", "bank_transfer", "online"])), package: listValues(),
+      sort: z.enum(["amountVnd", "transaction_code", "updated_at"]).default("amountVnd"), direction: z.enum(["asc", "desc"]).default("desc"),
+    }).strict() })),
     async (req, res, next) => {
       try {
-        sendSuccess(res, {
-          data: await service.list(
-            req.validated.query.memberId ? { member_id: req.validated.query.memberId } : undefined,
-          ),
-        });
+        const { items, meta } = await service.page(req.validated.query);
+        sendSuccess(res, { data: items, meta });
       } catch (error) {
         next(error);
       }

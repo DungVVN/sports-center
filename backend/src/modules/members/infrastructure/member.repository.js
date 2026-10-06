@@ -1,9 +1,11 @@
 import { prisma } from "../../../database.js";
+import { selectMemberPage } from "./member-page.js";
 
 export const memberRepository = {
-  list() { return prisma.members.findMany({ orderBy: { created_at: "desc" } }); },
-  async listWithOverview() {
-    const members = await this.list();
+  selectPage: selectMemberPage,
+  list(ids) { return prisma.members.findMany({ ...(ids && { where: { id: { in: ids } } }), take: 100, orderBy: [{ created_at: "desc" }, { id: "desc" }] }); },
+  async listWithOverview(ids) {
+    const members = await this.list(ids);
     if (!members.length) return [];
 
     const memberIds = members.map((member) => member.id);
@@ -12,7 +14,7 @@ export const memberRepository = {
     const [memberships, assignments] = await Promise.all([
       prisma.member_memberships.findMany({
         where: { member_id: { in: memberIds } },
-        orderBy: { created_at: "desc" },
+        orderBy: [{ created_at: "desc" }, { id: "desc" }],
         select: { member_id: true, package_name_snapshot: true, status: true, expires_on: true, created_at: true },
       }),
       prisma.member_coach_assignments.findMany({
@@ -21,7 +23,7 @@ export const memberRepository = {
           effective_from: { lte: today },
           OR: [{ effective_to: null }, { effective_to: { gte: today } }],
         },
-        orderBy: { effective_from: "desc" },
+        orderBy: [{ effective_from: "desc" }, { id: "desc" }],
         select: { member_id: true, coach_user_id: true },
       }),
     ]);

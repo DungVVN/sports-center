@@ -27,9 +27,14 @@ vite.config.*.timestamp-*
 # Disposable Figma reference; it is not product source.
 project/
 
-# Local documentation is kept on disk but not versioned.
-docs/
+# Version only reviewed operating documentation; keep local QA evidence private.
+/docs/*
 *.md
+!README.md
+!backend/README.md
+!backend/database/README.md
+!frontend/README.md
+!/docs/OPERATIONS.md
 
 # Local QA artifacts and editor state
 /qa-evidence/

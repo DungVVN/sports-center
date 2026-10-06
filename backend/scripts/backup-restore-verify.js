@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { spawn } from "node:child_process";
 import { Client } from "pg";
+import { readBusinessManifest, verifyBusinessManifest } from "./backup-manifest.js";
 
 const sourceUrl = process.env.DATABASE_URL ?? process.env.MIGRATE_DATABASE_URL;
 const verifyUrl = process.env.BACKUP_RESTORE_VERIFY_DATABASE_URL;
@@ -61,24 +62,34 @@ await mkdir(backupDir, { recursive: true });
 await mkdir(dirname(recordPath), { recursive: true });
 const pgDump = await postgresBinary("pg_dump");
 const pgRestore = await postgresBinary("pg_restore");
+const sourceClient = new Client({ connectionString: sourceUrl });
+const restoredClient = new Client({ connectionString: verifyUrl });
 
 try {
-  await run(pgDump, ["--format=custom", "--no-owner", "--no-privileges", `--file=${backupPath}`, sourceUrl]);
+  await sourceClient.connect();
+  await sourceClient.query("SET TIME ZONE 'UTC'");
+  await sourceClient.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
+  const { rows: [{ snapshot }] } = await sourceClient.query("SELECT pg_export_snapshot() AS snapshot");
+  const expected = await readBusinessManifest(sourceClient);
+  await run(pgDump, ["--format=custom", "--no-owner", "--no-privileges", `--snapshot=${snapshot}`, `--file=${backupPath}`, sourceUrl]);
+  await sourceClient.query("COMMIT");
   await access(backupPath);
   await run(pgRestore, ["--clean", "--if-exists", "--no-owner", "--no-privileges", `--dbname=${verifyUrl}`, backupPath]);
 
-  const client = new Client({ connectionString: verifyUrl });
-  await client.connect();
-  const result = await client.query("SELECT 1 AS restored");
-  await client.end();
-  if (result.rows[0]?.restored !== 1) throw new Error("Database kiểm thử không phản hồi sau restore.");
+  await restoredClient.connect();
+  await restoredClient.query("SET TIME ZONE 'UTC'");
+  await restoredClient.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
+  const restored = await readBusinessManifest(restoredClient);
+  verifyBusinessManifest(expected, restored);
+  await restoredClient.query("COMMIT");
   const finishedAt = new Date();
-  await writeFile(recordPath, JSON.stringify({ status: "passed", startedAt: startedAt.toISOString(), finishedAt: finishedAt.toISOString(), recoverySeconds: Number(((finishedAt - startedAt) / 1000).toFixed(3)) }, null, 2));
+  await writeFile(recordPath, JSON.stringify({ status: "passed", startedAt: startedAt.toISOString(), finishedAt: finishedAt.toISOString(), recoverySeconds: Number(((finishedAt - startedAt) / 1000).toFixed(3)), verifiedTables: Object.keys(expected).length, verification: "business_snapshot_fingerprints", manifest: restored }, null, 2));
   console.log(`PASS backup/restore: dump đã khôi phục vào database kiểm thử riêng. Kết quả: ${recordPath}`);
 } catch (error) {
   const finishedAt = new Date();
   await writeFile(recordPath, JSON.stringify({ status: "failed", startedAt: startedAt.toISOString(), finishedAt: finishedAt.toISOString(), recoverySeconds: Number(((finishedAt - startedAt) / 1000).toFixed(3)), failure: "backup_or_restore_failed" }, null, 2));
   throw error;
 } finally {
+  await Promise.allSettled([sourceClient.end(), restoredClient.end()]);
   await rm(backupPath, { force: true });
 }

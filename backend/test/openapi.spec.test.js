@@ -14,7 +14,7 @@ const mounts = { "auth.routes.js": "/auth", "staff.routes.js": "/staff", "member
 const methods = ["get", "post", "patch", "put", "delete"];
 
 function backendOperations() {
-  const operations = ["GET /health"];
+  const operations = ["GET /health", "GET /ready"];
   operations.push(...personalizationOperations.map(([method, path]) => `${method.toUpperCase()} ${path.replace(":id", "{id}")}`));
   for (const path of routeSourceFiles(modulesDirectory)) {
     const source = readFileSync(path, "utf8");

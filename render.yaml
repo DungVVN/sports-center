@@ -33,5 +33,11 @@ services:
         generateValue: true
       - key: VERIFICATION_CODE_SECRET
         generateValue: true
+      - key: AUTH_MFA_ENCRYPTION_KEY
+        sync: false
       - key: VERIFICATION_DELIVERY_MODE
-        value: development
+        value: provider
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM_EMAIL
+        sync: false

@@ -1,12 +1,10 @@
 import { PaymentReceiptDialog } from "./PaymentReceiptDialog.jsx";
 import { PageHeader } from "../../../shared/ui/PageHeader.jsx";
 import { ServiceReconciliation } from "./ServiceReconciliation.jsx";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Button } from "../../../shared/ui/Button.jsx";
 import { DataTableToolbar, FilterMenu, SortableHeader } from "../../../shared/ui/DataTable.jsx";
 import { Pagination } from "../../../shared/ui/Pagination.jsx";
-import { usePagination } from "../../../shared/ui/usePagination.js";
-import { sortTable } from "../../../shared/lib/table.js";
 import { hasSessionPermission } from "../../auth/index.js";
 import { usePaymentsWorkspace } from "../api/usePaymentsWorkspace.js";
 import { TableSkeleton } from "../../../shared/ui/TableSkeleton.jsx";
@@ -50,33 +48,21 @@ export function PaymentsPage({ session }) {
   const [paymentPackageFilters, setPaymentPackageFilters] = useState([]);
   const [isPaymentFilterOpen, setIsPaymentFilterOpen] = useState(false);
   const [paymentSort, setPaymentSort] = useState({ key: "amountVnd", direction: "desc" });
+  const [page, setPage] = useState(1);
   const isCashier = hasSessionPermission(session, "payment.record");
-  const workspace = usePaymentsWorkspace({ isCashier, memberId: selectedMemberId || undefined });
+  const workspace = usePaymentsWorkspace({ isCashier, memberId: selectedMemberId || undefined,
+    listQuery: { page, pageSize: 10, search: paymentSearch, status: paymentStatusFilters, method: paymentMethodFilters, package: paymentPackageFilters, sort: paymentSort.key, direction: paymentSort.direction },
+  });
   const { members, targets, payments: items } = workspace;
   const formErrors = validatePaymentForm(form, targets);
   const submitting = workspace.createPayment.isPending || workspace.confirmPayment.isPending;
-  const paymentPackages = useMemo(
-    () =>
-      [...new Set(items.map((item) => item.membership?.packageName).filter(Boolean))]
-        .sort((left, right) => left.localeCompare(right, "vi")),
-    [items],
-  );
-  const visiblePayments = useMemo(() => {
-    const query = paymentSearch.trim().toLocaleLowerCase("vi");
-    const filtered = items.filter((item) => {
-      const searchable = [item.transaction_code, item.member?.fullName, item.member?.memberCode, item.membership?.packageName, item.service?.name]
-        .filter(Boolean)
-        .some((value) => value.toLocaleLowerCase("vi").includes(query));
-      const matchesStatus = !paymentStatusFilters.length || paymentStatusFilters.includes(item.status);
-      const matchesMethod = !paymentMethodFilters.length || paymentMethodFilters.includes(item.method);
-      const matchesPackage = !paymentPackageFilters.length || paymentPackageFilters.includes(item.membership?.packageName);
-      return matchesStatus && matchesMethod && matchesPackage && (!query || searchable);
-    });
-    return sortTable(filtered, paymentSort.key, paymentSort.direction, (item, key) => item[key]);
-  }, [items, paymentStatusFilters, paymentMethodFilters, paymentPackageFilters, paymentSearch, paymentSort]);
-  const paymentsPagination = usePagination(visiblePayments);
+  const paymentPackages = workspace.listMeta?.facets?.package ?? [];
+  const visiblePayments = items;
+  const total = workspace.listMeta?.total ?? 0;
+  const paymentsPagination = { page: workspace.listMeta?.page ?? page, pageItems: items, pageSize: 10, setPage: (value) => setPage(typeof value === "function" ? value(workspace.listMeta?.page ?? page) : value), disabled: workspace.pagePending, total, totalPages: Math.max(1, Math.ceil(total / 10)) };
 
   function toggleFilterValue(setter, value) {
+    setPage(1);
     setter((current) =>
       current.includes(value)
         ? current.filter((item) => item !== value)
@@ -84,9 +70,11 @@ export function PaymentsPage({ session }) {
     );
   }
   function togglePaymentSort(key) {
+    setPage(1);
     setPaymentSort((value) => ({ key, direction: value.key === key && value.direction === "asc" ? "desc" : "asc" }));
   }
   function selectMember(memberId) {
+    setPage(1);
     setFormTouched((value) => ({ ...value, memberId: true, amountVnd: false }));
     setForm((value) => ({
       ...value,
@@ -244,11 +232,11 @@ export function PaymentsPage({ session }) {
           </div>
           {workspace.loading ? (
             <TableSkeleton columns={7} />
-          ) : items.length === 0 ? (
+          ) : items.length === 0 && !paymentSearch && !paymentStatusFilters.length && !paymentMethodFilters.length && !paymentPackageFilters.length ? (
             <p>Chưa có giao dịch.</p>
           ) : (
             <>
-              <DataTableToolbar onClear={() => { setPaymentSearch(""); setPaymentStatusFilters([]); setPaymentMethodFilters([]); setPaymentPackageFilters([]); }} resultCount={visiblePayments.length} search={paymentSearch} searchPlaceholder="Tìm mã, hội viên, gói..." setSearch={setPaymentSearch}>
+              <DataTableToolbar onClear={() => { setPage(1); setPaymentSearch(""); setPaymentStatusFilters([]); setPaymentMethodFilters([]); setPaymentPackageFilters([]); }} resultCount={total} search={paymentSearch} searchPlaceholder="Tìm mã, hội viên, gói..." setSearch={(value) => { setPage(1); setPaymentSearch(value); }}>
                 <FilterMenu activeCount={paymentStatusFilters.length + paymentMethodFilters.length + paymentPackageFilters.length} isOpen={isPaymentFilterOpen} onToggle={() => setIsPaymentFilterOpen((value) => !value)}>
                   <fieldset className="payment-filter-group">
                     <legend>Trạng thái phiếu thu</legend>

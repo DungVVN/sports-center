@@ -7,7 +7,7 @@ import { paymentApi } from "../api/payment-api.js";
 import { PaymentsPage } from "./PaymentsPage.jsx";
 
 vi.mock("../../members/index.js", () => ({ memberApi: { list: vi.fn() } }));
-vi.mock("../api/payment-api.js", () => ({ paymentApi: { targets: vi.fn(), list: vi.fn(), get: vi.fn(), create: vi.fn(), confirm: vi.fn() } }));
+vi.mock("../api/payment-api.js", () => ({ paymentApi: { targets: vi.fn(), list: vi.fn(), page: vi.fn(async () => { const items = await paymentApi.list(); return { items, meta: { total: items.length, page: 1, pageSize: 10, facets: { package: [...new Set(items.map((item) => item.membership?.packageName).filter(Boolean))] } } }; }), get: vi.fn(), create: vi.fn(), confirm: vi.fn() } }));
 
 const cashier = { user: { role: "receptionist" }, permissions: ["payment.read", "payment.record"] };
 const member = { id: "member-1", fullName: "Bình", memberCode: "HV-01" };

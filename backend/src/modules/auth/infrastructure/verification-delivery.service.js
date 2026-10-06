@@ -9,9 +9,11 @@ export function createVerificationDeliveryService({ config = env, fetchImpl = fe
   return {
     async deliver({ channel, code, recipient, purpose = "registration" }) {
       if (config.verificationDeliveryMode === "development") {
-      console.info(`Development ${channel} verification code for ${recipient}: ${code}`);
-      return { delivered: true, developmentCode: code };
-    }
+        if (config.nodeEnv === "production") {
+          throw new AppError({ statusCode: 503, code: "VERIFICATION_DELIVERY_NOT_CONFIGURED", message: "Production cần dịch vụ gửi email xác thực." });
+        }
+        return { delivered: true, developmentCode: code };
+      }
       if (channel !== "email" || !config.resendApiKey || !config.resendFromEmail) {
         throw new AppError({
           statusCode: 503,

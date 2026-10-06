@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMutationFeedback, useSubmitMutation } from "../../../shared/lib/useMutationFeedback.js";
 import { memberApi } from "../../members/index.js";
 import { paymentApi } from "./payment-api.js";
@@ -11,12 +11,13 @@ const keys = {
   payments: (memberId) => ["payments", memberId ?? "all"],
 };
 
-export function usePaymentsWorkspace({ isCashier, memberId }) {
+export function usePaymentsWorkspace({ isCashier, memberId, listQuery }) {
   const queryClient = useQueryClient();
   const feedback = useMutationFeedback();
   const paymentsQuery = useQuery({
-    queryKey: keys.payments(memberId),
-    queryFn: () => paymentApi.list(memberId),
+    queryKey: [...keys.payments(memberId), "page", listQuery],
+    queryFn: () => paymentApi.page({ ...listQuery, memberId }),
+    placeholderData: keepPreviousData,
     refetchInterval: 30_000,
   });
   const membersQuery = useQuery({ queryKey: keys.members, queryFn: memberApi.list, enabled: isCashier });
@@ -83,7 +84,9 @@ export function usePaymentsWorkspace({ isCashier, memberId }) {
     targetsUnavailable:
       Boolean(memberId) && (targetsQuery.isPending || targetsQuery.isFetching || targetsQuery.isError),
     notice: feedback.notice,
-    payments: paymentsQuery.data ?? [],
+    payments: paymentsQuery.data?.items ?? [],
+    listMeta: paymentsQuery.data?.meta,
+    pagePending: paymentsQuery.isFetching,
     reload: () => Promise.all([paymentsQuery.refetch(), ...(isCashier && memberId ? [targetsQuery.refetch()] : [])]),
     setError: feedback.setError,
   };

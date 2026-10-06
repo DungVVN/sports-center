@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMutationFeedback, useSubmitMutation } from "../../../shared/lib/useMutationFeedback.js";
 import { classApi } from "../../classes/index.js";
 import { memberApi } from "./member-api.js";
@@ -16,10 +16,10 @@ function queryMessage(query, fallback) {
   return query.isError ? errorMessageFor(query.error, fallback) : "";
 }
 
-export function useMembersWorkspace({ assignmentMemberId, editingMemberId }) {
+export function useMembersWorkspace({ assignmentMemberId, editingMemberId, listQuery }) {
   const queryClient = useQueryClient();
   const feedback = useMutationFeedback();
-  const membersQuery = useQuery({ queryKey: keys.list, queryFn: memberApi.list });
+  const membersQuery = useQuery({ queryKey: [...keys.list, "page", listQuery], queryFn: () => memberApi.page(listQuery), placeholderData: keepPreviousData });
   const coachesQuery = useQuery({
     queryKey: keys.coaches,
     queryFn: classApi.coaches,
@@ -103,7 +103,9 @@ export function useMembersWorkspace({ assignmentMemberId, editingMemberId }) {
     error: feedback.error || queryError,
     issueAccountCredentials,
     loading: membersQuery.isLoading,
-    members: membersQuery.data ?? [],
+    members: membersQuery.data?.items ?? [],
+    listMeta: membersQuery.data?.meta,
+    pagePending: membersQuery.isFetching,
     notice: feedback.notice,
     reload: membersQuery.refetch,
     saveMember,

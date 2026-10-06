@@ -15,7 +15,7 @@ import { paymentApi } from "./payments/api/payment-api.js";
 vi.mock("./classes/api/class-api.js", () => ({ classApi: { list: vi.fn(), rooms: vi.fn(), coaches: vi.fn(), changeRequests: vi.fn() } }));
 vi.mock("./bookings/api/booking-api.js", () => ({ bookingApi: { list: vi.fn() } }));
 vi.mock("./memberships/api/membership-api.js", () => ({ membershipApi: { packages: vi.fn(), freezeRequests: vi.fn() } }));
-vi.mock("./payments/api/payment-api.js", () => ({ paymentApi: { list: vi.fn() } }));
+vi.mock("./payments/api/payment-api.js", () => ({ paymentApi: { list: vi.fn(), page: vi.fn(async () => { const items = await paymentApi.list(); return { items, meta: { total: items.length, page: 1, pageSize: 10 } }; }) } }));
 vi.mock("./members/api/member-api.js", () => ({ memberApi: { list: vi.fn() } }));
 
 function renderWorkspace(ui) {

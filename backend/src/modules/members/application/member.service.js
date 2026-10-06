@@ -23,8 +23,14 @@ function memberConflict(error) {
 
 export function createMemberService({ repository, auditService, credentialsDelivery }) {
   return {
-    async list() {
-      const items = await repository.listWithOverview();
+    async page(query) {
+      const { ids, ...meta } = await repository.selectPage(query);
+      const items = await this.list(ids);
+      const byId = new Map(items.map((item) => [item.id, item]));
+      return { items: ids.map((id) => byId.get(id)).filter(Boolean), meta };
+    },
+    async list(ids) {
+      const items = await repository.listWithOverview(ids);
       if (!items.length) return [];
       const contacts = await repository.contactsForMembers(items.map(({ member }) => member.id));
       const contactsByMember = new Map();

@@ -25,7 +25,7 @@ const output = (payment) => ({
       }
     : null,
 });
-export function createPaymentService({ repository, auditService, payosGateway }) {
+export function createPaymentService({ repository, payosGateway }) {
   return {
     async refunds(actor) {
       if (!["member", "manager", "receptionist", "admin"].includes(actor.role))
@@ -63,6 +63,12 @@ export function createPaymentService({ repository, auditService, payosGateway })
         throw new AppError({ statusCode: 403, code: "FORBIDDEN", message: "Chỉ quản lý đối soát quyền sử dụng." });
       return output(await repository.reconcile(id, note, actor));
     },
+    async page(query) {
+      const { ids, ...meta } = await repository.selectPage(query);
+      const items = await this.list({ id: { in: ids } });
+      const byId = new Map(items.map((item) => [item.id, item]));
+      return { items: ids.map((id) => byId.get(id)).filter(Boolean), meta };
+    },
     async list(filters) {
       return (await repository.listWithDetails(filters)).map(output);
     },
@@ -72,7 +78,7 @@ export function createPaymentService({ repository, auditService, payosGateway })
         throw new AppError({ statusCode: 404, code: "MEMBER_NOT_FOUND", message: "Không tìm thấy hội viên." });
       return repository.targets(member);
     },
-    async ownPayments(actor) {
+    async ownPayments(actor, query) {
       const member = await repository.memberByUser(actor.id);
       if (!member)
         throw new AppError({
@@ -80,7 +86,7 @@ export function createPaymentService({ repository, auditService, payosGateway })
           code: "MEMBER_PROFILE_NOT_FOUND",
           message: "Tài khoản chưa có hồ sơ hội viên.",
         });
-      return this.list({ member_id: member.id });
+      return query ? this.page({ ...query, memberId: member.id }) : this.list({ member_id: member.id });
     },
     async get(id) {
       const [payment] = await repository.listWithDetails({ id });
@@ -222,6 +228,10 @@ export function createPaymentService({ repository, auditService, payosGateway })
                 notes: input.notes ?? null,
               },
               { event_type: "payment_created", new_status: "pending", actor_user_id: actorUserId },
+              {
+                action: "payment.created",
+                summary: method === "online" ? `Đã tạo thanh toán chờ xử lý qua ${provider}.` : "Đã lập phiếu thu chờ Lễ tân xác nhận hoặc đối soát.",
+              },
             );
           },
           { fields: ["transaction_code", "provider_order_code"] },
@@ -241,16 +251,6 @@ export function createPaymentService({ repository, auditService, payosGateway })
           });
         throw error;
       }
-      await auditService.record({
-        actorUserId,
-        action: "payment.created",
-        entityType: "payment",
-        entityId: payment.id,
-        summary:
-          method === "online"
-            ? `Đã tạo thanh toán chờ xử lý qua ${provider}.`
-            : "Đã lập phiếu thu tiền mặt chờ Lễ tân xác nhận.",
-      });
       if (provider === "payos") {
         let link;
         try {
@@ -263,13 +263,7 @@ export function createPaymentService({ repository, auditService, payosGateway })
             eventType: "payos_link_creation_failed",
             actorUserId,
             membershipId: payment.membership_id,
-          });
-          await auditService.record({
-            actorUserId,
-            action: "payment.payos_link_failed",
-            entityType: "payment",
-            entityId: payment.id,
-            summary: "Không tạo được payment link PayOS; phiếu thu đã được đóng ở trạng thái thất bại.",
+            audit: { action: "payment.payos_link_failed", summary: "Không tạo được payment link PayOS; phiếu thu đã được đóng ở trạng thái thất bại." },
           });
           throw error;
         }
@@ -295,6 +289,7 @@ export function createPaymentService({ repository, auditService, payosGateway })
         eventType: "payos_webhook",
         actorUserId: null,
         membershipId: payment.membership_id,
+        audit: { action: `payment.${succeeded ? "paid" : "failed"}`, summary: "Đã xử lý webhook PayOS đã xác thực.", reviewSummary: "Đã nhận tiền qua PayOS; dịch vụ cần đối soát trước khi cấp quyền sử dụng." },
       });
       // Another callback may have completed the pending-to-final transition while
       // this request waited for the row lock. Return the committed state, not the
@@ -322,6 +317,7 @@ export function createPaymentService({ repository, auditService, payosGateway })
           code: "BANK_TRANSFER_RECONCILIATION_NOTE_REQUIRED",
           message: "Cần ghi chú đối soát sao kê ít nhất 10 ký tự trước khi xác nhận chuyển khoản.",
         });
+      const paymentLabel = isBankTransfer ? "chuyển khoản" : "tiền mặt";
       const result = await repository.complete({
         id,
         status,
@@ -332,6 +328,12 @@ export function createPaymentService({ repository, auditService, payosGateway })
         actorUserId,
         membershipId: payment.membership_id,
         note: isBankTransfer ? reconciliationNote?.trim() : undefined,
+        audit: {
+          action: `payment.${status}`,
+          summary: status === "paid" ? `Lễ tân đã đối soát ${paymentLabel} và kích hoạt dịch vụ đã mua.` : `Lễ tân xác nhận phiếu thu ${paymentLabel} không thành công.`,
+          reviewSummary: "Đã ghi nhận tiền đã thu; dịch vụ cần đối soát trước khi cấp quyền sử dụng.",
+          reason: isBankTransfer ? reconciliationNote?.trim() : undefined,
+        },
       });
       if (!result)
         throw new AppError({
@@ -339,19 +341,6 @@ export function createPaymentService({ repository, auditService, payosGateway })
           code: "PAYMENT_ALREADY_CONFIRMED",
           message: "Giao dịch đã được xử lý bởi một xác nhận khác.",
         });
-      const paymentLabel = isBankTransfer ? "chuyển khoản" : "tiền mặt";
-      await auditService.record({
-        actorUserId,
-        action: `payment.${status}`,
-        entityType: "payment",
-        entityId: id,
-        summary: result.fulfillment_error
-          ? "Đã ghi nhận tiền đã thu; dịch vụ cần đối soát trước khi cấp quyền sử dụng."
-          : status === "paid"
-            ? `Lễ tân đã đối soát ${paymentLabel} và kích hoạt dịch vụ đã mua.`
-            : `Lễ tân xác nhận phiếu thu ${paymentLabel} không thành công.`,
-        reason: isBankTransfer ? reconciliationNote?.trim() : undefined,
-      });
       return output(result);
     },
   };

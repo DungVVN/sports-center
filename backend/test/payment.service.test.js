@@ -43,7 +43,7 @@ describe("Payment service", () => {
   it("creates payment and immutable creation event together", async () => {
     const { repository, auditService } = dependencies();
     await expect(createPaymentService({ repository, auditService }).create(input, "receptionist-1")).resolves.toMatchObject({ id: "payment-1", amountVnd: "500000" });
-    expect(repository.createWithEvent).toHaveBeenCalledWith(expect.objectContaining({ amount_vnd: 500000n, membership_id: membershipId }), expect.objectContaining({ event_type: "payment_created", actor_user_id: "receptionist-1" }));
+    expect(repository.createWithEvent).toHaveBeenCalledWith(expect.objectContaining({ amount_vnd: 500000n, membership_id: membershipId }), expect.objectContaining({ event_type: "payment_created", actor_user_id: "receptionist-1" }), expect.objectContaining({ action: "payment.created" }));
   });
 
   it("reports a concurrent confirmation without activating twice", async () => {
@@ -81,7 +81,8 @@ describe("Payment service", () => {
     repository.complete.mockResolvedValue({ id: "payment-1", amount_vnd: 500000n });
     await createPaymentService({ repository, auditService }).confirm("payment-1", "paid", "receptionist-1", "Đã khớp sao kê ngân hàng lúc 10:15");
     expect(repository.complete).toHaveBeenCalledWith(expect.objectContaining({ eventType: "bank_transfer_reconciled", note: "Đã khớp sao kê ngân hàng lúc 10:15" }));
-    expect(auditService.record).toHaveBeenCalledWith(expect.objectContaining({ reason: "Đã khớp sao kê ngân hàng lúc 10:15" }));
+    expect(repository.complete).toHaveBeenCalledWith(expect.objectContaining({ audit: expect.objectContaining({ reason: "Đã khớp sao kê ngân hàng lúc 10:15" }) }));
+    expect(auditService.record).not.toHaveBeenCalled();
   });
 
   it("does not allow a receptionist to manually confirm an online payment", async () => {
@@ -96,7 +97,7 @@ describe("Payment service", () => {
     const payosGateway = { createPaymentLink: vi.fn().mockRejectedValue(new Error("PayOS unavailable")), verifyWebhook: vi.fn() };
     await expect(createPaymentService({ repository, auditService, payosGateway }).create({ ...input, method: "online", provider: "payos" }, "receptionist-1")).rejects.toThrow("PayOS unavailable");
     expect(repository.complete).toHaveBeenCalledWith(expect.objectContaining({ status: "failed", eventType: "payos_link_creation_failed" }));
-    expect(auditService.record).toHaveBeenCalledWith(expect.objectContaining({ action: "payment.payos_link_failed" }));
+    expect(repository.complete).toHaveBeenCalledWith(expect.objectContaining({ audit: expect.objectContaining({ action: "payment.payos_link_failed" }) }));
   });
 
   it("returns the committed status when a duplicate PayOS callback loses the race", async () => {

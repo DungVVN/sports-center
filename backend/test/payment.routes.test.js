@@ -6,21 +6,21 @@ const memberId = "11111111-1111-4111-8111-111111111111";
 const membershipId = "22222222-2222-4222-8222-222222222222";
 const paymentId = "33333333-3333-4333-8333-333333333333";
 function authService(permissions, role = "receptionist") { return { getAuthentication: vi.fn().mockResolvedValue({ user: { id: "receptionist-1", role }, permissions }) }; }
-function paymentService() { return { targets: vi.fn().mockResolvedValue([]), ownPayments: vi.fn().mockResolvedValue([]), ownReceipt: vi.fn().mockResolvedValue({ id: paymentId, events: [] }), list: vi.fn().mockResolvedValue([]), create: vi.fn().mockResolvedValue({ id: paymentId, status: "pending" }), get: vi.fn(), confirm: vi.fn().mockResolvedValue({ id: paymentId, status: "paid" }), providerCallback: vi.fn(), payosCallback: vi.fn().mockResolvedValue({ id: paymentId, status: "paid" }) }; }
+function paymentService() { return { targets: vi.fn().mockResolvedValue([]), ownPayments: vi.fn().mockResolvedValue({ items: [], meta: { total: 0, page: 1, pageSize: 10 } }), ownReceipt: vi.fn().mockResolvedValue({ id: paymentId, events: [] }), page: vi.fn().mockResolvedValue({ items: [], meta: { total: 0, page: 1, pageSize: 10 } }), list: vi.fn().mockResolvedValue([]), create: vi.fn().mockResolvedValue({ id: paymentId, status: "pending" }), get: vi.fn(), confirm: vi.fn().mockResolvedValue({ id: paymentId, status: "paid" }), providerCallback: vi.fn(), payosCallback: vi.fn().mockResolvedValue({ id: paymentId, status: "paid" }) }; }
 
 describe("Payment routes", () => {
   it.each(["invalid", "", `${memberId}&memberId=${membershipId}`])("rejects malformed or repeated member filters before querying payments: %s", async (filter) => {
     const service = paymentService();
     await request(createApp({ authService: authService(["payment.read"]), paymentService: service })).get(`/api/v1/payments?memberId=${filter}`).set("Authorization", "Bearer token").expect(422);
-    expect(service.list).not.toHaveBeenCalled();
+    expect(service.page).not.toHaveBeenCalled();
   });
   it("passes a validated optional member filter to the receipt list", async () => {
     const service = paymentService();
     const app = createApp({ authService: authService(["payment.read"]), paymentService: service });
     await request(app).get(`/api/v1/payments?memberId=${memberId}`).set("Authorization", "Bearer token").expect(200);
-    expect(service.list).toHaveBeenLastCalledWith({ member_id: memberId });
+    expect(service.page).toHaveBeenLastCalledWith(expect.objectContaining({ memberId, page: 1, pageSize: 10 }));
     await request(app).get("/api/v1/payments").set("Authorization", "Bearer token").expect(200);
-    expect(service.list).toHaveBeenLastCalledWith(undefined);
+    expect(service.page).toHaveBeenLastCalledWith(expect.objectContaining({ page: 1, pageSize: 10 }));
   });
   it("lets a cashier load service targets using payment.record alone", async () => {
     const service = paymentService();
@@ -40,7 +40,7 @@ describe("Payment routes", () => {
   it("lets a Member view their own payment statuses with payment.self.read", async () => {
     const service = paymentService();
     await request(createApp({ authService: authService(["payment.self.read"], "member"), paymentService: service })).get("/api/v1/members/me/payments").set("Authorization", "Bearer token").expect(200);
-    expect(service.ownPayments).toHaveBeenCalledWith({ id: "receptionist-1", role: "member" });
+    expect(service.ownPayments).toHaveBeenCalledWith({ id: "receptionist-1", role: "member" }, { page: 1, pageSize: 10, search: "" });
   });
   it("creates a cash payment with its linked pending membership", async () => {
     const service = paymentService();
@@ -117,7 +117,7 @@ describe("Payment routes", () => {
     await request(app).get("/api/v1/payments").set("Authorization", "Bearer token").expect(200);
     await request(app).post("/api/v1/payments").set("Authorization", "Bearer token").send({ memberId, amountVnd: 500000, method: "cash" }).expect(403);
     await request(app).post(`/api/v1/payments/${paymentId}/confirm`).set("Authorization", "Bearer token").send({ status: "paid" }).expect(403);
-    expect(service.list).toHaveBeenCalledWith(undefined);
+    expect(service.page).toHaveBeenCalledWith(expect.objectContaining({ page: 1, pageSize: 10 }));
     expect(service.create).not.toHaveBeenCalled();
     expect(service.confirm).not.toHaveBeenCalled();
   });

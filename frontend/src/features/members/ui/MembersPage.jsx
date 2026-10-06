@@ -1,8 +1,7 @@
 import { PageHeader } from "../../../shared/ui/PageHeader.jsx";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { Button } from "../../../shared/ui/Button.jsx";
-import { usePagination } from "../../../shared/ui/usePagination.js";
 import { CoachAssignmentDialog } from "./dialogs/CoachAssignmentDialog.jsx";
 import { MemberEditorDialog } from "./dialogs/MemberEditorDialog.jsx";
 import { MemberCreateForm } from "./forms/MemberCreateForm.jsx";
@@ -23,27 +22,22 @@ export function MembersPage({ readOnly = false, canResetCredentials = !readOnly 
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [credentials, setCredentials] = useState(null);
   const [copiedPassword, setCopiedPassword] = useState(false);
+  const [page, setPage] = useState(1);
   const showToast = useToast();
-  const workspace = useMembersWorkspace({ assignmentMemberId: assignmentMember?.id, editingMemberId });
-  const visibleMembers = useMemo(() => {
-    const query = search.trim().toLocaleLowerCase("vi-VN");
-    return workspace.members.filter(
-      (member) =>
-        (!coachFilters.length || coachFilters.includes(member.coachName ?? "__unassigned")) &&
-        (!packageFilters.length || packageFilters.includes(member.registeredPackageName ?? "__unregistered")) &&
-        (!statusFilters.length || statusFilters.includes(member.membershipStatus ?? "__no_membership")) &&
-        (!query ||
-          [member.fullName, member.email, member.phone, member.memberCode]
-            .filter(Boolean)
-            .some((value) => value.toLocaleLowerCase("vi-VN").includes(query))),
-    );
-  }, [coachFilters, packageFilters, search, statusFilters, workspace.members]);
-  const pagination = usePagination(visibleMembers);
-  const toggleFilterValue = (kind, value) =>
+  const workspace = useMembersWorkspace({ assignmentMemberId: assignmentMember?.id, editingMemberId,
+    listQuery: { page, pageSize: 10, search, coach: coachFilters, package: packageFilters, status: statusFilters },
+  });
+  const visibleMembers = workspace.members;
+  const total = workspace.listMeta?.total ?? 0;
+  const pagination = { page: workspace.listMeta?.page ?? page, pageItems: visibleMembers, pageSize: 10, setPage: (value) => setPage(typeof value === "function" ? value(workspace.listMeta?.page ?? page) : value), disabled: workspace.pagePending, total, totalPages: Math.max(1, Math.ceil(total / 10)) };
+  const toggleFilterValue = (kind, value) => {
+    setPage(1);
     ({ coach: setCoachFilters, package: setPackageFilters, status: setStatusFilters })[kind]((current) =>
       current.includes(value) ? current.filter((item) => item !== value) : [...current, value],
     );
+  };
   const clearFilters = () => {
+    setPage(1);
     setSearch("");
     setCoachFilters([]);
     setPackageFilters([]);
@@ -158,12 +152,13 @@ export function MembersPage({ readOnly = false, canResetCredentials = !readOnly 
           }}
           loading={workspace.loading}
           members={workspace.members}
+          facets={workspace.listMeta?.facets}
           onEdit={(member) => setEditingMemberId(member.id)}
           onFilterToggle={() => setIsFilterOpen((value) => !value)}
           onIssueAccountCredentials={issueAccountCredentials}
           onOpenAssignment={setAssignmentMember}
           onReload={workspace.reload}
-          onSearchChange={setSearch}
+          onSearchChange={(value) => { setPage(1); setSearch(value); }}
           onToggleFilterValue={toggleFilterValue}
           onClearFilters={clearFilters}
           pagination={pagination}

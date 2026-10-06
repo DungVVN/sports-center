@@ -7,7 +7,7 @@ import { memberApi } from "../api/member-api.js";
 import { MembersPage } from "./MembersPage.jsx";
 
 vi.mock("../../classes/index.js", () => ({ classApi: { coaches: vi.fn() } }));
-vi.mock("../api/member-api.js", () => ({ memberApi: { list: vi.fn(), create: vi.fn(), issueAccountCredentials: vi.fn(), get: vi.fn(), update: vi.fn(), replaceContacts: vi.fn(), coachAssignments: vi.fn(), assignCoach: vi.fn() } }));
+vi.mock("../api/member-api.js", () => ({ memberApi: { list: vi.fn(), page: vi.fn(), create: vi.fn(), issueAccountCredentials: vi.fn(), get: vi.fn(), update: vi.fn(), replaceContacts: vi.fn(), coachAssignments: vi.fn(), assignCoach: vi.fn() } }));
 
 function renderPage(props) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -18,6 +18,7 @@ describe("MembersPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     memberApi.list.mockResolvedValue([]);
+    memberApi.page.mockImplementation(async () => { const items = await memberApi.list(); return { items, meta: { total: items.length, page: 1, pageSize: 10 } }; });
     classApi.coaches.mockResolvedValue([]);
   });
   afterEach(cleanup);

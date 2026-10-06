@@ -36,7 +36,7 @@ export function apiErrorFromResponse(response, payload, { suppressAuthentication
   });
 }
 
-export async function request(path, { method = "GET", body, headers, signal, timeoutMs = 30_000, suppressAuthenticationExpiredEvent = false } = {}) {
+export async function request(path, { method = "GET", body, headers, signal, timeoutMs = 30_000, suppressAuthenticationExpiredEvent = false, includeMeta = false } = {}) {
   const controller = new AbortController();
   let timedOut = false;
   const abort = () => controller.abort(signal.reason);
@@ -77,7 +77,7 @@ export async function request(path, { method = "GET", body, headers, signal, tim
     if (method !== "GET" && method !== "HEAD" && !path.startsWith("/notifications/") && typeof window !== "undefined") {
       window.dispatchEvent(new Event(mutationSucceededEvent));
     }
-    return payload.data;
+    return includeMeta ? { items: payload.data, meta: payload.meta } : payload.data;
   } catch (error) {
     if (timedOut && !signal?.aborted) throw new ApiError({
       code: "REQUEST_TIMEOUT",

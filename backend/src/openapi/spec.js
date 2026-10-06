@@ -2,6 +2,7 @@ import { env } from "../config/env.js";
 import { applyServiceContract } from "./service-contract.js";
 import { applySiteContract } from "./site-contract.js";
 import { applyTrainingPersonalizationContract } from "./training-personalization-contract.js";
+import { applyOperationsContract } from "./operations-contract.js";
 
 const uuid = { type: "string", format: "uuid" };
 const jsonBody = (schema) => ({ required: true, content: { "application/json": { schema } } });
@@ -2489,6 +2490,8 @@ applyServiceContract(openApiSpec, {
   facilityReservation,
   facilityReservationRecord,
 });
+
+applyOperationsContract(openApiSpec);
 
 for (const [path, operations] of Object.entries(openApiSpec.paths)) {
   const names = [...path.matchAll(/\{([^}]+)\}/g)].map((match) => match[1]);

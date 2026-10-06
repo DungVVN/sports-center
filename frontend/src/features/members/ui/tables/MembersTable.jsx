@@ -50,6 +50,7 @@ function MemberRowActions({
 export function MembersTable({
   canResetCredentials,
   filters,
+  facets,
   loading,
   members,
   onClearFilters,
@@ -65,13 +66,13 @@ export function MembersTable({
   visibleMembers,
 }) {
   const { coach, isOpen, package: packageFilters, search, status } = filters;
-  const coachOptions = [...new Set(members.map((member) => member.coachName ?? "__unassigned"))].sort((a, b) =>
+  const coachOptions = facets?.coach ?? [...new Set(members.map((member) => member.coachName ?? "__unassigned"))].sort((a, b) =>
     a.localeCompare(b, "vi-VN"),
   );
-  const packageOptions = [...new Set(members.map((member) => member.registeredPackageName ?? "__unregistered"))].sort(
+  const packageOptions = facets?.package ?? [...new Set(members.map((member) => member.registeredPackageName ?? "__unregistered"))].sort(
     (a, b) => a.localeCompare(b, "vi-VN"),
   );
-  const statusOptions = [...new Set(members.map((member) => member.membershipStatus ?? "__no_membership"))];
+  const statusOptions = facets?.status ?? [...new Set(members.map((member) => member.membershipStatus ?? "__no_membership"))];
   return (
     <section className="members-list">
       <div className="list-heading">
@@ -82,13 +83,13 @@ export function MembersTable({
       </div>
       {loading ? (
         <TableSkeleton columns={7} />
-      ) : members.length === 0 ? (
+      ) : members.length === 0 && !search && !coach.length && !packageFilters.length && !status.length ? (
         <p>Chưa có hội viên.</p>
       ) : (
         <>
           <DataTableToolbar
             onClear={onClearFilters}
-            resultCount={visibleMembers.length}
+            resultCount={pagination.total}
             search={search}
             searchPlaceholder="Tìm tên, mã, email..."
             setSearch={onSearchChange}

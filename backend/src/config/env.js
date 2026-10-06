@@ -60,6 +60,10 @@ if (values.NODE_ENV === "production" && values.VERIFICATION_DELIVERY_MODE === "p
   throw new Error("Resend must be configured when production email delivery is enabled.");
 }
 
+if (values.NODE_ENV === "production" && values.VERIFICATION_DELIVERY_MODE !== "provider") {
+  throw new Error("Production verification must use provider email delivery.");
+}
+
 if (values.NODE_ENV === "production" && values.CAPTCHA_ENABLED && !values.RECAPTCHA_SECRET_KEY) {
   throw new Error("RECAPTCHA_SECRET_KEY must be configured when CAPTCHA is enabled in production.");
 }

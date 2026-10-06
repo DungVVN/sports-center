@@ -4,6 +4,7 @@ import { AppError } from "../../../shared/errors/app-error.js";
 import { authenticate, requirePermission } from "../../../shared/auth/authentication.middleware.js";
 import { sendSuccess } from "../../../shared/http/response.js";
 import { validateRequest } from "../../../shared/validation/validate-request.js";
+import { listPageQuery, listValues } from "../../../shared/validation/list-query.js";
 const id = z.string().uuid();
 const phone = z.string().min(9, "Nhập số điện thoại từ 9 đến 20 ký tự, ví dụ 0901234567.").max(20, "Số điện thoại tối đa 20 ký tự, ví dụ 0901234567.");
 const contact = z.object({
@@ -45,8 +46,8 @@ export function createMemberRouter(service, authService) {
   router.get("/me", auth, async (req, res, next) => {
     try { sendSuccess(res, { data: await service.getByUserId(req.auth.user.id) }); } catch (error) { next(error); }
   });
-  router.get("/", ...read, async (req, res, next) => {
-    try { sendSuccess(res, { data: await service.list() }); } catch (error) { next(error); }
+  router.get("/", ...read, validateRequest(z.object({ query: listPageQuery.extend({ coach: listValues(), package: listValues(), status: listValues(z.enum(["active", "expiring_soon", "frozen", "pending_payment", "expired", "cancelled", "__no_membership"])) }).strict() })), async (req, res, next) => {
+    try { const { items, meta } = await service.page(req.validated.query); sendSuccess(res, { data: items, meta }); } catch (error) { next(error); }
   });
   router.post("/", ...write, validateRequest(z.object({ body: createBody })), async (req, res, next) => {
     try { sendSuccess(res, { statusCode: 201, data: await service.create(req.validated.body, req.auth.user.id) }); } catch (error) { next(error); }

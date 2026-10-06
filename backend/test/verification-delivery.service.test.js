@@ -2,6 +2,14 @@ import { describe, expect, it, vi } from "vitest";
 import { createVerificationDeliveryService } from "../src/modules/auth/index.js";
 
 describe("Resend verification delivery", () => {
+  it("rejects development delivery in production without logging an OTP", async () => {
+    const log = vi.spyOn(console, "info").mockImplementation(() => {});
+    try {
+      const service = createVerificationDeliveryService({ config: { nodeEnv: "production", verificationDeliveryMode: "development" } });
+      await expect(service.deliver({ channel: "email", code: "123456", recipient: "private@example.test" })).rejects.toMatchObject({ code: "VERIFICATION_DELIVERY_NOT_CONFIGURED" });
+      expect(log).not.toHaveBeenCalled();
+    } finally { log.mockRestore(); }
+  });
   it("sends an email verification code through Resend", async () => {
     const fetchImpl = vi.fn().mockResolvedValue({ ok: true, status: 200 });
     const service = createVerificationDeliveryService({

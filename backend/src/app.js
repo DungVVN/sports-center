@@ -13,6 +13,7 @@ import { errorHandler } from "./shared/middleware/error-handler.js";
 import { notFound } from "./shared/middleware/not-found.js";
 import { requestId } from "./shared/middleware/request-id.js";
 import { requireTrustedOrigin } from "./shared/security/trusted-origin.middleware.js";
+import { checkDatabaseReadiness } from "./shared/database/readiness.js";
 
 function isAllowedOrigin(origin) {
   return !origin || env.corsOrigins.includes(origin);
@@ -38,6 +39,18 @@ export function createApp(overrides = {}) {
   app.get(`${env.apiBasePath}/health`, (request, response) => sendSuccess(response, {
     data: { status: "ok", requestId: request.id },
   }));
+  app.get(`${env.apiBasePath}/ready`, async (request, response) => {
+    let timer;
+    try {
+      await Promise.race([
+        Promise.resolve().then(() => (overrides.readinessCheck ?? checkDatabaseReadiness)()),
+        new Promise((_, reject) => { timer = setTimeout(() => reject(new Error("READINESS_TIMEOUT")), 5000); }),
+      ]);
+      return sendSuccess(response, { data: { status: "ready", requestId: request.id } });
+    } catch {
+      return response.status(503).json({ success: false, error: { code: "DATABASE_UNAVAILABLE", message: "Kết nối dữ liệu chưa sẵn sàng.", requestId: request.id } });
+    } finally { clearTimeout(timer); }
+  });
   app.get("/openapi.json", (request, response) => response.json(openApiSpec));
   app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(openApiSpec, { explorer: true }));
   app.use(operationNotificationMiddleware(services.operationNotificationService, env.apiBasePath));

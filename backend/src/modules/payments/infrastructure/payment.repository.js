@@ -4,10 +4,24 @@ import { activateCourseEnrollment } from "../../courses/index.js";
 import { prisma } from "../../../database.js";
 import { serviceRefundRepository } from "./service-refund.repository.js";
 import { listPaymentTargets } from "./payment-target.repository.js";
+import { selectPaymentPage } from "./payment-page.js";
+
+async function recordPaymentAudit(tx, payment, audit, actorUserId) {
+  if (!audit) return;
+  await tx.audit_logs.create({ data: {
+    actor_user_id: actorUserId,
+    action: audit.action,
+    entity_type: "payment",
+    entity_id: payment.id,
+    summary: payment.fulfillment_error ? (audit.reviewSummary ?? audit.summary) : audit.summary,
+    ...(audit.reason && { reason: audit.reason }),
+  } });
+}
 export const paymentRepository = {
   targets: listPaymentTargets,
   ...serviceRefundRepository,
-  list: (filters) => prisma.payments.findMany({ where: filters, orderBy: { created_at: "desc" } }),
+  selectPage: selectPaymentPage,
+  list: (filters) => prisma.payments.findMany({ where: filters, take: 100, orderBy: [{ created_at: "desc" }, { id: "desc" }] }),
   memberByUser: (userId) => prisma.members.findUnique({ where: { user_id: userId }, select: { id: true } }),
   payment: (id) => prisma.payments.findUnique({ where: { id } }),
   paymentEvents: (paymentId) =>
@@ -91,16 +105,17 @@ export const paymentRepository = {
   ptPurchase: (id) => prisma.pt_purchases.findUnique({ where: { id } }),
   facilityReservation: (id) => prisma.facility_reservations.findUnique({ where: { id } }),
   courseEnrollment: (id) => prisma.course_enrollments.findUnique({ where: { id } }),
-  createWithEvent: (data, event) =>
+  createWithEvent: (data, event, audit) =>
     prisma.$transaction(async (tx) => {
       const payment = await tx.payments.create({ data });
       await tx.payment_events.create({ data: { ...event, payment_id: payment.id, amount_vnd: payment.amount_vnd } });
+      await recordPaymentAudit(tx, payment, audit, event.actor_user_id);
       return payment;
     }),
   paymentByCode: (transactionCode) => prisma.payments.findUnique({ where: { transaction_code: transactionCode } }),
   paymentByProviderOrderCode: (providerOrderCode) =>
     prisma.payments.findUnique({ where: { provider_order_code: BigInt(providerOrderCode) } }),
-  complete: ({ id, status, paidAt, eventType, actorUserId, membershipId, note }) =>
+  complete: ({ id, status, paidAt, eventType, actorUserId, membershipId, note, audit }) =>
     prisma.$transaction(async (tx) => {
       const changed = await tx.payments.updateMany({
         where: { id, status: "pending" },
@@ -193,6 +208,7 @@ export const paymentRepository = {
           payment.fulfillment_error = error.code;
         }
       }
+      await recordPaymentAudit(tx, payment, audit, actorUserId);
       return payment;
     }),
 };

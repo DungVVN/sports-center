@@ -108,11 +108,11 @@ describe("role permission configuration", () => {
 
   it("enforces a revoked permission on the next request", async () => {
     const authService = { getAuthentication: vi.fn().mockResolvedValue({ user: { id: "manager-1", role: "manager" }, permissions: ["payment.read"] }) };
-    const paymentService = { list: vi.fn().mockResolvedValue([]) };
+    const paymentService = { page: vi.fn().mockResolvedValue({ items: [], meta: { total: 0 } }) };
     const app = createApp({ authService, paymentService });
     await request(app).get("/api/v1/payments").set("Authorization", "Bearer token").expect(200);
     authService.getAuthentication.mockResolvedValue({ user: { id: "manager-1", role: "manager" }, permissions: [] });
     await request(app).get("/api/v1/payments").set("Authorization", "Bearer token").expect(403);
-    expect(paymentService.list).toHaveBeenCalledTimes(1);
+    expect(paymentService.page).toHaveBeenCalledTimes(1);
   });
 });

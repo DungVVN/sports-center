@@ -9,23 +9,24 @@ import { trainingApi } from "./training/api/training-api.js";
 vi.mock("../shared/api/client.js", () => ({ apiClient: { get: vi.fn() } }));
 
 describe("optional query parameters", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => { vi.clearAllMocks(); apiClient.get.mockResolvedValue({ items: [], meta: { page: 1, pageSize: 100, total: 0 } }); });
 
-  it("never serializes a React Query context object into an API URL", () => {
+  it("never serializes a React Query context object into an API URL", async () => {
     const queryContext = { queryKey: ["query"], signal: new AbortController().signal };
 
     trainingApi.plans(queryContext);
     bookingApi.list(queryContext);
-    paymentApi.list(queryContext);
+    const payments = paymentApi.list(queryContext);
     classApi.changeRequests(queryContext);
     membershipApi.freezeRequests(queryContext);
 
     expect(apiClient.get).toHaveBeenNthCalledWith(1, "/training-plans");
     expect(apiClient.get).toHaveBeenNthCalledWith(2, "/bookings");
-    expect(apiClient.get).toHaveBeenNthCalledWith(3, "/payments");
+    await payments;
+    expect(apiClient.get).toHaveBeenNthCalledWith(3, "/payments?page=1&pageSize=100", { includeMeta: true });
     expect(apiClient.get).toHaveBeenNthCalledWith(4, "/class-change-requests?status=pending");
     expect(apiClient.get).toHaveBeenNthCalledWith(5, "/membership-freeze-requests?status=pending");
-    expect(apiClient.get.mock.calls.flat().join(" ")).not.toContain("[object Object]");
+    expect(apiClient.get.mock.calls.map(([path]) => path).join(" ")).not.toContain("[object Object]");
   });
 
   it("keeps valid query values encoded", () => {
