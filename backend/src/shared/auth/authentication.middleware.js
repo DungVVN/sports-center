@@ -9,6 +9,7 @@ function tokenFromRequest(request) {
 
 export function authenticate(authService) {
   return async (request, response, next) => {
+    response.setHeader("Cache-Control", "no-store");
     try {
       const { token, fromCookie } = tokenFromRequest(request);
       if (!token) throw new AppError({ statusCode: 401, code: "UNAUTHENTICATED", message: "Bạn cần đăng nhập để tiếp tục." });

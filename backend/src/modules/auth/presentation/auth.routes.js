@@ -105,6 +105,10 @@ function sessionCookie(response, token, surface = "main") {
 
 export function createAuthRouter(authService, cloudinaryMediaService) {
   const router = Router();
+  router.use((request, response, next) => {
+    response.setHeader("Cache-Control", "no-store");
+    next();
+  });
   const authRequired = authenticate(authService);
 
   router.post("/register", validateRequest(registrationSchema), async (request, response, next) => {

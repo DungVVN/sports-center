@@ -24,7 +24,7 @@ export function apiErrorFromResponse(response, payload, { suppressAuthentication
   if (response.status === 401 && !suppressAuthenticationExpiredEvent && typeof window !== "undefined") {
     window.dispatchEvent(new Event(authenticationExpiredEvent));
   }
-  if (response.status === 403 && typeof window !== "undefined") {
+  if (response.status === 403 && ["FORBIDDEN", "PASSWORD_CHANGE_REQUIRED"].includes(payload?.error?.code) && typeof window !== "undefined") {
     window.dispatchEvent(new Event(permissionsChangedEvent));
   }
   return new ApiError({

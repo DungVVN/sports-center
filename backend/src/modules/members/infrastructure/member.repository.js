@@ -1,4 +1,5 @@
 import { prisma } from "../../../database.js";
+import { invalidateLoginChallenges } from "../../../shared/auth/invalidate-login-challenges.js";
 import { selectMemberPage } from "./member-page.js";
 
 export const memberRepository = {
@@ -83,6 +84,7 @@ export const memberRepository = {
     if (member.user_id) {
       const user = await tx.users.update({ where: { id: member.user_id }, data: { password_hash: passwordHash, must_change_password: true } });
       await tx.auth_sessions.updateMany({ where: { user_id: user.id, revoked_at: null }, data: { revoked_at: new Date() } });
+      await invalidateLoginChallenges(tx, user.id);
       return { member, user, accountCreated: false };
     }
     const user = await tx.users.create({ data: {

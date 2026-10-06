@@ -7,6 +7,35 @@ import { hashVerificationCode } from "../src/shared/auth/session-token.js";
 const acceptingCaptcha = { assertValid: vi.fn().mockResolvedValue(undefined) };
 
 describe("auth service login protection", () => {
+  it.each([
+    { method: "verifyRegistration", input: { userId: "user-1", channel: "email", code: "123456" }, code: "VERIFICATION_ATTEMPTS_EXCEEDED" },
+    { method: "verifyStaffEmailOtp", input: { challengeId: "verification-1", code: "123456" }, code: "EMAIL_OTP_ATTEMPTS_EXCEEDED" },
+  ])("rejects $method when a concurrent request takes the final attempt", async ({ method, input, code }) => {
+    const verification = { id: "verification-1", user_id: "user-1", attempts: 4, verified_at: null, expires_at: new Date(Date.now() + 60_000), code_hash: hashVerificationCode("123456") };
+    const repository = { findLatestVerification: vi.fn().mockResolvedValue(verification), findVerification: vi.fn().mockResolvedValue(verification),
+      incrementVerificationAttempts: vi.fn().mockResolvedValue({ count: 0 }), completeRegistrationVerification: vi.fn(), markVerificationVerifiedOnce: vi.fn(), createSession: vi.fn() };
+    const service = createAuthService({ repository, verificationDelivery: {} });
+    await expect(service[method](input)).rejects.toMatchObject({ statusCode: 429, code });
+    expect(repository.completeRegistrationVerification).not.toHaveBeenCalled();
+    expect(repository.markVerificationVerifiedOnce).not.toHaveBeenCalled();
+    expect(repository.createSession).not.toHaveBeenCalled();
+  });
+
+  it("never exposes credential hashes or extra database fields in pending registrations", async () => {
+    const createdAt = new Date("2026-10-01T00:00:00Z");
+    const repository = { listPendingRegistrations: vi.fn().mockResolvedValue([
+      { user: { id: "user-1", email: "member@example.com", display_name: "Member", role: "member", status: "pending_approval", created_at: createdAt, password_hash: "private-hash", future_secret: "private-secret" },
+        member: { id: "member-1", member_code: "MBR-1", full_name: "Member", phone: "0901234567", private_notes: "private-notes" } },
+      { user: { id: "user-2" }, member: null },
+    ]) };
+    const service = createAuthService({ repository, verificationDelivery: {} });
+    const result = await service.listPendingRegistrations();
+    expect(result[0]).toEqual({ user: { id: "user-1", email: "member@example.com", display_name: "Member", role: "member", status: "pending_approval", created_at: createdAt },
+      member: { id: "member-1", member_code: "MBR-1", full_name: "Member", phone: "0901234567" } });
+    expect(result[1].member).toBeNull();
+    expect(JSON.stringify(result)).not.toContain("private-");
+  });
+
   it("returns a conflict when a concurrent registration claims the same contact", async () => {
     const repository = {
       findUserByEmail: vi.fn().mockResolvedValue(null),
@@ -39,14 +68,13 @@ describe("auth service login protection", () => {
     const code = "123456";
     const repository = {
       findLatestVerification: vi.fn().mockResolvedValue({ id: "verification-1", code_hash: hashVerificationCode(code), expires_at: new Date(Date.now() + 60_000), attempts: 0, verified_at: null }),
-      incrementVerificationAttempts: vi.fn(),
-      markVerificationVerified: vi.fn(),
-      updateUserStatus: vi.fn(),
+      incrementVerificationAttempts: vi.fn().mockResolvedValue({ count: 1 }),
+      completeRegistrationVerification: vi.fn().mockResolvedValue(true),
     };
     const service = createAuthService({ repository, verificationDelivery: { deliver: vi.fn() }, auditService: { record: vi.fn() } });
 
     await expect(service.verifyRegistration({ channel: "email", code, userId: "user-1" })).resolves.toEqual({ status: "pending_approval" });
-    expect(repository.updateUserStatus).toHaveBeenCalledWith("user-1", "pending_approval");
+    expect(repository.completeRegistrationVerification).toHaveBeenCalledWith({ verificationId: "verification-1", userId: "user-1", channel: "email" });
   });
   it("limits repeated failed attempts and audits without storing credentials", async () => {
     const auditService = { record: vi.fn().mockResolvedValue(undefined) };
@@ -71,20 +99,19 @@ describe("auth service login protection", () => {
   });
 
   it("changes password only after verifying the current password and revokes sessions", async () => {
-    const repository = { userCredentials: vi.fn().mockResolvedValue({ id: "user-1", password_hash: await hashPassword("Current1") }), updatePassword: vi.fn(), revokeUserSessions: vi.fn() };
+    const repository = { userCredentials: vi.fn().mockResolvedValue({ id: "user-1", password_hash: await hashPassword("Current1") }), changePasswordAndRevokeSessions: vi.fn() };
     const auditService = { record: vi.fn() };
     const service = createAuthService({ repository, verificationDelivery: { send: vi.fn() }, auditService, captchaVerifier: acceptingCaptcha });
     await expect(service.changePassword({ userId: "user-1", currentPassword: "Current1", newPassword: "Updated2" })).resolves.toEqual({ mustChangePassword: false });
-    expect(repository.updatePassword).toHaveBeenCalled();
-    expect(repository.revokeUserSessions).toHaveBeenCalledWith("user-1");
+    expect(repository.changePasswordAndRevokeSessions).toHaveBeenCalledWith(expect.objectContaining({ userId: "user-1", passwordHash: expect.any(String), expectedPasswordHash: expect.any(String), currentSessionId: undefined }));
   });
 
   it("keeps the current session after an initial password change", async () => {
-    const repository = { userCredentials: vi.fn().mockResolvedValue({ id: "user-1", password_hash: await hashPassword("Current1"), must_change_password: true }), updatePassword: vi.fn(), revokeOtherUserSessions: vi.fn() };
+    const repository = { userCredentials: vi.fn().mockResolvedValue({ id: "user-1", password_hash: await hashPassword("Current1"), must_change_password: true }), changePasswordAndRevokeSessions: vi.fn() };
     const service = createAuthService({ repository, verificationDelivery: { send: vi.fn() }, auditService: { record: vi.fn() }, captchaVerifier: acceptingCaptcha });
 
     await expect(service.changePassword({ userId: "user-1", currentSessionId: "session-1", currentPassword: "Current1", newPassword: "Updated2" })).resolves.toEqual({ mustChangePassword: false });
-    expect(repository.revokeOtherUserSessions).toHaveBeenCalledWith("user-1", "session-1");
+    expect(repository.changePasswordAndRevokeSessions).toHaveBeenCalledWith(expect.objectContaining({ userId: "user-1", currentSessionId: "session-1" }));
   });
 
   it("returns current role permissions with a successful login", async () => {
@@ -164,7 +191,7 @@ describe("auth service login protection", () => {
     const code = "123456";
     const repository = {
       findVerification: vi.fn().mockResolvedValue({ id: "challenge-1", user_id: "staff-1", code_hash: hashVerificationCode(code), expires_at: new Date(Date.now() + 60_000), attempts: 0, verified_at: null }),
-      incrementVerificationAttempts: vi.fn(),
+      incrementVerificationAttempts: vi.fn().mockResolvedValue({ count: 1 }),
       markVerificationVerifiedOnce: vi.fn().mockResolvedValue({ count: 1 }),
       findUserById: vi.fn().mockResolvedValue({ id: "staff-1", email: "coach@example.com", display_name: "Coach", role: "coach", status: "active" }),
       createSession: vi.fn().mockResolvedValue({ id: "session-1" }),

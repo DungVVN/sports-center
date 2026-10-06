@@ -3,6 +3,10 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "overrides": {
+    "@prisma/config@7.10.0": { "deepmerge-ts": "8.0.0" },
+    "prisma": { "mysql2": "3.23.1" }
+  },
   "scripts": {
     "worker:assets": "node scripts/prepare-worker-assets.mjs",
     "worker:dev": "npm run worker:assets && wrangler dev",

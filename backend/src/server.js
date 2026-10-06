@@ -3,6 +3,7 @@ import { env } from "./config/env.js";
 import { runMembershipLifecycleJob } from "./jobs/membership-lifecycle.job.js";
 import { runNotificationEmailDeliveryJob } from "./jobs/notification-email-delivery.job.js";
 import { runServiceLifecycleJob } from "./jobs/service-lifecycle.job.js";
+import { createScheduledJobRunner } from "./jobs/scheduled-job-runner.js";
 
 const app = createApp();
 const server = app.listen(env.port, () => {
@@ -10,12 +11,16 @@ const server = app.listen(env.port, () => {
 });
 
 if (env.jobsEnabled) {
-  void runServiceLifecycleJob().catch((error) => console.error("Service lifecycle job failed", error));
-  setInterval(() => void runServiceLifecycleJob().catch((error) => console.error("Service lifecycle job failed", error)), 60_000).unref();
-  void runMembershipLifecycleJob().catch((error) => console.error("Membership lifecycle job failed", error));
-  void runNotificationEmailDeliveryJob().catch((error) => console.error("Notification email delivery job failed", error));
-  setInterval(() => void runMembershipLifecycleJob().catch((error) => console.error("Membership lifecycle job failed", error)), env.jobIntervalMinutes * 60_000).unref();
-  setInterval(() => void runNotificationEmailDeliveryJob().catch((error) => console.error("Notification email delivery job failed", error)), env.jobIntervalMinutes * 60_000).unref();
+  const jobs = [
+    { name: "service_lifecycle", run: runServiceLifecycleJob, intervalMs: 60_000 },
+    { name: "membership_lifecycle", run: runMembershipLifecycleJob, intervalMs: env.jobIntervalMinutes * 60_000 },
+    { name: "notification_email_delivery", run: runNotificationEmailDeliveryJob, intervalMs: env.jobIntervalMinutes * 60_000 },
+  ];
+  for (const { name, run, intervalMs } of jobs) {
+    const runOnce = createScheduledJobRunner({ name, run });
+    void runOnce();
+    setInterval(() => void runOnce(), intervalMs).unref();
+  }
 }
 
 function shutdown(signal) {

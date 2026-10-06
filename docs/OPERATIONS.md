@@ -27,6 +27,22 @@ Tạo phiếu thu, payment event và audit cùng transaction; xác nhận/PayOS 
 - Probe `/health` cho tiến trình, `/ready` cho API và database; theo dõi HTTP 5xx/503, độ trễ, request ID và tình trạng provider.
 - Cảnh báo scheduler không chạy, lỗi gửi email và payment cần đối soát. Ngưỡng độ trễ/tỷ lệ lỗi phải được thống nhất từ tải thực tế; source chưa cấu hình dịch vụ cảnh báo ngoài hệ thống.
 - Không log OTP, password, bearer token, connection string hoặc nội dung cá nhân. Giới hạn người xem log và retention.
+- Bộ xử lý lỗi HTTP chỉ ghi `event`, `statusCode`, `code`, `requestId`; không ghi nguyên error/stack hoặc payload của provider. Dùng request ID để đối chiếu sự cố, tránh thêm lại dữ liệu nhạy cảm vào log khi debug.
+- API đăng nhập và API yêu cầu xác thực trả `Cache-Control: no-store`. Sau deploy, xác minh proxy/CDN giữ header này, đặc biệt với hồ sơ, thanh toán và MFA.
+- JSON sai trả 400; body vượt 1 MB trả 413; encoding/charset không hỗ trợ trả 415. Những lỗi này có request ID và không được tính là sự cố 5xx của server.
+- Xác thực TOTP và xác nhận đăng ký Authenticator giới hạn theo tài khoản bằng `AUTH_LOGIN_MAX_ATTEMPTS` / `AUTH_LOGIN_WINDOW_MINUTES`; mỗi lần thử được giữ chỗ trước khi kiểm tra mã. Worker dùng transaction của Durable Object dùng chung, Node đơn tiến trình dùng bộ nhớ. Không coi limiter bộ nhớ là giới hạn dùng chung khi triển khai nhiều tiến trình Node.
+- JWT phiên chỉ chấp nhận HS256 và bắt buộc có `sub`, `sid`, `exp`, `iat`. Challenge MFA hết hạn hoặc sai cổng không được tạo phiên; kiểm tra lại hạn dùng khi consume trong database.
+- API đăng ký chờ duyệt chỉ trả thông tin phục vụ màn hình duyệt; không trả password hash hay nguyên bản ghi tài khoản.
+- Mỗi request xác thực vẫn đọc trạng thái phiên, tài khoản và quyền hiện tại. `last_seen_at` chỉ được cập nhật nếu đã cũ ít nhất 5 phút để giảm write vào database; timestamp này là chỉ báo hoạt động gần đây, không phải dấu vết từng request.
+- Đổi mật khẩu, thu hồi các phiên khác và ghi audit nằm trong cùng transaction. Hai yêu cầu dùng cùng password hash cũ chỉ được một yêu cầu thành công; lỗi revoke/audit phải rollback. Phiên đang đổi mật khẩu được giữ lại.
+- Mật khẩu mới không được vượt 72 byte UTF-8 của bcrypt; không cắt ngầm ký tự có dấu/emoji. Hash cũ vẫn được xác minh theo cách cũ để tránh khóa tài khoản; chưa áp dụng chuyển thuật toán hoặc buộc đổi mật khẩu cho dữ liệu legacy.
+- Chạy `npm run check:security` với kết nối registry để kiểm tra advisory hiện tại. Kết quả từ cache/offline không đủ để kết luận dependency đang sạch. CI backend/frontend chặn advisory mức high/critical, gồm dependency phát triển.
+- Prisma 7.10 dùng override riêng: `@prisma/config` -> `deepmerge-ts@8.0.0`, Prisma -> `mysql2@3.23.1`. Đây là bản vá dependency bắc cầu, không phải nâng major Prisma. Khi cập nhật Prisma, review lại override và chạy schema validation/generate cùng hồi quy database; không dùng audit fix --force để tự hạ major.
+- Trên Windows, backend/frontend Vitest dùng 4 worker threads để tránh lỗi thoát native của fork worker đã gặp khi chạy full suite và giảm tải đồng thời của jsdom. CI Linux giữ runner mặc định.
+- Scheduler Node bỏ qua tick nếu cùng job vẫn đang chạy; tick sau sẽ thử lại khi job kết thúc, kể cả sau lỗi. Log lỗi job chỉ gồm event và tên job cố định. Cơ chế này chỉ chống chạy chồng trong một tiến trình, không thay thế khóa phân tán hoặc yêu cầu một scheduler duy nhất khi triển khai nhiều instance.
+- OTP email giữ chỗ mỗi lần thử bằng update có điều kiện trong database, tối đa 5 lần kể cả request đồng thời. Xác nhận đăng ký consume mã, chuyển trạng thái `pending_verification` -> `pending_approval` và ghi audit trong cùng transaction; không ghi đè trạng thái tài khoản đã active/suspended.
+- Đổi/cấp lại mật khẩu làm hết hạn challenge TOTP và OTP đăng nhập nhân viên, gồm cả mã đã consume nhưng chưa tạo phiên. Việc tạo phiên khóa bản ghi user và kiểm tra lại credential/challenge/trạng thái/cổng, nên phải tuần tự với transaction reset mật khẩu. Kích hoạt MFA cũng khóa user, thu hồi phiên/challenge và ghi audit trong cùng transaction.
+- Tạo challenge MFA kiểm tra lại password hash và factor hiện tại trong transaction khóa user; yêu cầu đăng nhập đã kiểm tra mật khẩu cũ không được tạo challenge sau reset. Tạo phiên bằng mật khẩu/OTP email bị từ chối nếu tài khoản đã bật MFA. Reset mật khẩu cũng hết hạn enrollment MFA chưa hoàn tất.
 
 ## Backup và phục hồi
 
@@ -57,3 +73,5 @@ Mỗi case ghi môi trường, commit, vai trò, bước thực hiện, kết qu
 CI architecture/lint/unit/build kiểm tra source; browser smoke dùng API giả lập kiểm tra UI/navigation/pagination. PostgreSQL job riêng xác minh payment/audit rollback và race, booking capacity, pagination/ownership và các ràng buộc dữ liệu được test. Không tuyên bố những job này xác minh email/CAPTCHA/PayOS/Cloudinary production.
 
 Các form chọn hội viên hiện vẫn lấy đủ lựa chọn qua nhiều trang giới hạn 100; bảng chính chỉ tải một trang. Với dữ liệu rất lớn, bước tiếp theo là combobox tìm kiếm từ server để giảm tổng payload của form.
+
+Lượt tải lựa chọn được giới hạn theo tổng số trang của phản hồi đầu tiên, loại ID trùng khi dữ liệu thay đổi giữa các trang, dừng khi trang trống và từ chối metadata không hợp lệ. Query tải danh sách hội viên truyền signal hủy từ React Query xuống API. Đây không phải snapshot database của toàn bộ lượt đọc; dữ liệu thêm mới trong lúc tải cần refetch để thấy đầy đủ.

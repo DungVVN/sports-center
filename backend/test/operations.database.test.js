@@ -6,6 +6,7 @@ import { paymentRepository } from "../src/modules/payments/index.js";
 import { createPaymentService } from "../src/modules/payments/application/payment.service.js";
 import { bookingRepository } from "../src/modules/bookings/index.js";
 import { memberRepository } from "../src/modules/members/index.js";
+import { authRepository } from "../src/modules/auth/index.js";
 import { Client } from "pg";
 import { readBusinessManifest, verifyBusinessManifest } from "../scripts/backup-manifest.js";
 
@@ -55,9 +56,82 @@ describe.skipIf(!configuredUrl)("operations PostgreSQL regression", () => {
         await client.membership_packages.delete({ where: { id: membershipPackage.id } });
       }
       await client.members.deleteMany({ where: { id: { in: memberIds } } });
+      await client.auth_sessions.deleteMany({ where: { user_id: { in: ids } } });
+      await client.auth_mfa_login_challenges.deleteMany({ where: { user_id: { in: ids } } });
+      await client.auth_mfa_enrollments.deleteMany({ where: { user_id: { in: ids } } });
+      await client.auth_totp_factors.deleteMany({ where: { user_id: { in: ids } } });
+      await client.account_verifications.deleteMany({ where: { user_id: { in: ids } } });
       await client.users.deleteMany({ where: { id: { in: ids } } });
     } finally { await client.$disconnect(); }
   }, 30000);
+
+  it("rolls back password and session changes if the audit insert fails", async () => {
+    const authSession = await client.auth_sessions.create({ data: { user_id: ids[0], expires_at: new Date("2099-01-01") } });
+    const challenge = await client.auth_mfa_login_challenges.create({ data: { user_id: ids[0], expires_at: new Date("2099-01-01") } });
+    const failingDatabase = { $transaction: (callback) => client.$transaction((transaction) => callback(new Proxy(transaction, {
+      get(target, property) {
+        if (property === "audit_logs") return { create: async () => { throw new Error("forced audit failure"); } };
+        const value = Reflect.get(target, property, target);
+        return typeof value === "function" ? value.bind(target) : value;
+      },
+    }))) };
+    await expect(withRuntime({ database: failingDatabase }, () => authRepository.changePasswordAndRevokeSessions({
+      userId: ids[0], passwordHash: "uncommitted-password", expectedPasswordHash: "isolated-fixture",
+    }))).rejects.toThrow("forced audit failure");
+    expect((await client.users.findUnique({ where: { id: ids[0] } })).password_hash).toBe("isolated-fixture");
+    expect((await client.auth_sessions.findUnique({ where: { id: authSession.id } })).revoked_at).toBeNull();
+    expect((await client.auth_mfa_login_challenges.findUnique({ where: { id: challenge.id } })).expires_at).toEqual(new Date("2099-01-01"));
+  });
+
+  it("allows only one concurrent password change with the same previous hash", async () => {
+    const current = await client.auth_sessions.create({ data: { user_id: ids[1], expires_at: new Date("2099-01-01") } });
+    const other = await client.auth_sessions.create({ data: { user_id: ids[1], expires_at: new Date("2099-01-01") } });
+    const challenge = await client.auth_mfa_login_challenges.create({ data: { user_id: ids[1], expires_at: new Date("2099-01-01"), used_at: new Date() } });
+    const enrollment = await client.auth_mfa_enrollments.create({ data: { user_id: ids[1], secret_ciphertext: "isolated-enrollment", expires_at: new Date("2099-01-01") } });
+    const results = await Promise.allSettled(["new-hash-a", "new-hash-b"].map((passwordHash) => run(() => authRepository.changePasswordAndRevokeSessions({
+      userId: ids[1], passwordHash, expectedPasswordHash: "isolated-fixture", currentSessionId: current.id,
+    }))));
+    expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+    expect(results.filter((result) => result.reason?.code === "PASSWORD_CHANGE_CONFLICT")).toHaveLength(1);
+    expect((await client.auth_sessions.findUnique({ where: { id: current.id } })).revoked_at).toBeNull();
+    expect((await client.auth_sessions.findUnique({ where: { id: other.id } })).revoked_at).not.toBeNull();
+    expect(await client.audit_logs.count({ where: { actor_user_id: ids[1], action: "auth.password_changed" } })).toBe(1);
+    expect((await client.auth_mfa_login_challenges.findUnique({ where: { id: challenge.id } })).expires_at.getTime()).toBeLessThanOrEqual(Date.now());
+    expect((await client.auth_mfa_enrollments.findUnique({ where: { id: enrollment.id } })).expires_at.getTime()).toBeLessThanOrEqual(Date.now());
+    await expect(run(() => authRepository.createSession({ userId: ids[1], expiresAt: new Date("2099-01-01"), expectedPasswordHash: "isolated-fixture" }))).rejects.toMatchObject({ statusCode: 401 });
+  });
+
+  it("reserves no more than five OTP attempts under concurrent requests", async () => {
+    const verification = await client.account_verifications.create({ data: { user_id: ids[0], channel: "email", purpose: "registration", code_hash: "isolated-hash", expires_at: new Date("2099-01-01") } });
+    const results = await Promise.all(Array.from({ length: 10 }, () => run(() => authRepository.incrementVerificationAttempts(verification.id))));
+    expect(results.filter((result) => result.count === 1)).toHaveLength(5);
+    expect((await client.account_verifications.findUnique({ where: { id: verification.id } })).attempts).toBe(5);
+  });
+
+  it("moves registration to pending approval and audits exactly once under concurrent confirmation", async () => {
+    await client.users.update({ where: { id: ids[0] }, data: { status: "pending_verification" } });
+    try {
+      const verification = await client.account_verifications.create({ data: { user_id: ids[0], channel: "email", purpose: "registration", code_hash: "isolated-hash", expires_at: new Date("2099-01-01"), attempts: 1 } });
+      const results = await Promise.all(Array.from({ length: 2 }, () => run(() => authRepository.completeRegistrationVerification({ verificationId: verification.id, userId: ids[0], channel: "email" }))));
+      expect(results.filter(Boolean)).toHaveLength(1);
+      expect((await client.users.findUnique({ where: { id: ids[0] } })).status).toBe("pending_approval");
+      expect(await client.audit_logs.count({ where: { actor_user_id: ids[0], action: "member.registration.verified" } })).toBe(1);
+    } finally { await client.users.update({ where: { id: ids[0] }, data: { status: "active" } }); }
+  });
+
+  it("activates MFA while revoking sessions and pending login challenges", async () => {
+    const authSession = await client.auth_sessions.create({ data: { user_id: ids[0], expires_at: new Date("2099-01-01") } });
+    const challenge = await client.auth_mfa_login_challenges.create({ data: { user_id: ids[0], expires_at: new Date("2099-01-01") } });
+    const enrollment = await client.auth_mfa_enrollments.create({ data: { user_id: ids[0], secret_ciphertext: "isolated-encrypted-fixture", expires_at: new Date("2099-01-01") } });
+    await run(() => authRepository.activateTotpFactor({ enrollmentId: enrollment.id, userId: ids[0], secretCiphertext: enrollment.secret_ciphertext }));
+    expect((await client.auth_sessions.findUnique({ where: { id: authSession.id } })).revoked_at).not.toBeNull();
+    expect((await client.auth_mfa_login_challenges.findUnique({ where: { id: challenge.id } })).expires_at.getTime()).toBeLessThanOrEqual(Date.now());
+    expect(await client.audit_logs.count({ where: { actor_user_id: ids[0], action: "auth.mfa_enrolled" } })).toBe(1);
+    await expect(run(() => authRepository.createSession({ userId: ids[0], expiresAt: new Date("2099-01-01"), expectedPasswordHash: "isolated-fixture" }))).rejects.toMatchObject({ statusCode: 401 });
+    await expect(run(() => authRepository.createMfaLoginChallenge({ userId: ids[0], expiresAt: new Date("2099-01-01"), expectedPasswordHash: "stale-hash", expectedFactorCiphertext: enrollment.secret_ciphertext }))).rejects.toMatchObject({ statusCode: 401 });
+    const validChallenge = await run(() => authRepository.createMfaLoginChallenge({ userId: ids[0], expiresAt: new Date("2099-01-01"), expectedPasswordHash: "isolated-fixture", expectedFactorCiphertext: enrollment.secret_ciphertext }));
+    expect(validChallenge.user_id).toBe(ids[0]);
+  });
 
   it("rolls back payment creation and completion when the audit insert fails", async () => {
     const data = { transaction_code: `OPS-ROLLBACK-${suffix}`, member_id: members[0].id, recorded_by: ids[2], amount_vnd: 1000n, method: "cash", status: "pending" };

@@ -1,4 +1,5 @@
 import { prisma } from "../../../database.js";
+import { invalidateLoginChallenges } from "../../../shared/auth/invalidate-login-challenges.js";
 
 const select = {
   id: true,
@@ -90,6 +91,7 @@ export const staffRepository = {
         data: { password_hash: passwordHash, must_change_password: true },
       });
       await tx.auth_sessions.updateMany({ where: { user_id: id, revoked_at: null }, data: { revoked_at: new Date() } });
+      await invalidateLoginChallenges(tx, id);
       return user;
     });
   },

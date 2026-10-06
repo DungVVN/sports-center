@@ -77,6 +77,7 @@ export function App() {
     const resetToLogin = () => {
       sessionChangeVersion.current += 1;
       setIsRestoringSession(false);
+      queryClient.clear();
       setSession(null);
       navigate("login");
     };
@@ -102,19 +103,30 @@ export function App() {
   }, [isAdminPortal]);
   useEffect(() => {
     if (!session) return undefined;
-    const refreshSession = () => { void authApi.me().then((currentSession) => {
-      if ((currentSession.user.role === "admin") === isAdminPortal) {
-        if (currentSession.user.id !== session.user.id) {
-          queryClient.clear();
-          navigate("dashboard");
+    let isCurrent = true;
+    let currentRequest = 0;
+    const refreshSession = () => {
+      const requestId = ++currentRequest;
+      const version = sessionChangeVersion.current;
+      void authApi.me().then((currentSession) => {
+        if (!isCurrent || requestId !== currentRequest || version !== sessionChangeVersion.current) return;
+        if ((currentSession.user.role === "admin") === isAdminPortal) {
+          const identityChanged = currentSession.user.id !== session.user.id;
+          const accessChanged = currentSession.user.role !== session.user.role
+            || [...currentSession.permissions].sort().join("\n") !== [...session.permissions].sort().join("\n");
+          if (identityChanged || accessChanged) {
+            queryClient.clear();
+            if (identityChanged) navigate("dashboard");
+          }
+          setSession(currentSession);
         }
-        setSession(currentSession);
-      }
-      else setSession(null);
-    }).catch(() => {}); };
+        else { queryClient.clear(); setSession(null); }
+      }).catch(() => {});
+    };
     window.addEventListener("focus", refreshSession);
     window.addEventListener(permissionsChangedEvent, refreshSession);
     return () => {
+      isCurrent = false;
       window.removeEventListener("focus", refreshSession);
       window.removeEventListener(permissionsChangedEvent, refreshSession);
     };

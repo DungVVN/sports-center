@@ -22,6 +22,13 @@ function makeService() {
 }
 
 describe("Auth routes", () => {
+  it("prevents caching of login, private profile and unauthenticated responses", async () => {
+    const app = createApp({ authService: makeService() });
+    const login = await request(app).post("/api/v1/auth/login").send({ email: "anh@example.com", password: "Strongpass1" }).expect(200);
+    const profile = await request(app).get("/api/v1/auth/profile").set("Authorization", "Bearer session-token").expect(200);
+    const denied = await request(app).get("/api/v1/auth/profile").expect(401);
+    for (const response of [login, profile, denied]) expect(response.headers["cache-control"]).toBe("no-store");
+  });
   it.each(["http://example.com/avatar.jpg", "https://user:password@example.com/avatar.jpg"])("rejects unsafe avatar URL %s before saving a profile", async (avatarUrl) => {
     const service = makeService();
     await request(createApp({ authService: service })).patch("/api/v1/auth/profile").set("Authorization", "Bearer session-token").send({ fullName: "Lễ tân Hương", phone: "0901000011", dateOfBirth: null, avatarUrl }).expect(422);

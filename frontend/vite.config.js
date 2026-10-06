@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
+import process from "node:process";
 import { fileURLToPath } from "node:url";
 
 const rootDirectory = path.dirname(fileURLToPath(import.meta.url));
@@ -27,6 +28,7 @@ export default defineConfig({
     },
   },
   test: {
+    ...(process.platform === "win32" ? { pool: "threads", maxWorkers: 4 } : {}),
     environment: "jsdom",
     setupFiles: "./src/test/setup.js",
     include: ["src/**/*.test.{js,jsx}", "server/**/*.test.js"],

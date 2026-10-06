@@ -32,9 +32,9 @@ export function createApp(overrides = {}) {
     },
   }));
   app.use(cookieParser());
-  app.use(express.json({ limit: "1mb", verify: (request, response, buffer) => { request.rawBody = buffer; } }));
   app.use(requestId);
   app.use(requireTrustedOrigin);
+  app.use(express.json({ limit: "1mb", verify: (request, response, buffer) => { request.rawBody = buffer; } }));
 
   app.get(`${env.apiBasePath}/health`, (request, response) => sendSuccess(response, {
     data: { status: "ok", requestId: request.id },

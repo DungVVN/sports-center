@@ -1,7 +1,8 @@
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App.jsx";
 import { ApiError } from "../shared/api/api-error.js";
+import { QueryClient } from "@tanstack/react-query";
 
 const mockAuthMe = vi.hoisted(() => vi.fn());
 const mockPortalSurface = vi.hoisted(() => vi.fn(() => "main"));
@@ -29,7 +30,7 @@ vi.mock("../features/auth/ui/LoginPage.jsx", () => ({
   </div>,
 }));
 vi.mock("../features/auth/ui/AdminLoginPage.jsx", () => ({ AdminLoginPage: () => <div>Admin login page</div> }));
-vi.mock("./composition/DashboardPlaceholder.jsx", () => ({ DashboardPlaceholder: ({ initialView, onProfileSaved, session }) => <div>Dashboard view: {initialView}; account: {session.user.id}<button onClick={onProfileSaved}>Save profile</button></div> }));
+vi.mock("./composition/DashboardPlaceholder.jsx", () => ({ DashboardPlaceholder: ({ initialView, onProfileSaved, onLogout, session }) => <div>Dashboard view: {initialView}; account: {session.user.id}<button onClick={onProfileSaved}>Save profile</button><button onClick={onLogout}>Logout</button></div> }));
 vi.mock("../features/auth/ui/InitialPasswordChangePage.jsx", () => ({ InitialPasswordChangePage: ({ onCompleted }) => <button onClick={onCompleted}>Change temporary password</button> }));
 vi.mock("../features/auth/ui/PendingApprovalPage.jsx", () => ({ PendingApprovalPage: () => null }));
 vi.mock("../features/auth/ui/RegisterPage.jsx", () => ({ RegisterPage: () => null }));
@@ -44,7 +45,52 @@ describe("first login routing", () => {
     mockPortalSurface.mockReturnValue("main");
     mockPageByPath.mockReset().mockRejectedValue(new ApiError({ status: 404, code: "NOT_FOUND" }));
   });
-  afterEach(cleanup);
+  afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+  it("does not restore a session from a focus refresh that finishes after logout", async () => {
+    const session = { user: { id: "member-1", role: "member", mustChangePassword: false, profileSetupRequired: false }, permissions: [] };
+    mockAuthMe.mockResolvedValueOnce(session);
+    render(<App />);
+    await screen.findByText("Dashboard view: dashboard; account: member-1");
+    let finishRefresh;
+    mockAuthMe.mockReturnValueOnce(new Promise((resolve) => { finishRefresh = resolve; }));
+    fireEvent(window, new Event("focus"));
+    fireEvent.click(screen.getByText("Logout"));
+    await act(async () => finishRefresh(session));
+    expect(screen.getByText("Member login")).toBeInTheDocument();
+    expect(screen.queryByText("Dashboard view: dashboard; account: member-1")).not.toBeInTheDocument();
+  });
+
+  it("keeps the newest session when concurrent focus refreshes finish out of order", async () => {
+    const subscriptions = vi.spyOn(window, "addEventListener");
+    const original = { user: { id: "member-1", role: "member", mustChangePassword: false, profileSetupRequired: false }, permissions: [] };
+    mockAuthMe.mockResolvedValueOnce(original);
+    render(<App />);
+    await screen.findByText("Dashboard view: dashboard; account: member-1");
+    await waitFor(() => expect(subscriptions.mock.calls.some(([event]) => event === "focus")).toBe(true));
+    let finishOlder;
+    mockAuthMe.mockReturnValueOnce(new Promise((resolve) => { finishOlder = resolve; }))
+      .mockResolvedValueOnce({ ...original, user: { ...original.user, id: "member-2" } });
+    await act(async () => window.dispatchEvent(new window.Event("focus")));
+    await waitFor(() => expect(mockAuthMe).toHaveBeenCalledTimes(2));
+    await act(async () => window.dispatchEvent(new window.Event("focus")));
+    expect(await screen.findByText("Dashboard view: dashboard; account: member-2")).toBeInTheDocument();
+    await act(async () => finishOlder(original));
+    expect(screen.getByText("Dashboard view: dashboard; account: member-2")).toBeInTheDocument();
+  });
+
+  it("clears cached queries when a session expires or its permissions change", async () => {
+    const original = { user: { id: "member-1", role: "member", mustChangePassword: false, profileSetupRequired: false }, permissions: ["booking.read"] };
+    mockAuthMe.mockResolvedValueOnce(original);
+    render(<App />);
+    await screen.findByText("Dashboard view: dashboard; account: member-1");
+    const clear = vi.spyOn(QueryClient.prototype, "clear");
+    mockAuthMe.mockResolvedValueOnce({ ...original, permissions: [] });
+    await act(async () => fireEvent(window, new Event("sports-center:permissions-changed")));
+    expect(clear).toHaveBeenCalledTimes(1);
+    fireEvent(window, new Event("sports-center:authentication-expired"));
+    expect(clear).toHaveBeenCalledTimes(2);
+    expect(screen.getByText("Member login")).toBeInTheDocument();
+  });
   it.each(["/gallery", "/calendar"])("preserves the published CMS SEO title at %s", async (path) => {
     window.history.replaceState({}, "", path);
     const previousTitle = document.title;

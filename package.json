@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "check:architecture": "node scripts/check-architecture.mjs",
+    "check:security": "npm --prefix backend audit --audit-level=high --offline=false && npm --prefix frontend audit --audit-level=high --offline=false",
     "check": "npm run check:architecture && npm --prefix backend run check && npm --prefix frontend run check"
   }
 }

@@ -13,6 +13,16 @@ export function createLoginAttemptLimiter({ maxAttempts, windowMinutes }) {
   }
 
   return Object.freeze({
+    async consumeAttempt(key, now = Date.now()) {
+      if (currentRuntime()?.loginLimiter) return currentRuntime().loginLimiter.consumeAttempt(key, now);
+      const attempts = prune(key, now);
+      if (attempts.length >= maxAttempts) {
+        throw new AppError({ statusCode: 429, code: "LOGIN_ATTEMPTS_EXCEEDED", message: "Bạn đã đăng nhập sai quá nhiều lần. Vui lòng thử lại sau." });
+      }
+      // Reserve before returning so concurrent requests cannot all pass the same check.
+      attempts.push(now);
+      entries.set(key, attempts);
+    },
     assertAllowed(key, now = Date.now()) {
       if (currentRuntime()?.loginLimiter) return currentRuntime().loginLimiter.assertAllowed(key, now);
       if (prune(key, now).length >= maxAttempts) {

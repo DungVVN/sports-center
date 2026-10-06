@@ -16,7 +16,7 @@ export async function createSessionToken({ sessionId, userId, expiresAt }) {
 
 export async function readSessionToken(token) {
   try {
-    const { payload } = await jwtVerify(token, jwtSecret);
+    const { payload } = await jwtVerify(token, jwtSecret, { algorithms: ["HS256"], requiredClaims: ["sub", "sid", "exp", "iat"] });
     if (typeof payload.sub !== "string" || typeof payload.sid !== "string") {
       throw new Error("Session token claims are missing.");
     }

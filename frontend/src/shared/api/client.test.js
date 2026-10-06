@@ -7,6 +7,21 @@ import { errorMessageFor } from "./error-message.js";
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 describe("apiClient", () => {
+  it.each([
+    { code: "FORBIDDEN", expected: 1 },
+    { code: "PASSWORD_CHANGE_REQUIRED", expected: 1 },
+    { code: "UNTRUSTED_ORIGIN", expected: 0 },
+    { code: "BOOKING_ACCESS_DENIED", expected: 0 },
+  ])("refreshes permissions only for relevant 403 errors ($code)", async ({ code, expected }) => {
+    const listener = vi.fn();
+    window.addEventListener("sports-center:permissions-changed", listener);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ success: false, error: { code } }), { status: 403, headers: { "content-type": "application/json" } })));
+    try {
+      await expect(apiClient.get("/classes")).rejects.toMatchObject({ code });
+      expect(listener).toHaveBeenCalledTimes(expected);
+    } finally { window.removeEventListener("sports-center:permissions-changed", listener); }
+  });
+
   it("refreshes notifications for successful writes but not reads or marking notifications read", async () => {
     const listener = vi.fn();
     window.addEventListener(mutationSucceededEvent, listener);

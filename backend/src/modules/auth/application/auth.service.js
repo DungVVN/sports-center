@@ -123,14 +123,14 @@ export function createAuthService({
       if (verification.expires_at <= new Date()) throw new AppError({ statusCode: 422, code: "VERIFICATION_EXPIRED", message: "Mã xác thực đã hết hạn." });
       if (verification.attempts >= 5) throw new AppError({ statusCode: 429, code: "VERIFICATION_ATTEMPTS_EXCEEDED", message: "Bạn đã nhập mã quá nhiều lần. Vui lòng yêu cầu mã mới." });
 
-      await repository.incrementVerificationAttempts(verification.id);
+      const attempt = await repository.incrementVerificationAttempts(verification.id);
+      if (attempt.count !== 1) throw new AppError({ statusCode: 429, code: "VERIFICATION_ATTEMPTS_EXCEEDED", message: "Mã đã hết hiệu lực hoặc vượt số lần thử. Vui lòng yêu cầu mã mới." });
       if (!verificationCodeMatches(code, verification.code_hash)) {
         throw new AppError({ statusCode: 422, code: "VERIFICATION_CODE_INVALID", message: "Mã xác thực không chính xác." });
       }
-      await repository.markVerificationVerified(verification.id);
+      const consumed = await repository.completeRegistrationVerification({ verificationId: verification.id, userId, channel });
+      if (!consumed) throw new AppError({ statusCode: 409, code: "VERIFICATION_CONSUMED", message: "Mã đã được sử dụng hoặc hết hạn. Vui lòng tải lại trạng thái tài khoản." });
       if (channel === "email") {
-        await repository.updateUserStatus(userId, "pending_approval");
-        await auditService.record({ actorUserId: userId, action: "member.registration.verified", entityType: "user", entityId: userId, summary: "Đã xác thực email, chờ Lễ tân duyệt." });
         return { status: "pending_approval" };
       }
       return { status: "pending_verification" };
@@ -163,13 +163,13 @@ export function createAuthService({
       const factor = repository.findTotpFactor ? await repository.findTotpFactor(user.id) : null;
       if (factor) {
         const expiresAt = new Date(Date.now() + env.authMfaChallengeTtlMinutes * 60_000);
-        const challenge = await repository.createMfaLoginChallenge({ userId: user.id, expiresAt, loginSurface });
+        const challenge = await repository.createMfaLoginChallenge({ userId: user.id, expiresAt, expectedPasswordHash: user.password_hash, expectedFactorCiphertext: factor.secret_ciphertext, loginSurface });
         await loginLimiter.clear(email);
         await auditService.record({ actorUserId: user.id, action: "auth.mfa_challenge_created", entityType: "auth_mfa_login_challenge", entityId: challenge.id, summary: "Đã yêu cầu mã Authenticator để hoàn tất đăng nhập." });
         return { mfaRequired: true, mfaChallengeId: challenge.id, expiresAt };
       }
       const expiresAt = new Date(Date.now() + env.authSessionTtlHours * 60 * 60_000);
-      const session = await repository.createSession({ expiresAt, userId: user.id });
+      const session = await repository.createSession({ expiresAt, userId: user.id, expectedPasswordHash: user.password_hash, loginSurface });
       await loginLimiter.clear(email);
       await auditService.record({
         actorUserId: user.id,
@@ -196,21 +196,24 @@ export function createAuthService({
     async confirmTotpEnrollment({ enrollmentId, code, userId }) {
       const enrollment = await repository.findMfaEnrollment({ enrollmentId, userId });
       if (!enrollment || enrollment.expires_at <= new Date()) throw new AppError({ statusCode: 422, code: "MFA_ENROLLMENT_EXPIRED", message: "Phiên đăng ký MFA không hợp lệ hoặc đã hết hạn." });
+      const attemptKey = `mfa-enrollment:${userId}`;
+      await loginLimiter.consumeAttempt(attemptKey);
       const secret = decryptTotpSecret(enrollment.secret_ciphertext);
       if (!verifyTotp({ secret, code })) throw new AppError({ statusCode: 422, code: "MFA_CODE_INVALID", message: "Mã Authenticator không chính xác." });
       const factor = await repository.activateTotpFactor({ enrollmentId, userId, secretCiphertext: enrollment.secret_ciphertext });
       if (!factor) throw new AppError({ statusCode: 409, code: "MFA_ENROLLMENT_CONSUMED", message: "Phiên đăng ký MFA đã được sử dụng." });
-      await repository.revokeUserSessions(userId);
-      await auditService.record({ actorUserId: userId, action: "auth.mfa_enrolled", entityType: "auth_totp_factor", entityId: userId, summary: "Đã kích hoạt Authenticator cho tài khoản." });
+      await loginLimiter.clear(attemptKey);
       return { enrolled: true };
     },
 
     async verifyMfaLogin({ challengeId, code, loginSurface = "main" }) {
       const challenge = await repository.findMfaLoginChallenge(challengeId);
-      if (!challenge) throw new AppError({ statusCode: 422, code: "MFA_CHALLENGE_EXPIRED", message: "Phiên xác thực MFA không hợp lệ hoặc đã hết hạn." });
+      if (!challenge || challenge.expires_at <= new Date()) throw new AppError({ statusCode: 422, code: "MFA_CHALLENGE_EXPIRED", message: "Phiên xác thực MFA không hợp lệ hoặc đã hết hạn." });
       if ((challenge.login_surface ?? "main") !== loginSurface) {
         throw new AppError({ statusCode: 403, code: "MFA_LOGIN_SURFACE_INVALID", message: "Phiên xác thực này phải được hoàn tất tại đúng cổng đăng nhập." });
       }
+      const attemptKey = `mfa-login:${challenge.user_id}`;
+      await loginLimiter.consumeAttempt(attemptKey);
       const factor = await repository.findTotpFactor(challenge.user_id);
       if (!factor || !verifyTotp({ secret: decryptTotpSecret(factor.secret_ciphertext), code })) {
         throw new AppError({ statusCode: 422, code: "MFA_CODE_INVALID", message: "Mã Authenticator không chính xác." });
@@ -219,11 +222,13 @@ export function createAuthService({
       const user = await repository.findUserById(challenge.user_id);
       if (!user || user.status !== "active") throw new AppError({ statusCode: 401, code: "UNAUTHENTICATED", message: "Tài khoản không còn hoạt động." });
       if (loginSurface === "admin" && user.role !== "admin") throw new AppError({ statusCode: 403, code: "ADMIN_ACCOUNT_REQUIRED", message: "Cổng này chỉ dành cho Quản trị hệ thống." });
+      if (loginSurface !== "admin" && user.role === "admin") throw new AppError({ statusCode: 403, code: "ADMIN_LOGIN_REQUIRED", message: "Tài khoản quản trị chỉ đăng nhập tại cổng Admin riêng." });
       const expiresAt = new Date(Date.now() + env.authSessionTtlHours * 60 * 60_000);
-      const session = await repository.createSession({ expiresAt, userId: user.id });
+      const session = await repository.createSession({ expiresAt, userId: user.id, mfaChallengeId: challengeId, expectedFactorCiphertext: factor.secret_ciphertext, loginSurface });
       const token = await createSessionToken({ sessionId: session.id, userId: user.id, expiresAt });
       const permissions = await repository.getPermissions(user.role);
       await auditService.record({ actorUserId: user.id, action: "auth.mfa_login_succeeded", entityType: "auth_session", entityId: session.id, summary: "Đăng nhập hoàn tất bằng Authenticator." });
+      await loginLimiter.clear(attemptKey);
       return { token, expiresAt, user: publicUser(user), permissions: permissions.map(({ permission_code: permissionCode }) => permissionCode) };
     },
 
@@ -231,14 +236,15 @@ export function createAuthService({
       const verification = await repository.findVerification({ verificationId: challengeId, purpose: "staff_login" });
       if (!verification || verification.verified_at || verification.expires_at <= new Date()) throw new AppError({ statusCode: 422, code: "EMAIL_OTP_EXPIRED", message: "Mã đăng nhập không hợp lệ hoặc đã hết hạn." });
       if (verification.attempts >= 5) throw new AppError({ statusCode: 429, code: "EMAIL_OTP_ATTEMPTS_EXCEEDED", message: "Bạn đã nhập mã quá nhiều lần. Vui lòng đăng nhập lại để nhận mã mới." });
-      await repository.incrementVerificationAttempts(verification.id);
+      const attempt = await repository.incrementVerificationAttempts(verification.id);
+      if (attempt.count !== 1) throw new AppError({ statusCode: 429, code: "EMAIL_OTP_ATTEMPTS_EXCEEDED", message: "Mã đã hết hiệu lực hoặc vượt số lần thử. Vui lòng đăng nhập lại." });
       if (!verificationCodeMatches(code, verification.code_hash)) throw new AppError({ statusCode: 422, code: "EMAIL_OTP_INVALID", message: "Mã đăng nhập không chính xác." });
       const consumed = await repository.markVerificationVerifiedOnce(verification.id);
       if (!consumed || consumed.count !== 1) throw new AppError({ statusCode: 409, code: "EMAIL_OTP_CONSUMED", message: "Mã đăng nhập đã được sử dụng." });
       const user = await repository.findUserById(verification.user_id);
       if (!user || user.status !== "active" || !["receptionist", "coach"].includes(user.role)) throw new AppError({ statusCode: 401, code: "UNAUTHENTICATED", message: "Tài khoản không còn hoạt động." });
       const expiresAt = new Date(Date.now() + env.authSessionTtlHours * 60 * 60_000);
-      const session = await repository.createSession({ expiresAt, userId: user.id });
+      const session = await repository.createSession({ expiresAt, userId: user.id, emailVerificationId: verification.id });
       const token = await createSessionToken({ sessionId: session.id, userId: user.id, expiresAt });
       const permissions = await repository.getPermissions(user.role);
       await auditService.record({ actorUserId: user.id, action: "auth.staff_email_otp_succeeded", entityType: "auth_session", entityId: session.id, summary: "Đăng nhập nhân viên hoàn tất bằng mã email." });
@@ -253,10 +259,7 @@ export function createAuthService({
     async changePassword({ currentPassword, newPassword, userId, currentSessionId }) {
       const user = await repository.userCredentials(userId);
       if (!user || !await verifyPassword(currentPassword, user.password_hash)) throw new AppError({ statusCode: 422, code: "CURRENT_PASSWORD_INVALID", message: "Mật khẩu hiện tại không đúng." });
-      await repository.updatePassword(userId, await hashPassword(newPassword));
-      if (currentSessionId && repository.revokeOtherUserSessions) await repository.revokeOtherUserSessions(userId, currentSessionId);
-      else await repository.revokeUserSessions(userId);
-      await auditService.record({ actorUserId: userId, action: "auth.password_changed", entityType: "user", entityId: userId, summary: "Đã đổi mật khẩu và thu hồi các phiên đăng nhập." });
+      await repository.changePasswordAndRevokeSessions({ userId, passwordHash: await hashPassword(newPassword), expectedPasswordHash: user.password_hash, currentSessionId });
       return { mustChangePassword: false };
     },
 
@@ -308,8 +311,12 @@ export function createAuthService({
       return updated;
     },
 
-    listPendingRegistrations() {
-      return repository.listPendingRegistrations();
+    async listPendingRegistrations() {
+      const registrations = await repository.listPendingRegistrations();
+      return registrations.map(({ user, member }) => ({
+        user: { id: user.id, email: user.email, display_name: user.display_name, role: user.role, status: user.status, created_at: user.created_at },
+        member: member ? { id: member.id, member_code: member.member_code, full_name: member.full_name, phone: member.phone } : null,
+      }));
     },
 
     async approveRegistration({ approvedBy, userId }) {
