@@ -47,13 +47,16 @@ describe("first login routing", () => {
   });
   afterEach(() => { cleanup(); vi.restoreAllMocks(); });
   it("does not restore a session from a focus refresh that finishes after logout", async () => {
+    const subscriptions = vi.spyOn(window, "addEventListener");
     const session = { user: { id: "member-1", role: "member", mustChangePassword: false, profileSetupRequired: false }, permissions: [] };
     mockAuthMe.mockResolvedValueOnce(session);
     render(<App />);
     await screen.findByText("Dashboard view: dashboard; account: member-1");
+    await waitFor(() => expect(subscriptions.mock.calls.some(([event]) => event === "focus")).toBe(true));
     let finishRefresh;
     mockAuthMe.mockReturnValueOnce(new Promise((resolve) => { finishRefresh = resolve; }));
-    fireEvent(window, new Event("focus"));
+    await act(async () => window.dispatchEvent(new window.Event("focus")));
+    await waitFor(() => expect(mockAuthMe).toHaveBeenCalledTimes(2));
     fireEvent.click(screen.getByText("Logout"));
     await act(async () => finishRefresh(session));
     expect(screen.getByText("Member login")).toBeInTheDocument();
@@ -79,16 +82,18 @@ describe("first login routing", () => {
   });
 
   it("clears cached queries when a session expires or its permissions change", async () => {
+    const subscriptions = vi.spyOn(window, "addEventListener");
     const original = { user: { id: "member-1", role: "member", mustChangePassword: false, profileSetupRequired: false }, permissions: ["booking.read"] };
     mockAuthMe.mockResolvedValueOnce(original);
     render(<App />);
     await screen.findByText("Dashboard view: dashboard; account: member-1");
+    await waitFor(() => expect(subscriptions.mock.calls.some(([event]) => event === "sports-center:permissions-changed")).toBe(true));
     const clear = vi.spyOn(QueryClient.prototype, "clear");
     mockAuthMe.mockResolvedValueOnce({ ...original, permissions: [] });
-    await act(async () => fireEvent(window, new Event("sports-center:permissions-changed")));
-    expect(clear).toHaveBeenCalledTimes(1);
-    fireEvent(window, new Event("sports-center:authentication-expired"));
-    expect(clear).toHaveBeenCalledTimes(2);
+    await act(async () => window.dispatchEvent(new window.Event("sports-center:permissions-changed")));
+    await waitFor(() => expect(clear).toHaveBeenCalledTimes(1));
+    fireEvent(window, new window.Event("sports-center:authentication-expired"));
+    await waitFor(() => expect(clear).toHaveBeenCalledTimes(2));
     expect(screen.getByText("Member login")).toBeInTheDocument();
   });
   it.each(["/gallery", "/calendar"])("preserves the published CMS SEO title at %s", async (path) => {
