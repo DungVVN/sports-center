@@ -50,3 +50,9 @@ Backend production hiện bật CAPTCHA. Build Pages đã có site key công kha
 Cloudflare Pages tự fallback về `index.html` cho các route SPA khi không có `404.html` ở thư mục build; không chuyển `vercel.json` thành `_redirects`. Dự án thử nghiệm đã tạo ở `https://sports-center-frontend.pages.dev` từ GitHub `main`. Trước khi kiểm thử API trên URL này, thêm chính xác `https://sports-center-frontend.pages.dev` vào danh sách `CORS_ORIGIN` trên Render (giữ nguyên các origin cũ, phân tách bằng dấu phẩy); không dùng wildcard. Gắn `kineticsports.io.vn`, `www.kineticsports.io.vn` và `admin.kineticsports.io.vn` vào cùng Pages project **sau** khi deployment `*.pages.dev` qua smoke test. Trước khi đổi DNS, xác nhận backend `CORS_ORIGIN` cho đúng các origin mới. Khi test đăng nhập trên `*.pages.dev`, cookie qua `api.kineticsports.io.vn` có thể bị trình duyệt xem là bên thứ ba; kiểm tra đăng nhập lần cuối trên domain thật sau cutover và giữ Vercel làm đường rollback cho đến khi ổn định. Không đổi `api.kineticsports.io.vn` trong giai đoạn frontend.
 
 Kiểm thử tối thiểu trước cutover: mở trực tiếp `/`, `/gallery`, `/calendar`, `/login`, `/admin/site/pages` trên hostname admin; xác nhận asset không 404, đăng nhập admin/hội viên, gọi API, đăng xuất, responsive và các luồng đặt lịch/giá gói. `vercel.json` được giữ tạm để rollback, không phải cấu hình của Cloudflare Pages.
+
+## Tổ chức feature lịch sân
+
+`features/facilities/ui/FacilityCalendarPage.jsx` ghép điều hướng và các phần lịch, cấu hình, đơn đặt sân. `api/useFacilityWorkspace.js` quản lý state, query, mutation và cache invalidation; `domain/calendar-display.js` giữ chuyển đổi ngày/giờ và nhãn. Các component UI nhận dữ liệu và callback từ workspace; quyền và điều kiện tải dữ liệu vẫn được kiểm tra tại workspace và backend.
+
+Ranh giới source và architecture gate được mô tả trong [README gốc](../README.md#cấu-trúc-và-ranh-giới-source).

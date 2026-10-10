@@ -1,15 +1,11 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { importSpecifiers, resolveImport, dependencyCycles } from "./architecture-analysis.mjs";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const backendModules = join(root, "backend", "src", "modules") + sep;
-const sourceRoots = [
-  join(root, "backend", "src", "modules"),
-  join(root, "frontend", "src", "features"),
-  join(root, "frontend", "src", "app", "composition"),
-  join(root, "frontend", "src", "shared"),
-];
+const sourceRoots = [join(root, "backend", "src"), join(root, "frontend", "src")];
 const errors = [];
 
 function filesUnder(directory) {
@@ -26,7 +22,10 @@ for (const legacyRoot of ["api", "components", "contexts", "hooks", "lib", "page
   }
 }
 
-for (const file of sourceRoots.flatMap(filesUnder)) {
+const sourceFiles = sourceRoots.flatMap(filesUnder);
+const fileSet = new Set(sourceFiles);
+const graph = new Map();
+for (const file of sourceFiles) {
   const source = readFileSync(file, "utf8");
   if (file.startsWith(backendModules)) {
     const moduleRoot = join(backendModules, file.slice(backendModules.length).split(sep)[0]);
@@ -45,14 +44,27 @@ for (const file of sourceRoots.flatMap(filesUnder)) {
   if (file.startsWith(supportInfrastructure) && /\bprisma\.(?:members|notifications)\b/.test(source)) {
     errors.push(`${file}: Support repository accesses another module's table`);
   }
-  const paths = [...source.matchAll(/(?:\b(?:import|export)\s+(?:[^'"\n]*?\s+from\s*)?|\bimport\s*\()\s*["']([^"']+)["']/g)].map((match) => match[1]);
+  const paths = importSpecifiers(source);
+  const dependencies = [];
   for (const specifier of paths) {
-    const target = specifier.startsWith(".") ? resolve(file, "..", specifier) : specifier;
+    const target = resolveImport(file, specifier, join(root, "frontend", "src"), fileSet);
+    if (fileSet.has(target) && !/\.test\.[cm]?[jt]sx?$/.test(target)) dependencies.push(target);
     const backendApplication = file.startsWith(backendModules) && file.includes(`${sep}application${sep}`);
     const backendPresentation = file.startsWith(backendModules) && file.includes(`${sep}presentation${sep}`);
     const frontendShared = join(root, "frontend", "src", "shared") + sep;
     const frontendFeatures = join(root, "frontend", "src", "features") + sep;
     const frontendApp = join(root, "frontend", "src", "app") + sep;
+    const backendDomain = file.startsWith(backendModules) && file.includes(`${sep}domain${sep}`);
+    const frontendDomain = file.startsWith(frontendFeatures) && file.includes(`${sep}domain${sep}`);
+    if (backendDomain && (specifier === "express" || specifier.startsWith("@prisma/") ||
+      /[\\/](?:application|presentation|infrastructure|app|worker)[\\/]/.test(target) ||
+      /[\\/]database(?:-pool|-url)?\.js$/.test(target))) {
+      errors.push(`${file}: domain imports runtime/product dependency ${specifier}`);
+    }
+    if (frontendDomain && (specifier === "react" || specifier.startsWith("@tanstack/") ||
+      /[\\/](?:ui|api|app)[\\/]/.test(target))) {
+      errors.push(`${file}: domain imports UI/HTTP dependency ${specifier}`);
+    }
     if (backendApplication && (specifier === "express" || target.includes(`${sep}infrastructure${sep}`) || target.endsWith(`${sep}database.js`) || specifier.startsWith("@prisma/"))) {
       errors.push(`${file}: application imports runtime/data dependency ${specifier}`);
     }
@@ -79,11 +91,16 @@ for (const file of sourceRoots.flatMap(filesUnder)) {
       errors.push(`${file}: feature deep-imports another feature ${specifier}`);
     }
   }
+  if (!/\.test\.[cm]?[jt]sx?$/.test(file)) graph.set(file, dependencies);
+}
+
+for (const cycle of dependencyCycles(graph)) {
+  errors.push(`Circular source dependency: ${cycle.map((file) => file.slice(root.length + 1)).join(" -> ")}`);
 }
 
 if (errors.length) {
   console.error(errors.join("\n"));
   process.exitCode = 1;
 } else {
-  console.log("Backend module boundaries and migrated frontend boundaries passed.");
+  console.log("Backend/frontend boundaries, domain isolation and source dependency cycles passed.");
 }

@@ -16,7 +16,7 @@ Cutover requires staged smoke tests covering authenticated admin/member sessions
 
 This folder contains the Node.js/Express API, Prisma database layer, OpenAPI contract, validation, permission middleware and domain modules for the Sports Center MVP. The `project/` folder at the repository root is only the original Figma UI reference and is not a deployment source.
 
-`src/app/create-services.js` owns service composition and `src/app/register-routes.js` owns route order. Each module exposes `index.js` and separates presentation, application, domain (where needed), and infrastructure. See [the migration plan](../ARCHITECTURE_MIGRATION.md). Run `npm run check` for lint, unit/contract tests and build validation; database and browser acceptance remain separate gates. `scripts/integration/support-flow.mjs` runs a write-flow check only when `TEST_DATABASE_URL` points to a localhost database named `sports_center_arch_qa*`.
+`src/app/create-services.js` owns service composition and `src/app/register-routes.js` owns route order. Each module exposes `index.js` and separates presentation, application, domain (where needed), and infrastructure. The current boundaries and checks are documented in the root [README](../README.md#cấu-trúc-và-ranh-giới-source). Run `npm run check` for lint, unit/contract tests and build validation; database and browser acceptance remain separate gates. `scripts/integration/support-flow.mjs` runs a write-flow check only when `TEST_DATABASE_URL` points to a localhost database named `sports_center_arch_qa*`.
 
 ## Database
 
@@ -56,3 +56,9 @@ Deployment snapshot (2026-10-01): the frontend runs on Cloudflare Pages, the pro
 - Package tiers inherit lower-tier entitlements: Basic, Standard, then Premium.
 - Member-facing refunds are out of scope after contract acceptance and membership use.
 - AI is a contextual reminder and Coach-assistance feature, not an autonomous live chatbot or medical adviser.
+
+## Source composition
+
+`src/openapi/spec.js` composes the published contract from path groups, core/facility schemas and contract enrichments. Edit the owning path/contract file and verify `test/openapi.spec.test.js`; the public export and endpoints remain the same.
+
+`src/modules/training/application/personalization.service.js` composes profile/consent, assessment, protocol/authorization, decision and session operations. `personalization-context.js` owns their shared scope, audit and error-mapping helpers; domain rules remain in `domain/personalization-policy.js`. Repositories are injected at the service composition boundary.

@@ -20,3 +20,14 @@ Swagger: `/api-docs`; OpenAPI: `/openapi.json`. Danh sách hội viên và phi�
 Liveness: `/api/v1/health`. Readiness database: `/api/v1/ready` (503 nếu database không sẵn sàng hoặc quá 5 giây).
 
 Xem [runbook và checklist UAT](docs/OPERATIONS.md), [backend](backend/README.md) và [frontend](frontend/README.md).
+
+## Cấu trúc và ranh giới source
+
+- `backend/src/app/`: lắp ghép service và đăng ký route. `backend/src/modules/<nghiệp-vụ>/index.js` là cửa vào của mỗi module; presentation xử lý HTTP, application điều phối nghiệp vụ, domain giữ chính sách và infrastructure truy cập database/provider.
+- `backend/src/shared/`: các cơ chế dùng chung. `backend/src/openapi/spec.js` ghép hợp đồng từ các file path/schema/contract; schema và migration database ở `backend/database/prisma/`.
+- `frontend/src/app/`: lắp ghép trang và layout. `frontend/src/features/<nghiệp-vụ>/`: UI, API/hook và domain của feature, công bố qua `index.js`. `frontend/src/shared/`: UI, API client và tiện ích dùng chung.
+- Không import sâu vào module/feature khác. Frontend shared không phụ thuộc feature/app; feature không phụ thuộc app. Backend application và presentation không truy cập persistence trực tiếp; domain không phụ thuộc UI/HTTP hoặc tầng điều phối/persistence.
+
+`npm run check:architecture` kiểm tra toàn bộ JavaScript/JSX trong hai thư mục `src`, import tĩnh, re-export và dynamic import có đường dẫn literal, bao gồm alias `@/` của frontend và đường dẫn không có extension. Gate phát hiện phụ thuộc vòng giữa các file source; test không tham gia đồ thị vòng. Import được tính ở runtime từ biến không thể xác định bằng kiểm tra tĩnh.
+
+Gate dùng parser của dependency ESLint đã khai báo ở backend; cần cài dependency backend trước khi chạy. Các test của bộ phân tích chạy trước gate trong local và CI. Gate này không xác minh quyền sở hữu từng bảng database hoặc trạng thái triển khai.
